@@ -10,10 +10,11 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 - [x] État de l'art des serveurs BBS rétro (`docs/etat-de-l-art.md`)
 - [x] Cadrage cibles : Oric-1/Atmos + LOCI + WiFiModem ; émulateurs Oricutron + Phosphoror
 - [x] Initialisation dépôt Git, documentation agile, CHANGELOG, ROADMAP
-- [ ] **DÉCISION** : confirmer le langage du serveur *(en attente de précision — « Autre »)*
+- [x] **DÉCISION** : langage serveur = **Go** (1.26)
 - [x] **DÉCISION** : hébergement = **VPS cloud (IP fixe)** ; port public = **6502** (clin d'œil au CPU)
-- [ ] Serveur telnet « hello world » écoutant sur `0.0.0.0:6502`, accessible via `nc` / SyncTerm
-- [ ] Exposition Internet minimale : rate limiting, limite de connexions, logs de connexion
+- [x] Serveur telnet « hello world » écoutant sur `0.0.0.0:6502`, testé via `nc` ✅
+- [x] Exposition Internet minimale : limite de connexions globale + par IP, timeout d'inactivité, logs de connexion
+- [x] Pipeline de test émulateur confirmé (oric1-emu/Phosphoric `--serial tcp:`) — voir `docs/test-emulateurs.md`
 
 ## Sprint 1 — Couche terminal Oric (« OASCII ») 🎯 cœur du projet
 - [ ] Abstraction d'écran : `cls`, positionnement curseur, retour ligne
@@ -45,10 +46,12 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 ---
 
 ## Décisions actées
+- **Langage serveur** : Go 1.26 (`cmd/bbsd`, `internal/server`, `internal/bbs`).
 - **Hébergement** : VPS cloud avec IP fixe (exposition Internet publique 24/7).
 - **Port public** : `6502`.
+- **Test** : émulateurs locaux (oric1-emu/Phosphoric, Oricutron) via socket TCP.
 
 ## Décisions ouvertes (ADR à formaliser)
-1. **Langage serveur** — « Autre » retenu, techno précise **à confirmer**. *(Sprint 0, bloquant pour A3)*
-2. **Adressage ACIA** — supporter `0x380` (LOCI) et `#31C` (Telestrat/Oricutron) côté client.
-3. **Protocole telnet** — vrai telnet (NUL strippés) vs « fake telnet » (NUL passés). À trancher au Sprint 1.
+1. **Adressage ACIA** — supporter `$03A0-$03BF` (LOCI) et `$031C` (Telestrat/oric1-emu) côté client.
+2. **Protocole telnet** — négociation IAC complète vs filtrage minimal (actuel). À trancher au Sprint 1.
+3. **Rendu OASCII** — table d'attributs Téletexte Oric exacte à valider sur émulateur (Sprint 1).

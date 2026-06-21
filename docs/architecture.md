@@ -74,8 +74,10 @@ read_key() / read_line()  lecture clavier
 
 ## 4. Matériel réel (Sprint 4)
 
-- Oric-1/Atmos + **LOCI** + WiFiModem USB → ACIA modem à **`0x380`**.
-- Le client Oric devra gérer l'adresse ACIA selon le montage (`0x380` LOCI vs `#31C` Telestrat).
+- Oric-1/Atmos + **LOCI** + WiFiModem USB. Adressage : MIA LOCI à **`$03A0-$03BF`** (cf. oric1-emu
+  `--loci`) ; ACIA « standard » à **`$031C`** (Telestrat / défaut oric1-emu).
+- Le client Oric devra cibler la bonne base ACIA selon le montage.
+- Pipeline de test local complet via les émulateurs : voir [`test-emulateurs.md`](test-emulateurs.md).
 - Commandes Hayes AT pour établir la connexion telnet vers le serveur.
 
 ## 5. Exposition Internet (contrainte de premier ordre)

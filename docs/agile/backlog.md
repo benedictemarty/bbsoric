@@ -5,11 +5,11 @@
 ## Épopée A — Socle & connexion (Sprint 0–1)
 
 - [x] **A1** (1) En tant qu'équipe, je veux un dépôt versionné et documenté pour tracer le travail.
-- [ ] **A2** (1) En tant que dev, je veux **confirmer le langage du serveur** pour démarrer le code.
-- [ ] **A3** (3) En tant qu'utilisateur, je veux me connecter en telnet et voir un écran d'accueil
-  (« hello world »), afin de valider la chaîne réseau de bout en bout.
-- [ ] **A4** (2) En tant que dev, je veux tester la connexion **dans Oricutron** (backend `modem`)
-  pour valider sans matériel.
+- [x] **A2** (1) En tant que dev, je veux **confirmer le langage du serveur** (→ **Go 1.26**).
+- [x] **A3** (3) En tant qu'utilisateur, je veux me connecter en telnet et voir un écran d'accueil
+  (« hello world »), afin de valider la chaîne réseau de bout en bout. *(testé via `nc`)*
+- [~] **A4** (2) En tant que dev, je veux tester la connexion **dans un émulateur** sans matériel.
+  *(pipeline documenté `docs/test-emulateurs.md` ; test interactif émulateur à dérouler)*
 
 ## Épopée B — Rendu OASCII (Sprint 1)
 
