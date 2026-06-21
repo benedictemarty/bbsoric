@@ -22,9 +22,13 @@
 
 ## Épopée C — Moteur BBS (Sprint 2)
 
-- [ ] **C1** (3) En tant qu'utilisateur, je veux **naviguer dans des menus** et revenir en arrière.
-- [ ] **C2** (3) En tant que serveur, je veux gérer **plusieurs connexions simultanées** sans blocage.
-- [ ] **C3** (2) En tant qu'utilisateur, je veux être **déconnecté proprement** après inactivité.
+- [x] **C1** (3) En tant qu'utilisateur, je veux **naviguer dans des menus** et revenir en arrière.
+  *(menu principal + 3 écrans, retour via RETURN ; tests Go + validation écran émulateur)*
+- [x] **C2** (3) En tant que serveur, je veux gérer **plusieurs connexions simultanées** sans blocage.
+  *(1 goroutine/connexion, couche `server`)*
+- [x] **C3** (2) En tant qu'utilisateur, je veux être **déconnecté proprement** après inactivité.
+  *(idle timeout couche `server`)*
+- [ ] **C5** (3) En tant qu'utilisateur Oric, je veux **taper au clavier** pour naviguer (TX terminal).
 - [ ] **C4** (3) En tant qu'utilisateur, je veux **m'identifier** et retrouver mon profil.
 
 ## Épopée D — Contenu (Sprint 3)

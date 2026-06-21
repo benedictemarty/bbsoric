@@ -6,6 +6,17 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Sprint 2 — moteur de menus BBS)
+- `internal/bbs/menu.go` : moteur de menus. Menu principal coloré (OASCII) + écrans
+  **Informations système**, **À propos**, **Livre d'or** (placeholder), navigation par choix
+  (1/2/3/Q), retour au menu via RETURN, sortie propre. Helper `firstKey` (routage des choix).
+- `internal/bbs/welcome.go` : `WelcomeHandler` enchaîne désormais bannière + boucle de menu
+  (remplace l'écho « hello world »).
+- Tests : `TestBannerAndMenu`, `TestMenuNavigationAndQuit`, `TestFirstKey` (intégration via
+  socket réelle, lecture par octets robuste aux invites sans `\n`).
+- `docs/img/sprint2-menu.png` : menu coloré rendu dans l'émulateur (validation visuelle).
+- Note : la navigation depuis l'Oric nécessitera l'émission clavier (TX) du terminal — prochaine étape.
+
 ### Ajouté (Sprint 1 — terminal Oric + validation émulateur)
 - `oric-client/term.s` : terminal Oric minimal en 6502 (assemblage `xa`). Lit l'ACIA 6551
   `$031C` (9600 8N1, polling) et écrit **directement en VRAM `$BB80`** pour rendre les

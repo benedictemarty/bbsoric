@@ -22,7 +22,7 @@ func startWelcomeServer(t *testing.T) (addr string, stop func()) {
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
-	cfg := server.Config{Addr: ln.Addr().String(), IdleTimeout: 2 * time.Second}
+	cfg := server.Config{Addr: ln.Addr().String(), IdleTimeout: 30 * time.Second}
 	srv := server.New(cfg, WelcomeHandler{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -39,7 +39,30 @@ func startWelcomeServer(t *testing.T) (addr string, stop func()) {
 	}
 }
 
-func TestWelcomeBannerAndQuit(t *testing.T) {
+// readUntil lit (par octets, car les invites n'ont pas de \n) jusqu'à voir le
+// marqueur ou expiration, et renvoie le cumul.
+func readUntil(t *testing.T, r *bufio.Reader, conn net.Conn, marker string) string {
+	t.Helper()
+	var acc strings.Builder
+	buf := make([]byte, 256)
+	deadline := time.Now().Add(2 * time.Second)
+	_ = conn.SetReadDeadline(deadline)
+	for time.Now().Before(deadline) {
+		n, err := r.Read(buf)
+		if n > 0 {
+			acc.Write(buf[:n])
+			if strings.Contains(acc.String(), marker) {
+				break
+			}
+		}
+		if err != nil {
+			break
+		}
+	}
+	return acc.String()
+}
+
+func TestBannerAndMenu(t *testing.T) {
 	addr, stop := startWelcomeServer(t)
 	defer stop()
 
@@ -48,31 +71,62 @@ func TestWelcomeBannerAndQuit(t *testing.T) {
 		t.Fatalf("dial: %v", err)
 	}
 	defer conn.Close()
-
 	r := bufio.NewReader(conn)
 
-	// Lit la bannière (plusieurs lignes) jusqu'à l'invite "> ".
-	var banner strings.Builder
-	_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
-	for i := 0; i < 8; i++ {
-		line, err := r.ReadString('\n')
-		banner.WriteString(line)
-		if err != nil || strings.Contains(line, "QUIT pour quitter") {
-			break
-		}
+	// Bannière + menu principal apparaissent à la connexion.
+	out := readUntil(t, r, conn, "Votre choix")
+	if !strings.Contains(out, "B B S   O R I C") {
+		t.Errorf("bannière absente:\n%s", out)
 	}
-	if !strings.Contains(banner.String(), "B B S   O R I C") {
-		t.Errorf("bannière absente:\n%s", banner.String())
+	if !strings.Contains(out, "MENU PRINCIPAL") {
+		t.Errorf("menu absent:\n%s", out)
 	}
+}
 
-	// Envoie QUIT et vérifie la fin de session.
-	if _, err := conn.Write([]byte("QUIT\r\n")); err != nil {
+func TestMenuNavigationAndQuit(t *testing.T) {
+	addr, stop := startWelcomeServer(t)
+	defer stop()
+
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+	r := bufio.NewReader(conn)
+
+	readUntil(t, r, conn, "Votre choix")
+
+	// Choix 1 -> écran Informations systeme
+	if _, err := conn.Write([]byte("1\r\n")); err != nil {
 		t.Fatalf("write: %v", err)
 	}
-	_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	out := readUntil(t, r, conn, "retour au menu")
+	if !strings.Contains(out, "INFORMATIONS SYSTEME") {
+		t.Errorf("écran info attendu, reçu:\n%s", out)
+	}
+
+	// RETURN -> revient au menu
+	if _, err := conn.Write([]byte("\r\n")); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	readUntil(t, r, conn, "Votre choix")
+
+	// Q -> quitte
+	if _, err := conn.Write([]byte("Q\r\n")); err != nil {
+		t.Fatalf("write: %v", err)
+	}
 	rest, _ := io.ReadAll(r)
-	if !strings.Contains(string(rest), "Au revoir") {
-		t.Errorf("QUIT n'a pas terminé proprement, reçu:\n%s", string(rest))
+	if !strings.Contains(string(rest), "A bientot") {
+		t.Errorf("Q n'a pas quitté proprement, reçu:\n%s", string(rest))
+	}
+}
+
+func TestFirstKey(t *testing.T) {
+	cases := map[string]byte{"": 0, "1": '1', " q ": 'Q', "Quit": 'Q', "  ": 0, "abc": 'A'}
+	for in, want := range cases {
+		if got := firstKey(in); got != want {
+			t.Errorf("firstKey(%q) = %q, want %q", in, got, want)
+		}
 	}
 }
 

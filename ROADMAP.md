@@ -28,10 +28,13 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
   — capture `docs/img/sprint1-banner.png`, test automatisé `scripts/test-emulateur.sh`
 - [ ] Positionnement curseur / `cls` direct (optionnel — l'écriture VRAM gère déjà le rendu ; à définir si besoin)
 
-## Sprint 2 — Moteur BBS
-- [ ] Boucle de session multi-clients (1 connexion = 1 tâche)
-- [ ] Système de menus / navigation
-- [ ] Timeout d'inactivité, déconnexion propre
+## Sprint 2 — Moteur BBS — ⏳ en cours
+- [x] Boucle de session multi-clients (1 connexion = 1 goroutine) — couche `server`
+- [x] Système de menus / navigation (`internal/bbs/menu.go` : menu principal + écrans
+  Informations / À propos / Livre d'or, rendu OASCII couleur) — validé écran (`docs/img/sprint2-menu.png`)
+- [x] Timeout d'inactivité, déconnexion propre — couche `server`
+- [ ] **Émission clavier (TX) côté terminal Oric** — scan matrice AY-via-VIA, requis pour
+  naviguer depuis l'Oric (test via `--type-keys`). *Prochaine étape.*
 - [ ] Login / profils utilisateurs (persistance)
 
 ## Sprint 3 — Modules de contenu
