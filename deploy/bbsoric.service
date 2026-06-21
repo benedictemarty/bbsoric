@@ -4,8 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-User=bmarty
-Group=bmarty
+# Utilisateur non privilégié éphémère créé par systemd (pas de compte dédié à
+# provisionner ; plus sûr que root). Le BBS n'écrit aucun fichier.
+DynamicUser=yes
 ExecStart=/usr/local/bin/bbsoric -addr 0.0.0.0:6502 -max-conns 50 -max-conns-per-ip 3 -idle 5m
 Restart=on-failure
 RestartSec=5
