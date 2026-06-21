@@ -29,9 +29,15 @@ contrôle 0–31 deviennent de vrais **attributs Téletexte sériels** (couleurs
 - **DTL 2000** non géré : c'est un modem **V23/Minitel** (6850 + PIA, pas de Hayes AT ni
   de TCP moderne) — il ne sert pas à joindre un BBS telnet Internet.
 - **TLS/SSL** : l'Oric 8 bits **ne fait aucune crypto**. Le TLS est terminé par le **modem
-  WiFi** (Pico W). Côté Oric, « protocole » ne fait que choisir la commande envoyée :
-  telnet/raw → `ATD hôte:port` (fonctionnel) ; TLS → commande sécurisée spécifique au
-  Pico W (matériel réel uniquement ; le backend `modem` de l'émulateur ne fait que du TCP).
+  WiFi** (Pico W, firmware v0.2.0) qui présente du clair à l'Oric. Côté Oric, « protocole »
+  choisit la commande de numérotation :
+  - telnet/raw → `ATD hôte:port`
+  - **TLS → `ATDT#hôte:port`** (le `#` ouvre un appel TLS-terminé)
+  Validé **de bout en bout dans l'émulateur** (build OpenSSL, backend `--serial picowifi`) :
+  TLSv1.3, bannière BBS rendue à travers le tunnel (`../docs/img/tls-dial.png`).
+  Vérification du certificat : `VERIFY_NONE` par défaut ; `AT$CA` charge **un** CA racine
+  (buffer 8 Ko, conforme au firmware — pas de bundle système entier) et `AT$CV1` impose la
+  vérification. `ATGET https://...` permet aussi un GET HTTPS (port 443).
 
 ## Construire
 

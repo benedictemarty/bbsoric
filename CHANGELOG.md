@@ -6,6 +6,15 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Terminal Oric — dial TLS réel + build autonome)
+- **Numérotation TLS** : le protocole 2 (TLS) compose désormais **`ATDT#hôte:port`** (le `#`
+  ouvre un appel TLS-terminé côté Pico W, firmware v0.2.0) au lieu d'un `ATD` simple.
+  **Validé de bout en bout** dans l'émulateur (build OpenSSL, `--serial picowifi`) : TX
+  `ATDT#127.0.0.1:6510` → `TLS session up (TLSv1.3)` → bannière BBS rendue à travers un
+  proxy TLS de test (`docs/img/tls-dial.png`).
+- `oric-client/bin2tap.py` : générateur `.tap` autonome (Python) — le build ne dépend plus
+  du `bin2tap` externe de l'émulateur (qui peut être nettoyé). `build.sh` l'utilise.
+
 ### Ajouté (Terminal Oric — multi-modem + saisie manuelle host/port/protocole)
 - **Abstraction des E/S série** via `ACIAPTR` (pointeur ZP sur la base de l'ACIA) +
   primitives `ser_tx`/`ser_rx_ready`/`ser_rx`. Un seul `.tap` gère 2 backends, sélectionnés
@@ -17,9 +26,9 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 - **Saisie manuelle** (option `M` du répertoire) : champs **hôte**, **port**, **protocole**
   (1=telnet/raw fonctionnel, 2=TLS), avec écho. Le terminal compose `ATD hôte:port`.
   Routine `input_line` (saisie de ligne avec écho + anti-rebond `wait_release`).
-- **TLS** : noté comme assuré par le **modem** (Pico W) — l'Oric ne fait pas de crypto ;
-  côté Oric le protocole choisit la commande de numérotation. Non testable dans l'émulateur
-  (backend `modem` = TCP simple). Voir `oric-client/README.md`.
+- **TLS** : assuré par le **modem** (Pico W) — l'Oric ne fait pas de crypto ; côté Oric le
+  protocole choisit la commande. *(Le dial TLS `ATDT#` a depuis été implémenté et validé via
+  le backend `--serial picowifi` — voir l'entrée « dial TLS réel ».)*
 - Captures : `docs/img/modem-menu.png`, `docs/img/manual-entry.png`.
 - Note de test : `--type-keys` maintient une touche enfoncée jusqu'à une touche identique
   ou la fin de chaîne, ce qui rend la navigation multi-écrans difficile à automatiser

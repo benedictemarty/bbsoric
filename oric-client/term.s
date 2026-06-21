@@ -46,6 +46,7 @@ ACIAPTR   = $EA          ; base de l'ACIA (2 octets)
 BUFPTR    = $E8          ; cible de saisie (2 octets)
 INLEN     = $E7
 INMAX     = $E6
+PROTO     = $E5          ; 0 = telnet/raw, 1 = TLS
 
 NUM_ENTRIES = 4
 
@@ -190,21 +191,37 @@ mp_wait:
         jsr get_key
         sta LASTKEY
         cmp #'1'
-        beq mp_ok
+        beq mp_telnet
         cmp #'2'
         beq mp_tls
         jmp mp_wait
+mp_telnet:
+        lda #0
+        sta PROTO
+        jmp mp_dial
 mp_tls:
-        ; TLS = role du modem ; on note et on poursuit en ATD (cf. docs)
+        lda #1
+        sta PROTO
         lda #<me_tlsnote
         sta STRPTR
         lda #>me_tlsnote
         sta STRPTR+1
         jsr print_string
-mp_ok:
+mp_dial:
         jsr wait_release
-        ; composer ATD + host + " -" + port + CR
-        jsr send_atd
+        ; prefixe de numerotation selon le protocole
+        lda PROTO
+        beq md_telnet
+        ; TLS - ATDT#  (le modem Pico W termine le TLS, l'Oric recoit du clair)
+        lda #<at_atdts
+        sta STRPTR
+        lda #>at_atdts
+        sta STRPTR+1
+        jsr send_string
+        jmp md_hostport
+md_telnet:
+        jsr send_atd             ; telnet/raw - ATD
+md_hostport:
         lda #<hostbuf
         sta STRPTR
         lda #>hostbuf
@@ -586,6 +603,8 @@ asciitab:
 
 at_atd:
         .byt "ATD",$00
+at_atdts:
+        .byt "ATDT#",$00          ; dial securise TLS (picowifi v0.2.0)
 msg_dial:
         .byt $0D,$0A,$02,"Numerotation en cours...",$0D,$0A,$07,$00
 
@@ -618,7 +637,7 @@ me_port:
 me_proto:
         .byt $0D,$0A,$07,"Protocole  1=telnet  2=TLS > ",$00
 me_tlsnote:
-        .byt $0D,$0A,$01,"TLS gere par le modem (Pico W).",$0D,$0A,$07,$00
+        .byt $0D,$0A,$01,"TLS (ATDT#) termine par le modem.",$0D,$0A,$07,$00
 
 dial_lo:
         .byt <dial0,<dial1,<dial2,<dial3
