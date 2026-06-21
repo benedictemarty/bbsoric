@@ -6,6 +6,16 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Terminal Oric — répertoire + numérotation AT autonome)
+- `oric-client/term.s` : **répertoire (phonebook)** au démarrage + **numérotation Hayes
+  autonome**. Le terminal affiche une liste de BBS (BBS Oric prod, ParticlesBBS, Altair,
+  Heatwave), l'utilisateur choisit (1-4), et le terminal compose lui-même `ATD<hôte:port>`
+  vers le modem, puis bascule en mode terminal — plus besoin de configurer le modem.
+- Routines ajoutées : `print_string`, `send_string`, `get_key`, `reset_cursor` ; données
+  répertoire + table d'adresses des cibles de numérotation.
+- Validé sur émulateur (`--serial modem`) : sélection → `ATD` composé → `CONNECT` vers
+  `pavi.3617.fr:6502` (`docs/img/phonebook-dial.png`).
+
 ### Ajouté (Déploiement production)
 - `deploy/` : mécanisme de déploiement repris du projet telenet — `deploy.conf` (cible LXC
   pavi3617 via VPN mustang), `bbsoric.service` (unité systemd durcie, port 6502), `vps-deploy.sh`
