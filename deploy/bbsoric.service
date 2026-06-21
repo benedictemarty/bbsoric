@@ -1,0 +1,28 @@
+[Unit]
+Description=BBS Oric (telnet OASCII, port 6502)
+After=network.target
+
+[Service]
+Type=simple
+User=bmarty
+Group=bmarty
+ExecStart=/usr/local/bin/bbsoric -addr 0.0.0.0:6502 -max-conns 50 -max-conns-per-ip 3 -idle 5m
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=bbsoric
+
+# Durcissement (le BBS est exposé sur Internet)
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

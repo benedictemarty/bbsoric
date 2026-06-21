@@ -6,6 +6,14 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Déploiement production)
+- `deploy/` : mécanisme de déploiement repris du projet telenet — `deploy.conf` (cible LXC
+  pavi3617 via VPN mustang), `bbsoric.service` (unité systemd durcie, port 6502), `vps-deploy.sh`
+  (compile linux/amd64 statique → copie → installe l'unité → restart + vérifie l'écoute).
+- `Makefile` : cibles `build`, `test`, `vet`, `run`, `oric-client`, `deploy`, `deploy-build`.
+- Déploiement comme service systemd dédié `bbsoric` sur le port 6502 (libre ; le service
+  `telenet-bbs` préexistant était inactif), sans impacter `telenet-serveur`/`telenet-compagnon`.
+
 ### Ajouté (Sprint 2 — émission clavier / BBS interactif)
 - `oric-client/term.s` : **émission clavier (TX)**. Scan complet de la matrice 8×8
   (protocole PSG-via-VIA repris de `Oric asteroids/src/asm/input.s`), table ASCII par
