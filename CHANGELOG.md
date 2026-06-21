@@ -6,6 +6,14 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Production — écoute TLS 6992)
+- **Déployé** : `bbsd -tls-addr 0.0.0.0:6992` sur le LXC pavi3617 (en plus du telnet 6502).
+  Les deux ports écoutent (même process) ; TLS validé via VPN (`openssl s_client` →
+  bannière BBS). Unité systemd mise à jour.
+- ⚠️ **À faire (infra atlas)** : ouvrir le forward NAT du port **6992** vers le LXC pour
+  l'accès public `pavi.3617.fr:6992` (le 6502 l'a déjà). Tant que ce n'est pas fait,
+  l'entrée 5 du répertoire ne se connecte qu'en interne (VPN).
+
 ### Ajouté (Terminal Oric — dial TLS réel + build autonome)
 - **Numérotation TLS** : le protocole 2 (TLS) compose désormais **`ATDT#hôte:port`** (le `#`
   ouvre un appel TLS-terminé côté Pico W, firmware v0.2.0) au lieu d'un `ATD` simple.
