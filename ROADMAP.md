@@ -16,11 +16,14 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 - [x] Exposition Internet minimale : limite de connexions globale + par IP, timeout d'inactivité, logs de connexion
 - [x] Pipeline de test émulateur confirmé (oric1-emu/Phosphoric `--serial tcp:`) — voir `docs/test-emulateurs.md`
 
-## Sprint 1 — Couche terminal Oric (« OASCII ») 🎯 cœur du projet
-- [ ] Abstraction d'écran : `cls`, positionnement curseur, retour ligne
-- [ ] Encodage des **attributs sériels Téletexte** : encre (8), fond (8), clignotement, double hauteur
-- [ ] Helpers : `ink()`, `paper()`, `at(x,y)`, `println()`, ASCII-art
-- [ ] Validation dans `Oric1/oric1-emu` (`--serial loopback` puis `--serial tcp:`)
+## Sprint 1 — Couche terminal Oric (« OASCII ») 🎯 cœur du projet — ⏳ en cours
+- [x] Encodage des **attributs sériels Téletexte** : encre (8), fond (8), clignotement, double hauteur, charset alt
+  — table extraite du décodeur ULA de `oric1-emu` (`src/video/video.c`), tests unitaires verts
+- [x] `internal/oascii` : `Builder` (`Ink/Paper/Blink/DoubleHeight/AltCharset/Text/Newline`), mode `Sticky`
+- [x] Bannière d'accueil colorée (handler) — flux d'octets vérifié au hexdump
+- [x] Spec documentée : `docs/oascii.md`
+- [ ] Positionnement curseur / `cls` (dépend du protocole terminal côté Oric — à définir avec le client, Sprint 4)
+- [ ] Validation interactive dans `Oric1/oric1-emu` (`--serial tcp:`) avec rendu écran réel
 
 ## Sprint 2 — Moteur BBS
 - [ ] Boucle de session multi-clients (1 connexion = 1 tâche)

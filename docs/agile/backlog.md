@@ -13,12 +13,12 @@
 
 ## Épopée B — Rendu OASCII (Sprint 1)
 
-- [ ] **B1** (5) En tant qu'utilisateur Oric, je veux des écrans **en couleur** (encre/fond) correctement
-  rendus malgré les attributs sériels, pour une expérience fidèle à l'Oric.
-- [ ] **B2** (3) En tant que dev, je veux une **API d'écran** (`cls/at/ink/paper/print`) qui masque les
-  codes d'attribut, pour écrire les menus simplement.
-- [ ] **B3** (2) En tant que dev, je veux une **table d'attributs Oric vérifiée** sur émulateur,
-  pour fiabiliser le rendu.
+- [x] **B1** (5) En tant qu'utilisateur Oric, je veux des écrans **en couleur** (encre/fond) correctement
+  rendus malgré les attributs sériels. *(bannière colorée, flux vérifié au hexdump)*
+- [~] **B2** (3) En tant que dev, je veux une **API d'écran** (`ink/paper/blink/text/newline`) qui masque les
+  codes d'attribut. *(Builder OASCII livré ; `cls`/positionnement curseur en attente du protocole client)*
+- [x] **B3** (2) En tant que dev, je veux une **table d'attributs Oric vérifiée** sur émulateur.
+  *(extraite de `oric1-emu` src/video/video.c ; 7 tests unitaires)*
 
 ## Épopée C — Moteur BBS (Sprint 2)
 

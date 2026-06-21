@@ -32,5 +32,6 @@ occupent une case écran** (attributs sériels). Le cœur technique du projet es
 - [`ROADMAP.md`](ROADMAP.md) — plan par sprints
 - [`CHANGELOG.md`](CHANGELOG.md) — historique des modifications
 - [`docs/architecture.md`](docs/architecture.md) — architecture technique & spécificités Oric
+- [`docs/oascii.md`](docs/oascii.md) — couche d'affichage OASCII (attributs Téletexte, palette, API)
 - [`docs/etat-de-l-art.md`](docs/etat-de-l-art.md) — analyse des serveurs BBS rétro existants
 - [`docs/agile/backlog.md`](docs/agile/backlog.md) — backlog produit (user stories)

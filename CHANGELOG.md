@@ -6,7 +6,20 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
-### Ajouté
+### Ajouté (Sprint 1 — couche OASCII)
+- `internal/oascii` : couche d'affichage Oric. `Builder` chaînable
+  (`Ink/Paper/Blink/DoubleHeight/AltCharset/Text/Newline`), mode `Sticky` (ré-émission
+  des attributs par ligne), encodeurs bas niveau `InkAttr/PaperAttr/TextAttr`, constantes
+  de couleurs (palette Oric) et de dimensions (`Cols=40`, `Rows=28`).
+- Table d'attributs Téletexte sériels **extraite du décodeur ULA de l'émulateur de
+  référence** (`Oric1/oric1-emu`, `src/video/video.c`) → fiabilité garantie. 7 tests
+  unitaires comparant les octets émis aux valeurs de l'émulateur.
+- `internal/bbs` : bannière d'accueil **colorée** via OASCII (titre jaune, sous-titre
+  cyan, infos vert/blanc). Flux d'octets d'attribut vérifié au hexdump.
+- `docs/oascii.md` : spécification de la couche (nature réelle d'« OASCII », table
+  d'attributs, palette, API, pièges de mise en page 40 colonnes).
+
+### Ajouté (Sprint 0)
 - Initialisation du projet (Sprint 0).
 - `README.md` : présentation, cibles, spécificités Oric.
 - `ROADMAP.md` : plan agile par sprints (0 à 5) et décisions ouvertes.
