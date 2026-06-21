@@ -6,6 +6,20 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Sprint 2 — émission clavier / BBS interactif)
+- `oric-client/term.s` : **émission clavier (TX)**. Scan complet de la matrice 8×8
+  (protocole PSG-via-VIA repris de `Oric asteroids/src/asm/input.s`), table ASCII par
+  position (depuis `src/io/keyboard.c`), anti-rebond (1 caractère par appui), envoi ACIA et
+  **écho local** à l'écran. Le terminal lit/affiche (RX) et envoie les frappes (TX).
+- `internal/server/session.go` : `ReadLine` termine désormais la ligne sur **CR seul** (`$0D`,
+  ce qu'envoie l'Oric sur RETURN) en plus de LF/CRLF, sans lecture bloquante.
+- Test `TestCROnlyLineTermination`.
+- `docs/img/sprint2-keyboard-nav.png` : **preuve d'interactivité** — saisie `1` + RETURN depuis
+  l'Oric émulé → écran « Informations système » affiché (écho local + navigation serveur).
+- Validation : touches espacées toutes transmises (`a/b/c/RETURN`) ; navigation menu de bout en
+  bout via `--type-keys`. (Caveat : `--type-keys` en rafale très rapide pendant le chargement de
+  la bannière peut perdre des frappes — non représentatif d'une frappe humaine.)
+
 ### Ajouté (Sprint 2 — moteur de menus BBS)
 - `internal/bbs/menu.go` : moteur de menus. Menu principal coloré (OASCII) + écrans
   **Informations système**, **À propos**, **Livre d'or** (placeholder), navigation par choix

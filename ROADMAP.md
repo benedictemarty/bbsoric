@@ -33,8 +33,9 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 - [x] Système de menus / navigation (`internal/bbs/menu.go` : menu principal + écrans
   Informations / À propos / Livre d'or, rendu OASCII couleur) — validé écran (`docs/img/sprint2-menu.png`)
 - [x] Timeout d'inactivité, déconnexion propre — couche `server`
-- [ ] **Émission clavier (TX) côté terminal Oric** — scan matrice AY-via-VIA, requis pour
-  naviguer depuis l'Oric (test via `--type-keys`). *Prochaine étape.*
+- [x] **Émission clavier (TX) côté terminal Oric** — scan matrice complet AY-via-VIA
+  (`oric-client/term.s`), écho local, terminaison ligne sur CR. **Navigation interactive
+  validée à l'écran** (`docs/img/sprint2-keyboard-nav.png`, test via `--type-keys`).
 - [ ] Login / profils utilisateurs (persistance)
 
 ## Sprint 3 — Modules de contenu

@@ -87,6 +87,30 @@ func TestEchoRoundTrip(t *testing.T) {
 	}
 }
 
+func TestCROnlyLineTermination(t *testing.T) {
+	// L'Oric envoie CR ($0D) seul sur RETURN : la ligne doit se terminer.
+	addr, stop := startServer(t, Config{IdleTimeout: 2 * time.Second}, echoHandler{})
+	defer stop()
+
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+
+	if _, err := conn.Write([]byte("salut\r")); err != nil { // CR seul, pas de LF
+		t.Fatalf("write: %v", err)
+	}
+	r := bufio.NewReader(conn)
+	line, err := r.ReadString('\n')
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if got := strings.TrimSpace(line); got != "echo:salut" {
+		t.Fatalf("CR seul non traité comme fin de ligne: %q", got)
+	}
+}
+
 func TestTelnetIACStripped(t *testing.T) {
 	addr, stop := startServer(t, Config{IdleTimeout: 2 * time.Second}, echoHandler{})
 	defer stop()

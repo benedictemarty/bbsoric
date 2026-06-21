@@ -81,7 +81,16 @@ func (s *Session) ReadLine() (string, error) {
 		case '\n':
 			return b.String(), nil
 		case '\r':
-			// ignoré : le '\n' qui suit (ou non) termine la ligne
+			// L'Oric (RETURN) et de nombreux clients envoient CR seul ou CRLF.
+			// On termine la ligne sur CR et on absorbe un LF suivant SEULEMENT
+			// s'il est déjà bufferisé (jamais de lecture bloquante : l'Oric
+			// envoie CR seul).
+			if s.reader.Buffered() > 0 {
+				if next, err := s.reader.ReadByte(); err == nil && next != '\n' {
+					_ = s.reader.UnreadByte()
+				}
+			}
+			return b.String(), nil
 		case 0:
 			// NUL ignoré (cf. comportement telnet)
 		default:

@@ -1,50 +1,58 @@
 ; ---------------------------------------------------------------------------
-;  term.s - Terminal Oric minimal pour le BBS Oric
+;  term.s - Terminal Oric pour le BBS Oric (RX ecran + TX clavier)
 ;
-;  Recoit le flux serie de l'ACIA 6551 et l'ecrit DIRECTEMENT en memoire
-;  ecran ($BB80), pour que les octets de controle 0-31 deviennent de vrais
-;  attributs Teletexte seriels Oric (encre/fond/clignotement), au lieu d'etre
-;  interpretes par les routines ROM.
+;  RX  - lit l'ACIA 6551 et ecrit DIRECTEMENT en VRAM (BB80) pour rendre les
+;        attributs Teletexte seriels OASCII (octets 0-31).
+;  TX  - scanne la matrice clavier (protocole PSG-via-VIA, repris de
+;        'Oric asteroids/src/asm/input.s') et envoie la touche a l'ACIA ;
+;        echo local a l'ecran.
 ;
-;  Cible  - oric1-emu (ACIA @ $031C). Assemblage  - xa. Chargement  - $1000.
-;
-;  CR ($0D) -> debut de ligne ; LF ($0A) -> ligne suivante + scroll.
-;  Caracteres et attributs  - ecrits a la position courante (clamp a 40 col).
-;  TX clavier omis (le serveur emet la banniere a la connexion).
-;  (Commentaires en ASCII  - xa ne supporte pas l'UTF-8.)
+;  Cible oric1-emu (ACIA 031C, VIA 0300). Assemblage xa. Chargement 1000.
+;  Commentaires ASCII, sans deux-points (limitations de xa).
 ; ---------------------------------------------------------------------------
 
-; Registres ACIA 6551 (oric1-emu, base $031C)
-ACIA_DATA = $031C        ; R - RDR / W - TDR
-ACIA_STAT = $031D        ; R - status
-ACIA_CMD  = $031E        ; command
-ACIA_CTL  = $031F        ; control
-RDRF      = $08          ; status bit3  - Receiver Data Register Full
-TDRE      = $10          ; status bit4  - Transmit Data Register Empty
+; --- ACIA 6551 ---
+ACIA_DATA = $031C
+ACIA_STAT = $031D
+ACIA_CMD  = $031E
+ACIA_CTL  = $031F
+RDRF      = $08
+TDRE      = $10
 
-; Ecran TEXT Oric  - 40x28 a $BB80
+; --- VIA 6522 (acces PSG clavier) ---
+VIA_ORB   = $0300
+VIA_ORA   = $0301
+VIA_DDRB  = $0302
+VIA_DDRA  = $0303
+VIA_PCR   = $030C
+
+; --- Ecran TEXT 40x28 ---
 SCREEN    = $BB80
-SCREND    = $BFE0        ; fin exclusive = $BB80 + 28*40
-LASTLINE  = $BFB8        ; $BB80 + 27*40
+SCREND    = $BFE0
+LASTLINE  = $BFB8
 
-; Variables page zero (IRQ masquees, ROM non appelee -> ZP libre)
-SCRPTR    = $F0          ; pointeur ecran courant (2 octets)
-COL       = $F2          ; colonne courante (0..40)
-SRC       = $F4          ; pointeur source scroll (2 octets)
-DST       = $F6          ; pointeur destination (2 octets)
+; --- Page zero ---
+SCRPTR    = $F0
+COL       = $F2
+SRC       = $F4
+DST       = $F6
+KCOL      = $F8
+KROW      = $F9
+LASTKEY   = $FA
+PCRSAVE   = $FB
+KTMP      = $FC
 
 * = $1000
 
 start:
-        sei                      ; on prend la main (pas d'IRQ ROM)
-        ; init ACIA  - 9600 8N1, DTR on, IRQ off, TX on
-        lda #$1E                 ; control  - 9600, 8 bits, 1 stop, horloge interne
+        sei
+        ; ACIA 9600 8N1, DTR on, IRQ off, TX on
+        lda #$1E
         sta ACIA_CTL
-        lda #$0B                 ; command  - DTR=1, RX-IRQ off, RTS low, sans parite
+        lda #$0B
         sta ACIA_CMD
 
         jsr clear_screen
-        ; SCRPTR = SCREEN ; COL = 0
         lda #<SCREEN
         sta SCRPTR
         lda #>SCREEN
@@ -52,32 +60,67 @@ start:
         lda #0
         sta COL
 
+        ; --- init clavier (VIA/PSG) ---
+        lda VIA_PCR
+        and #$11                 ; preserver bits 0 (CA1) et 4 (CB1)
+        sta PCRSAVE
+        lda #$FF                 ; DDRA output (pour ecrire le PSG)
+        sta VIA_DDRA
+        lda #$F7                 ; DDRB - PB3 en entree, reste sortie
+        sta VIA_DDRB
+        lda #$7F                 ; PSG R7 - port A output, sons coupes
+        ldy #7
+        jsr psg_write
+        lda #0
+        sta LASTKEY
+
 main:
+        ; --- RX prioritaire (vidange) ---
         lda ACIA_STAT
         and #RDRF
-        beq main                 ; rien recu
-        lda ACIA_DATA            ; octet recu (acquitte RDRF)
+        beq do_keyscan
+        lda ACIA_DATA
+        jsr putbyte
+        jmp main
 
+do_keyscan:
+        jsr key_scan             ; A = ASCII (0 si rien)
+        cmp #0
+        beq ks_release
+        cmp LASTKEY
+        beq ks_ret               ; meme touche maintenue - pas de repetition
+        sta LASTKEY
+        jsr acia_tx              ; envoie au serveur (A preserve)
+        jsr putbyte              ; echo local
+        jmp main
+ks_release:
+        lda #0
+        sta LASTKEY
+ks_ret:
+        jmp main
+
+; ---------------------------------------------------------------------------
+;  putbyte - affiche A a l'ecran (gere CR, LF+scroll, clamp 40 col)
+; ---------------------------------------------------------------------------
+putbyte:
         cmp #$0D
-        beq do_cr
+        beq pb_cr
         cmp #$0A
-        beq do_lf
-
-        ; caractere imprimable ou octet d'attribut  - ecrire au curseur
+        beq pb_lf
         ldx COL
         cpx #40
-        bcs main                 ; ligne pleine  - ignore jusqu'a CR/LF (clamp)
+        bcs pb_done              ; ligne pleine - ignore
         ldy #0
         sta (SCRPTR),y
         inc SCRPTR
-        bne adv_col
+        bne pb_adv
         inc SCRPTR+1
-adv_col:
+pb_adv:
         inc COL
-        jmp main
+pb_done:
+        rts
 
-do_cr:
-        ; SCRPTR -= COL ; COL = 0 (retour debut de ligne)
+pb_cr:
         sec
         lda SCRPTR
         sbc COL
@@ -87,13 +130,12 @@ do_cr:
         sta SCRPTR+1
         lda #0
         sta COL
-        jmp main
+        rts
 
-do_lf:
-        ; SCRPTR += (40 - COL) ; COL = 0 ; verifier scroll
+pb_lf:
         lda #40
         sec
-        sbc COL                  ; A = 40 - COL
+        sbc COL
         clc
         adc SCRPTR
         sta SCRPTR
@@ -102,10 +144,11 @@ do_lf:
         sta SCRPTR+1
         lda #0
         sta COL
-        jsr check_scroll
-        jmp main
+        jmp check_scroll         ; check_scroll fait rts
 
-; --- Scroll si le curseur a depasse le bas de l'ecran ---
+; ---------------------------------------------------------------------------
+;  check_scroll / scroll_up / clear_screen
+; ---------------------------------------------------------------------------
 check_scroll:
         lda SCRPTR+1
         cmp #>SCREND
@@ -123,7 +166,6 @@ cs_do:
 cs_done:
         rts
 
-; --- Remonte l'ecran d'une ligne (1080 octets) + efface la derniere ---
 scroll_up:
         lda #<(SCREEN+40)
         sta SRC
@@ -133,7 +175,7 @@ scroll_up:
         sta DST
         lda #>SCREEN
         sta DST+1
-        ldx #4                   ; 4 pages pleines (1024 octets)
+        ldx #4
         ldy #0
 su_page:
         lda (SRC),y
@@ -144,7 +186,6 @@ su_page:
         inc DST+1
         dex
         bne su_page
-        ; reste  - 1080 - 1024 = 56 octets ($38)
         ldy #0
 su_rem:
         lda (SRC),y
@@ -152,7 +193,6 @@ su_rem:
         iny
         cpy #$38
         bne su_rem
-        ; efface la derniere ligne (40 octets) avec des espaces
         ldy #0
         lda #$20
 su_clr:
@@ -162,13 +202,12 @@ su_clr:
         bne su_clr
         rts
 
-; --- Efface tout l'ecran avec des espaces (1120 octets) ---
 clear_screen:
         lda #<SCREEN
         sta DST
         lda #>SCREEN
         sta DST+1
-        ldx #4                   ; 4 pages (1024) + reste 96
+        ldx #4
         ldy #0
         lda #$20
 clr_page:
@@ -182,6 +221,120 @@ clr_page:
 clr_rem:
         sta (DST),y
         iny
-        cpy #$60                 ; 96 octets restants
+        cpy #$60
         bne clr_rem
         rts
+
+; ---------------------------------------------------------------------------
+;  acia_tx - envoie l'octet A via l'ACIA (attend TDRE). A preserve.
+; ---------------------------------------------------------------------------
+acia_tx:
+        pha
+tx_wait:
+        lda ACIA_STAT
+        and #TDRE
+        beq tx_wait
+        pla
+        sta ACIA_DATA
+        rts
+
+; ---------------------------------------------------------------------------
+;  psg_write - ecrit A dans le registre PSG Y (protocole BDIR/BC1 via VIA)
+; ---------------------------------------------------------------------------
+psg_write:
+        sta KTMP
+        tya
+        sta VIA_ORA
+        lda PCRSAVE
+        ora #$EE                 ; latch address
+        sta VIA_PCR
+        lda PCRSAVE
+        ora #$CC                 ; inactive
+        sta VIA_PCR
+        lda KTMP
+        sta VIA_ORA
+        lda PCRSAVE
+        ora #$EC                 ; write data
+        sta VIA_PCR
+        lda PCRSAVE
+        ora #$CC                 ; inactive
+        sta VIA_PCR
+        rts
+
+; ---------------------------------------------------------------------------
+;  key_scan - scanne la matrice 8x8, renvoie l'ASCII de la 1re touche pressee
+;             (0 si aucune). Indep. de la ROM (IRQ deja masquee par SEI).
+; ---------------------------------------------------------------------------
+key_scan:
+        lda #0
+        sta KCOL
+ks_colloop:
+        lda VIA_ORB
+        and #$F8
+        ora KCOL
+        sta VIA_ORB
+        lda #0
+        sta KROW
+ks_rowloop:
+        ldx KROW
+        lda rowmask,x
+        ldy #14
+        jsr psg_write
+        nop
+        nop
+        lda VIA_ORB
+        and #$08                 ; PB3 - 1 si touche pressee
+        beq ks_rownext
+        lda KCOL
+        asl
+        asl
+        asl
+        ora KROW                 ; index = KCOL*8 + KROW
+        tax
+        lda asciitab,x
+        cmp #0
+        bne ks_found             ; ignore les modificateurs (ASCII 0)
+ks_rownext:
+        inc KROW
+        lda KROW
+        cmp #8
+        bne ks_rowloop
+        inc KCOL
+        lda KCOL
+        cmp #8
+        bne ks_colloop
+        lda #0                   ; rien trouve
+ks_found:
+        pha
+        lda #$FF                 ; reg14 = toutes rangees inactives
+        ldy #14
+        jsr psg_write
+        pla
+        rts
+
+; ---------------------------------------------------------------------------
+;  Tables
+; ---------------------------------------------------------------------------
+; Masques R14 - un seul bit a 0 = rangee active (index = rangee)
+rowmask:
+        .byt $FE,$FD,$FB,$F7,$EF,$DF,$BF,$7F
+
+; ASCII par position matrice, index = colonne*8 + rangee (0 = non mappe).
+; Disposition reprise de src/io/keyboard.c (table QWERTY Oric-1).
+asciitab:
+        ; Col0  7    n    5    v    -    1    x    3
+        .byt $37,$6E,$35,$76,$00,$31,$78,$33
+        ; Col1  j    t    r    f    -    -    q    d
+        .byt $6A,$74,$72,$66,$00,$00,$71,$64
+        ; Col2  m    6    b    4    -    z    2    c
+        .byt $6D,$36,$62,$34,$00,$7A,$32,$63
+        ; Col3  k    9    ;    -    -    -    \    '
+        .byt $6B,$39,$3B,$2D,$00,$00,$5C,$27
+        ; Col4  SPC  ,    .    UP   LSH  LFT  DWN  RGT
+        .byt $20,$2C,$2E,$00,$00,$00,$00,$00
+        ; Col5  u    i    o    p    -    -    ]    [
+        .byt $75,$69,$6F,$70,$00,$00,$5D,$5B
+        ; Col6  y    h    g    e    -    a    s    w
+        .byt $79,$68,$67,$65,$00,$61,$73,$77
+        ; Col7  8    l    0    /    RSH  RET  -    =
+        .byt $38,$6C,$30,$2F,$00,$0D,$00,$3D

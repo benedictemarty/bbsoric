@@ -54,7 +54,21 @@ des attributs sériels OASCII :
 ![Bannière BBS Oric rendue dans l'émulateur](img/sprint1-banner.png)
 
 La trace `--serial-trace FILE` détaille chaque octet TX/RX (utile pour diagnostiquer
-les attributs Téletexte).
+les attributs Téletexte ou vérifier les frappes clavier émises).
+
+### 2c. Tester l'émission clavier (TX) et la navigation
+`--type-keys 'C:TEXTE'` injecte des frappes après C cycles (`\n`=RETURN, `\pN`=pause N s).
+Exemple — choisir l'entrée 1 du menu puis valider :
+```bash
+oric1-emu ... --type-keys '6000000:1\p2\n' --screenshot-at 9500000:/tmp/nav.ppm -c 10000000
+```
+Résultat de référence — saisie `1` + RETURN → écran « Informations système » :
+
+![Navigation clavier depuis l'Oric](img/sprint2-keyboard-nav.png)
+
+> ⚠️ Espacer les frappes (`\pN`) : une rafale très rapide pendant le chargement de la bannière
+> peut perdre des frappes (le terminal vide d'abord le flux RX). Une frappe humaine (touches
+> maintenues ~100 ms, espacées) est captée sans problème — validé : `a/b/c/RETURN` tous transmis.
 
 ### 2b. Connexion via modem émulé (proche du réel)
 ```bash

@@ -28,7 +28,8 @@
   *(1 goroutine/connexion, couche `server`)*
 - [x] **C3** (2) En tant qu'utilisateur, je veux être **déconnecté proprement** après inactivité.
   *(idle timeout couche `server`)*
-- [ ] **C5** (3) En tant qu'utilisateur Oric, je veux **taper au clavier** pour naviguer (TX terminal).
+- [x] **C5** (3) En tant qu'utilisateur Oric, je veux **taper au clavier** pour naviguer (TX terminal).
+  *(scan matrice complet + écho local + CR ; navigation validée à l'écran via `--type-keys`)*
 - [ ] **C4** (3) En tant qu'utilisateur, je veux **m'identifier** et retrouver mon profil.
 
 ## Épopée D — Contenu (Sprint 3)

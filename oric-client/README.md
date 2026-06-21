@@ -11,9 +11,9 @@ les routines ROM.
 - Init ACIA `$031C` : 9600 8N1, DTR on, polling (pas d'IRQ).
 - Réception → écran : gère `CR` ($0D, retour début de ligne), `LF` ($0A, ligne
   suivante + scroll), clamp à 40 colonnes.
-- Chargé/exécuté en `$1000`. ~229 octets.
-- TX clavier non implémenté (suffisant pour afficher la bannière émise par le
-  serveur à la connexion ; l'envoi clavier viendra avec le moteur BBS).
+- **TX clavier** : scan complet de la matrice 8×8 (protocole PSG-via-VIA), table ASCII
+  par position, anti-rebond (1 caractère par appui), envoi ACIA + **écho local**.
+- Chargé/exécuté en `$1000`. ~490 octets.
 
 ## Construire
 
