@@ -13,8 +13,8 @@ versionnage [SemVer](https://semver.org/lang/fr/).
   (`.2:6502`). NAT MikroTik `:6992` redirigé vers Caddy (`.130`). Chaîne et config
   versionnées dans `deploy/caddy-tls.md`.
 - Le Pico W peut maintenant **vérifier le certificat** (`AT$CV1` + CA Let's Encrypt).
-- `bbsd -tls-addr 6992` devient redondant (hors chemin public) ; retrait possible au prochain
-  déploiement. Sites web de CT 130 (meteolib/3617/lamatronne…) vérifiés sans régression.
+- `bbsd -tls-addr 6992` **retiré** de l'unité systemd : bbsd ne sert plus que le telnet clair
+  (`.2:6502`) vers Caddy. Sites web de CT 130 (meteolib/3617/lamatronne…) vérifiés sans régression.
 
 ### Ajouté (Production — écoute TLS 6992, accès public ouvert)
 - **Déployé** : `bbsd -tls-addr 0.0.0.0:6992` sur le LXC pavi3617 (en plus du telnet 6502).
