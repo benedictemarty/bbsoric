@@ -19,3 +19,7 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 - Prise en compte de la contrainte **serveur Internet public** : section « Exposition Internet »
   dans `docs/architecture.md` (port public, absence de TLS, surface d'attaque, hébergement, dispo) ;
   sécurité/exposition/hébergement remontées comme préoccupations transverses dans `ROADMAP.md`.
+
+### Décidé
+- **Hébergement** : VPS cloud avec IP fixe.
+- **Port public** : `6502`.

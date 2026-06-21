@@ -83,8 +83,9 @@ read_key() / read_line()  lecture clavier
 Le BBS est un **serveur Internet public** : il écoute sur `0.0.0.0:<port>` et est joignable depuis
 n'importe quel Oric connecté via son WiFiModem. Conséquences à intégrer dès le départ :
 
-- **Port public** : le port 23 (telnet) est très scanné et souvent bloqué par les FAI en sortie.
-  Choisir un port (ex. `6502`, clin d'œil au CPU) et le documenter pour les utilisateurs.
+- **Port public** : **`6502`** retenu (clin d'œil au CPU de l'Oric ; évite le port 23 très scanné et
+  souvent bloqué en sortie par les FAI). À configurer côté client dans le `ATD <host>:6502`.
+- **Hébergement** : **VPS cloud avec IP fixe** (service public 24/7, exposition directe sans DNS dynamique).
 - **Pas de chiffrement** : les clients Oric ne font pas de TLS → le flux telnet est **en clair**.
   Donc : jamais de secret sensible côté utilisateur, mots de passe BBS traités comme non confidentiels,
   hachage côté serveur quand même.
@@ -93,9 +94,7 @@ n'importe quel Oric connecté via son WiFiModem. Conséquences à intégrer dès
   - Lecture défensive des entrées (jamais d'`eval`, tailles bornées, timeouts agressifs).
   - Journalisation des connexions (IP, horodatage) + rotation des logs.
   - Isolation du process (utilisateur dédié non privilégié / conteneur).
-- **Hébergement** (à décider) : VPS cloud, machine perso derrière box (port-forwarding + DNS dynamique),
-  ou Raspberry Pi exposé. Si IP résidentielle : prévoir un **DNS dynamique** (nom stable pour les `ATD`).
-- **Disponibilité** : service `systemd` ou conteneur avec redémarrage auto.
+- **Disponibilité** : service `systemd` ou conteneur avec redémarrage auto sur le VPS.
 
 > Ces points remontent la sécurité et le déploiement comme préoccupations **transverses**, pas comme un
 > sprint final. Voir la ROADMAP mise à jour.
