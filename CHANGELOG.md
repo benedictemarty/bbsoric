@@ -6,13 +6,14 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
-### Ajouté (Production — écoute TLS 6992)
+### Ajouté (Production — écoute TLS 6992, accès public ouvert)
 - **Déployé** : `bbsd -tls-addr 0.0.0.0:6992` sur le LXC pavi3617 (en plus du telnet 6502).
-  Les deux ports écoutent (même process) ; TLS validé via VPN (`openssl s_client` →
-  bannière BBS). Unité systemd mise à jour.
-- ⚠️ **À faire (infra atlas)** : ouvrir le forward NAT du port **6992** vers le LXC pour
-  l'accès public `pavi.3617.fr:6992` (le 6502 l'a déjà). Tant que ce n'est pas fait,
-  l'entrée 5 du répertoire ne se connecte qu'en interne (VPN).
+  Les deux ports écoutent (même process). Unité systemd mise à jour.
+- **Forward NAT ouvert** sur le routeur MikroTik (dst-nat `:6992` → `192.168.1.2:6992`,
+  calqué sur la règle 6502). **`pavi.3617.fr:6992` est joignable publiquement en TLS** :
+  testé (`openssl s_client` → bannière + navigation `1` → écran Informations).
+- L'entrée 5 du répertoire (`BBS Oric TLS`) est désormais opérationnelle depuis un vrai
+  Oric sur Internet (`ATDT#pavi.3617.fr:6992`).
 
 ### Ajouté (Terminal Oric — dial TLS réel + build autonome)
 - **Numérotation TLS** : le protocole 2 (TLS) compose désormais **`ATDT#hôte:port`** (le `#`
