@@ -17,8 +17,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bmarty/bbsoric/internal/bbs"
-	"github.com/bmarty/bbsoric/internal/server"
+	"github.com/benedictemarty/bbsoric/internal/bbs"
+	"github.com/benedictemarty/bbsoric/internal/server"
 )
 
 func main() {

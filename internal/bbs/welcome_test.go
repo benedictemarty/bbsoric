@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bmarty/bbsoric/internal/server"
+	"github.com/benedictemarty/bbsoric/internal/server"
 )
 
 // startWelcomeServer démarre un vrai serveur BBS avec le WelcomeHandler sur un

@@ -7,8 +7,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/bmarty/bbsoric/internal/oascii"
-	"github.com/bmarty/bbsoric/internal/server"
+	"github.com/benedictemarty/bbsoric/internal/oascii"
+	"github.com/benedictemarty/bbsoric/internal/server"
 )
 
 // WelcomeHandler affiche la bannière d'accueil puis lance le menu principal.

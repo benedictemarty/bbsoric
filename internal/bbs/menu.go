@@ -3,8 +3,8 @@ package bbs
 import (
 	"strings"
 
-	"github.com/bmarty/bbsoric/internal/oascii"
-	"github.com/bmarty/bbsoric/internal/server"
+	"github.com/benedictemarty/bbsoric/internal/oascii"
+	"github.com/benedictemarty/bbsoric/internal/server"
 )
 
 // Version applicative affichée par le BBS (suit le sprint courant).
