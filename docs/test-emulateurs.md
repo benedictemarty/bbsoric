@@ -34,13 +34,27 @@ go run ./cmd/bbsd -addr 127.0.0.1:6502
 ```
 
 ### 2a. Connexion directe ACIA → BBS (le plus simple)
-L'émulateur relie son ACIA à notre serveur via une socket TCP :
+L'émulateur relie son ACIA à notre serveur via une socket TCP. Côté Oric, le terminal
+[`oric-client/term.s`](../oric-client/term.s) lit l'ACIA `$031C` et écrit en VRAM.
+
+**Procédure validée et automatisée** (Sprint 1) :
 ```bash
-cd /home/bmarty/Oric1
-./oric1-emu --serial tcp:127.0.0.1:6502 --acia-addr 031C
+oric-client/build.sh                 # term.s -> term.tap (autorun, charge en $1000)
+scripts/test-emulateur.sh /tmp/oric.ppm
 ```
-Côté Oric, un programme terminal lit/écrit l'ACIA à `$031C`. La trace `--serial-trace`
-aide à diagnostiquer le rendu (octets d'attribut Téletexte).
+Le script lance le serveur, démarre l'émulateur **headless** connecté en série TCP,
+puis capture l'écran. Points clés validés :
+- ROM **obligatoire** : `-r roms/basic11b.rom` (sinon la machine ne boote pas, PC reste à 0).
+- Fast-load `-f` : le terminal est injecté en `$1000` vers ~3 M cycles, capture à 6,5 M.
+- FIFO RX `--serial-buffer 512` : encaisse la bannière pendant le boot.
+
+**Résultat de référence** — la bannière colorée s'affiche correctement, prouvant le rendu
+des attributs sériels OASCII :
+
+![Bannière BBS Oric rendue dans l'émulateur](img/sprint1-banner.png)
+
+La trace `--serial-trace FILE` détaille chaque octet TX/RX (utile pour diagnostiquer
+les attributs Téletexte).
 
 ### 2b. Connexion via modem émulé (proche du réel)
 ```bash

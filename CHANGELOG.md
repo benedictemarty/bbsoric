@@ -6,6 +6,19 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Sprint 1 — terminal Oric + validation émulateur)
+- `oric-client/term.s` : terminal Oric minimal en 6502 (assemblage `xa`). Lit l'ACIA 6551
+  `$031C` (9600 8N1, polling) et écrit **directement en VRAM `$BB80`** pour rendre les
+  attributs sériels OASCII ; gère CR/LF/scroll, clamp 40 colonnes ; chargé/exécuté en `$1000`.
+- `oric-client/build.sh` : assemblage + génération `.tap` autorun (via `bin2tap`).
+- `scripts/test-emulateur.sh` : test d'intégration headless (serveur + `oric1-emu` en série
+  TCP + capture d'écran PPM/PNG).
+- `docs/img/sprint1-banner.png` : **preuve visuelle** — la bannière colorée (jaune/cyan/vert/blanc)
+  s'affiche correctement dans l'émulateur, validant la table d'attributs et toute la chaîne réseau.
+- `oric-client/README.md` : doc du terminal Oric.
+- `docs/test-emulateurs.md` : procédure de test validée et automatisée (ROM obligatoire,
+  fast-load, FIFO RX, timings de capture).
+
 ### Ajouté (Sprint 1 — couche OASCII)
 - `internal/oascii` : couche d'affichage Oric. `Builder` chaînable
   (`Ink/Paper/Blink/DoubleHeight/AltCharset/Text/Newline`), mode `Sticky` (ré-émission

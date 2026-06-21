@@ -22,8 +22,11 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 - [x] `internal/oascii` : `Builder` (`Ink/Paper/Blink/DoubleHeight/AltCharset/Text/Newline`), mode `Sticky`
 - [x] Bannière d'accueil colorée (handler) — flux d'octets vérifié au hexdump
 - [x] Spec documentée : `docs/oascii.md`
-- [ ] Positionnement curseur / `cls` (dépend du protocole terminal côté Oric — à définir avec le client, Sprint 4)
-- [ ] Validation interactive dans `Oric1/oric1-emu` (`--serial tcp:`) avec rendu écran réel
+- [x] **Terminal Oric** (`oric-client/term.s`, 6502/xa) : ACIA `$031C` → écriture directe VRAM `$BB80`
+  (CR/LF/scroll, clamp 40 col), build `.tap` autorun via `bin2tap`
+- [x] **Validation visuelle dans `oric1-emu`** : bannière colorée rendue correctement (jaune/cyan/vert/blanc)
+  — capture `docs/img/sprint1-banner.png`, test automatisé `scripts/test-emulateur.sh`
+- [ ] Positionnement curseur / `cls` direct (optionnel — l'écriture VRAM gère déjà le rendu ; à définir si besoin)
 
 ## Sprint 2 — Moteur BBS
 - [ ] Boucle de session multi-clients (1 connexion = 1 tâche)

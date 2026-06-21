@@ -20,3 +20,7 @@ node_modules/
 # Données runtime du BBS (à versionner séparément si besoin)
 /data/
 *.db
+
+# Artefacts client Oric (regénérés par oric-client/build.sh)
+oric-client/term.bin
+oric-client/term.tap

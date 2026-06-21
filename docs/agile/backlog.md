@@ -8,15 +8,15 @@
 - [x] **A2** (1) En tant que dev, je veux **confirmer le langage du serveur** (→ **Go 1.26**).
 - [x] **A3** (3) En tant qu'utilisateur, je veux me connecter en telnet et voir un écran d'accueil
   (« hello world »), afin de valider la chaîne réseau de bout en bout. *(testé via `nc`)*
-- [~] **A4** (2) En tant que dev, je veux tester la connexion **dans un émulateur** sans matériel.
-  *(pipeline documenté `docs/test-emulateurs.md` ; test interactif émulateur à dérouler)*
+- [x] **A4** (2) En tant que dev, je veux tester la connexion **dans un émulateur** sans matériel.
+  *(terminal `oric-client/term.s` + `scripts/test-emulateur.sh` ; bannière colorée validée à l'écran)*
 
 ## Épopée B — Rendu OASCII (Sprint 1)
 
 - [x] **B1** (5) En tant qu'utilisateur Oric, je veux des écrans **en couleur** (encre/fond) correctement
-  rendus malgré les attributs sériels. *(bannière colorée, flux vérifié au hexdump)*
-- [~] **B2** (3) En tant que dev, je veux une **API d'écran** (`ink/paper/blink/text/newline`) qui masque les
-  codes d'attribut. *(Builder OASCII livré ; `cls`/positionnement curseur en attente du protocole client)*
+  rendus malgré les attributs sériels. *(bannière colorée validée À L'ÉCRAN dans oric1-emu)*
+- [x] **B2** (3) En tant que dev, je veux une **API d'écran** (`ink/paper/blink/text/newline`) qui masque les
+  codes d'attribut. *(Builder OASCII ; `cls`/curseur gérés côté terminal Oric par écriture VRAM)*
 - [x] **B3** (2) En tant que dev, je veux une **table d'attributs Oric vérifiée** sur émulateur.
   *(extraite de `oric1-emu` src/video/video.c ; 7 tests unitaires)*
 
