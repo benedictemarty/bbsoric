@@ -48,7 +48,7 @@ INLEN     = $E7
 INMAX     = $E6
 PROTO     = $E5          ; 0 = telnet/raw, 1 = TLS
 
-NUM_ENTRIES = 4
+NUM_ENTRIES = 5
 
 * = $1000
 
@@ -137,8 +137,18 @@ pb_wait:
         sta TARGETLO
         lda dial_hi,x
         sta TARGETHI
-        ; ATD + cible + CR
+        ; prefixe selon proto_tbl[X] (0=telnet ATD, 1=TLS ATDT#)
+        lda proto_tbl,x
+        beq pb_telnet
+        lda #<at_atdts
+        sta STRPTR
+        lda #>at_atdts
+        sta STRPTR+1
+        jsr send_string
+        jmp pb_target
+pb_telnet:
         jsr send_atd
+pb_target:
         lda TARGETLO
         sta STRPTR
         lda TARGETHI
@@ -624,8 +634,9 @@ pb_text:
         .byt $06," 2  ",$07,"ParticlesBBS",$0D,$0A
         .byt $06," 3  ",$07,"Altair",$0D,$0A
         .byt $06," 4  ",$07,"Heatwave",$0D,$0A
+        .byt $06," 5  ",$07,"BBS Oric TLS  pavi.3617.fr:6992",$0D,$0A
         .byt $06," M  ",$07,"Saisie manuelle",$0D,$0A,$0D,$0A
-        .byt $02,"Choix (1-4, M) > ",$07,$00
+        .byt $02,"Choix (1-5, M) > ",$07,$00
 
 me_host:
         .byt "========================================",$0D,$0A
@@ -640,9 +651,12 @@ me_tlsnote:
         .byt $0D,$0A,$01,"TLS (ATDT#) termine par le modem.",$0D,$0A,$07,$00
 
 dial_lo:
-        .byt <dial0,<dial1,<dial2,<dial3
+        .byt <dial0,<dial1,<dial2,<dial3,<dial4
 dial_hi:
-        .byt >dial0,>dial1,>dial2,>dial3
+        .byt >dial0,>dial1,>dial2,>dial3,>dial4
+; protocole par entree - 0 = telnet (ATD), 1 = TLS (ATDT#)
+proto_tbl:
+        .byt 0,0,0,0,1
 dial0:
         .byt "pavi.3617.fr:6502",$00
 dial1:
@@ -651,6 +665,8 @@ dial2:
         .byt "altair.virtualaltair.com:4667",$00
 dial3:
         .byt "heatwave.ddns.net:9640",$00
+dial4:
+        .byt "pavi.3617.fr:6992",$00
 
 ; Tampons de saisie
 hostbuf:
