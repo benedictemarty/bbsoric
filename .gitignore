@@ -24,3 +24,7 @@ node_modules/
 # Artefacts client Oric (regénérés par oric-client/build.sh)
 oric-client/term.bin
 oric-client/term.tap
+
+# Config de déploiement réelle (infra prod) — utiliser deploy.conf.example
+deploy/deploy.conf
+bbsd

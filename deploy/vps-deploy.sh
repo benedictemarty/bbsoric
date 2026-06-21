@@ -14,6 +14,12 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [ ! -f "$SCRIPT_DIR/deploy.conf" ]; then
+    echo "ERREUR : deploy/deploy.conf manquant."
+    echo "  cp deploy/deploy.conf.example deploy/deploy.conf  puis renseignez-le."
+    exit 1
+fi
 source "$SCRIPT_DIR/deploy.conf"
 
 SSH="ssh -p $VPS_PORT -o ConnectTimeout=8 $VPS_USER@$VPS_HOST"

@@ -27,9 +27,10 @@ déployé via `make deploy`. Voir [`ROADMAP.md`](ROADMAP.md) et [`docs/agile/bac
 ## Déploiement
 
 ```bash
-make deploy        # compile (linux/amd64) + installe le service systemd bbsoric (port 6502)
+cp deploy/deploy.conf.example deploy/deploy.conf   # puis renseigner (gitignoré)
+make deploy                                         # compile (linux/amd64) + service systemd bbsoric (6502)
 ```
-Prérequis : VPN WireGuard mustang actif. Détails dans [`deploy/`](deploy/).
+Détails dans [`deploy/`](deploy/). `deploy.conf` (infra réelle) n'est pas versionné.
 
 ## Pourquoi c'est différent d'un BBS C64/Atari
 

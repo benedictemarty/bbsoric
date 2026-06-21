@@ -1,0 +1,19 @@
+# Configuration du déploiement du BBS Oric.
+# Copier en `deploy.conf` et renseigner les vraies valeurs (deploy.conf est
+# gitignoré : il ne doit JAMAIS être versionné — il contient l'infra de prod).
+#
+#   cp deploy/deploy.conf.example deploy/deploy.conf
+#   $EDITOR deploy/deploy.conf
+
+# Connexion SSH au serveur de production (VPN si nécessaire)
+VPS_HOST=10.0.0.1           # IP ou nom d'hôte du serveur
+VPS_USER=root
+VPS_PORT=22
+
+# Service systemd et binaire sur le serveur
+SERVICE=bbsoric
+BINAIRE_REMOTE=/usr/local/bin/bbsoric
+RUN_USER=root
+
+# Port public du BBS (telnet)
+BBS_PORT=6502
