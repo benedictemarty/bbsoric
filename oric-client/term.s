@@ -1,24 +1,21 @@
 ; ---------------------------------------------------------------------------
-;  term.s - Terminal BBS autonome pour Oric (repertoire + dial AT + RX/TX)
+;  term.s - Terminal BBS autonome pour Oric
 ;
-;  Au demarrage  - affiche un REPERTOIRE (phonebook). L'utilisateur choisit une
-;  entree (1-4) ; le terminal compose lui-meme la commande Hayes ATD<cible> vers
-;  le modem (ACIA 6551), puis bascule en mode terminal :
-;    RX  - flux serie -> VRAM ($BB80), attributs Teletexte seriels OASCII
-;    TX  - scan matrice clavier (PSG-via-VIA) -> ACIA, avec echo local
+;  Demarrage  -> menu modem -> repertoire (ou saisie manuelle) -> numerotation
+;  AT autonome -> mode terminal (RX ecran couleur OASCII + TX clavier).
 ;
-;  Cible oric1-emu (ACIA 031C, VIA 0300). Tester avec  --serial modem
-;  (mode commande Hayes). Assemblage xa. Chargement 1000.
-;  Commentaires ASCII, sans deux-points (limitations de xa).
+;  E/S serie abstraites via ACIAPTR (pointeur ZP sur la base de l'ACIA 6551)  -
+;    backend 1 = ACIA 6551 direct  ($031C)
+;    backend 2 = LOCI / Pico W      ($03A0)   (meme interface 6551, autre base)
+;  (DTL2000 = V23/Minitel, hors sujet ; TLS = role du modem, voir docs.)
+;
+;  Cible oric1-emu. Tester avec --serial modem [--acia-addr 03A0 pour LOCI].
+;  Assemblage xa. Chargement 1000. Commentaires ASCII sans deux-points.
 ; ---------------------------------------------------------------------------
 
-; --- ACIA 6551 ---
-ACIA_DATA = $031C
-ACIA_STAT = $031D
-ACIA_CMD  = $031E
-ACIA_CTL  = $031F
-RDRF      = $08
-TDRE      = $10
+; --- Bits de statut ACIA 6551 (offset 1 depuis la base) ---
+RDRF      = $08          ; Receiver Data Register Full
+TDRE      = $10          ; Transmit Data Register Empty
 
 ; --- VIA 6522 (acces PSG clavier) ---
 VIA_ORB   = $0300
@@ -42,9 +39,13 @@ KROW      = $F9
 LASTKEY   = $FA
 PCRSAVE   = $FB
 KTMP      = $FC
-STRPTR    = $EE          ; pointeur de chaine (print/send)
-TARGETLO  = $EC          ; adresse cible de numerotation
+STRPTR    = $EE
+TARGETLO  = $EC
 TARGETHI  = $ED
+ACIAPTR   = $EA          ; base de l'ACIA (2 octets)
+BUFPTR    = $E8          ; cible de saisie (2 octets)
+INLEN     = $E7
+INMAX     = $E6
 
 NUM_ENTRIES = 4
 
@@ -52,12 +53,6 @@ NUM_ENTRIES = 4
 
 start:
         sei
-        ; ACIA 9600 8N1, DTR on, IRQ off, TX on
-        lda #$1E
-        sta ACIA_CTL
-        lda #$0B
-        sta ACIA_CMD
-
         ; init clavier (VIA/PSG)
         lda VIA_PCR
         and #$11
@@ -73,7 +68,47 @@ start:
         sta LASTKEY
 
 ; ---------------------------------------------------------------------------
-;  Repertoire (phonebook)
+;  Menu modem -> choisit ACIAPTR puis initialise l'ACIA
+; ---------------------------------------------------------------------------
+modem_menu:
+        jsr clear_screen
+        jsr reset_cursor
+        lda #<mm_text
+        sta STRPTR
+        lda #>mm_text
+        sta STRPTR+1
+        jsr print_string
+mm_wait:
+        jsr get_key
+        sta LASTKEY
+        cmp #'1'
+        beq mm_6551
+        cmp #'2'
+        beq mm_loci
+        jmp mm_wait
+mm_6551:
+        lda #$1C
+        sta ACIAPTR
+        lda #$03
+        sta ACIAPTR+1
+        jmp mm_init
+mm_loci:
+        lda #$A0
+        sta ACIAPTR
+        lda #$03
+        sta ACIAPTR+1
+mm_init:
+        ; ACIA 9600 8N1, DTR on, IRQ off, TX on
+        lda #$1E
+        ldy #3                   ; control
+        sta (ACIAPTR),y
+        lda #$0B
+        ldy #2                   ; command
+        sta (ACIAPTR),y
+        jsr wait_release
+
+; ---------------------------------------------------------------------------
+;  Repertoire (phonebook) + option M (saisie manuelle)
 ; ---------------------------------------------------------------------------
 phonebook:
         jsr clear_screen
@@ -83,40 +118,108 @@ phonebook:
         lda #>pb_text
         sta STRPTR+1
         jsr print_string
-
 pb_wait:
-        jsr get_key              ; A = touche (bloquant)
-        sta LASTKEY              ; anti-rebond - ne pas renvoyer ce choix au BBS
+        jsr get_key
+        sta LASTKEY
+        cmp #'M'
+        beq manual_entry
+        cmp #'m'
+        beq manual_entry
         sec
-        sbc #'1'                 ; A = index 0..N-1
-        bcc pb_wait              ; < '1' -> invalide
+        sbc #'1'
+        bcc pb_wait
         cmp #NUM_ENTRIES
-        bcs pb_wait              ; >= N -> invalide
+        bcs pb_wait
         tax
-
         ; cible = dial[X]
         lda dial_lo,x
         sta TARGETLO
         lda dial_hi,x
         sta TARGETHI
-
-        ; envoyer "ATD"
-        lda #<at_atd
-        sta STRPTR
-        lda #>at_atd
-        sta STRPTR+1
-        jsr send_string
-        ; envoyer la cible
+        ; ATD + cible + CR
+        jsr send_atd
         lda TARGETLO
         sta STRPTR
         lda TARGETHI
         sta STRPTR+1
         jsr send_string
-        ; envoyer CR (declenche la numerotation)
-        lda #$0D
-        jsr acia_tx
+        jsr send_cr
+        jmp connecting
 
-        ; message local puis mode terminal
+; ---------------------------------------------------------------------------
+;  Saisie manuelle host / port / protocole
+; ---------------------------------------------------------------------------
+manual_entry:
+        jsr wait_release
+        jsr clear_screen
+        jsr reset_cursor
+        lda #<me_host
+        sta STRPTR
+        lda #>me_host
+        sta STRPTR+1
+        jsr print_string
+        ; saisir l'hote dans hostbuf (max 40)
+        lda #<hostbuf
+        sta BUFPTR
+        lda #>hostbuf
+        sta BUFPTR+1
+        lda #40
+        sta INMAX
+        jsr input_line
+
+        lda #<me_port
+        sta STRPTR
+        lda #>me_port
+        sta STRPTR+1
+        jsr print_string
+        lda #<portbuf
+        sta BUFPTR
+        lda #>portbuf
+        sta BUFPTR+1
+        lda #6
+        sta INMAX
+        jsr input_line
+
+        ; protocole 1=telnet 2=TLS
+        lda #<me_proto
+        sta STRPTR
+        lda #>me_proto
+        sta STRPTR+1
+        jsr print_string
+mp_wait:
+        jsr get_key
+        sta LASTKEY
+        cmp #'1'
+        beq mp_ok
+        cmp #'2'
+        beq mp_tls
+        jmp mp_wait
+mp_tls:
+        ; TLS = role du modem ; on note et on poursuit en ATD (cf. docs)
+        lda #<me_tlsnote
+        sta STRPTR
+        lda #>me_tlsnote
+        sta STRPTR+1
+        jsr print_string
+mp_ok:
+        jsr wait_release
+        ; composer ATD + host + " -" + port + CR
+        jsr send_atd
+        lda #<hostbuf
+        sta STRPTR
+        lda #>hostbuf
+        sta STRPTR+1
+        jsr send_string
+        lda #$3A                 ; " -"
+        jsr ser_tx
+        lda #<portbuf
+        sta STRPTR
+        lda #>portbuf
+        sta STRPTR+1
+        jsr send_string
+        jsr send_cr
+
+connecting:
         lda #<msg_dial
         sta STRPTR
         lda #>msg_dial
@@ -127,13 +230,11 @@ pb_wait:
 ;  Mode terminal (RX ecran + TX clavier)
 ; ---------------------------------------------------------------------------
 main:
-        lda ACIA_STAT
-        and #RDRF
+        jsr ser_rx_ready
         beq do_keyscan
-        lda ACIA_DATA
+        jsr ser_rx
         jsr putbyte
         jmp main
-
 do_keyscan:
         jsr key_scan
         cmp #0
@@ -141,7 +242,7 @@ do_keyscan:
         cmp LASTKEY
         beq ks_ret
         sta LASTKEY
-        jsr acia_tx
+        jsr ser_tx
         jsr putbyte              ; echo local
         jmp main
 ks_release:
@@ -151,7 +252,77 @@ ks_ret:
         jmp main
 
 ; ---------------------------------------------------------------------------
-;  get_key - attend (bloquant) une touche, renvoie l'ASCII dans A
+;  Primitives serie (via ACIAPTR  - offset 0=data 1=status 2=cmd 3=ctrl)
+; ---------------------------------------------------------------------------
+ser_tx:                          ; A = octet a envoyer (A preserve)
+        pha
+stx_wait:
+        ldy #1
+        lda (ACIAPTR),y
+        and #TDRE
+        beq stx_wait
+        pla
+        ldy #0
+        sta (ACIAPTR),y
+        rts
+
+ser_rx_ready:                    ; renvoie A = status & RDRF (Z=1 si rien)
+        ldy #1
+        lda (ACIAPTR),y
+        and #RDRF
+        rts
+
+ser_rx:                          ; A = octet recu
+        ldy #0
+        lda (ACIAPTR),y
+        rts
+
+send_atd:                        ; envoie "ATD"
+        lda #<at_atd
+        sta STRPTR
+        lda #>at_atd
+        sta STRPTR+1
+        jmp send_string          ; send_string fait rts
+
+send_cr:                         ; envoie CR (declenche la numerotation)
+        lda #$0D
+        jmp ser_tx               ; ser_tx fait rts
+
+; ---------------------------------------------------------------------------
+;  input_line - lit une ligne dans (BUFPTR), max INMAX, echo, RETURN termine
+; ---------------------------------------------------------------------------
+input_line:
+        lda #0
+        sta INLEN
+il_loop:
+        jsr get_key
+        cmp #$0D
+        beq il_done
+        cmp #$20
+        bcc il_skip              ; ignore controle < espace
+        ldx INLEN
+        cpx INMAX
+        bcs il_skip              ; plein
+        ldy INLEN
+        sta (BUFPTR),y
+        inc INLEN
+        jsr putbyte              ; echo (A preserve)
+il_skip:
+        jsr wait_release
+        jmp il_loop
+il_done:
+        ldy INLEN
+        lda #0
+        sta (BUFPTR),y           ; terminer la chaine
+        jsr wait_release
+        lda #$0D
+        jsr putbyte
+        lda #$0A
+        jsr putbyte
+        rts
+
+; ---------------------------------------------------------------------------
+;  get_key / wait_release
 ; ---------------------------------------------------------------------------
 get_key:
         jsr key_scan
@@ -159,8 +330,14 @@ get_key:
         beq get_key
         rts
 
+wait_release:
+        jsr key_scan
+        cmp #0
+        bne wait_release
+        rts
+
 ; ---------------------------------------------------------------------------
-;  reset_cursor - SCRPTR = haut d'ecran, COL = 0
+;  reset_cursor
 ; ---------------------------------------------------------------------------
 reset_cursor:
         lda #<SCREEN
@@ -172,8 +349,7 @@ reset_cursor:
         rts
 
 ; ---------------------------------------------------------------------------
-;  print_string - affiche la chaine terminee par 0 pointee par STRPTR
-;                 (via putbyte ; STRPTR est detruit)
+;  print_string / send_string (chaine terminee par 0 pointee par STRPTR)
 ; ---------------------------------------------------------------------------
 print_string:
         ldy #0
@@ -187,14 +363,11 @@ print_string:
 ps_done:
         rts
 
-; ---------------------------------------------------------------------------
-;  send_string - envoie la chaine terminee par 0 pointee par STRPTR via l'ACIA
-; ---------------------------------------------------------------------------
 send_string:
         ldy #0
         lda (STRPTR),y
         beq ss_done
-        jsr acia_tx
+        jsr ser_tx
         inc STRPTR
         bne send_string
         inc STRPTR+1
@@ -203,7 +376,7 @@ ss_done:
         rts
 
 ; ---------------------------------------------------------------------------
-;  putbyte - affiche A (gere CR, LF+scroll, clamp 40 col)
+;  putbyte - affiche A (CR, LF+scroll, clamp 40 col). A preserve (chemin char).
 ; ---------------------------------------------------------------------------
 putbyte:
         cmp #$0D
@@ -327,20 +500,7 @@ clr_rem:
         rts
 
 ; ---------------------------------------------------------------------------
-;  acia_tx - envoie A via l'ACIA (attend TDRE). A preserve.
-; ---------------------------------------------------------------------------
-acia_tx:
-        pha
-tx_wait:
-        lda ACIA_STAT
-        and #TDRE
-        beq tx_wait
-        pla
-        sta ACIA_DATA
-        rts
-
-; ---------------------------------------------------------------------------
-;  psg_write - ecrit A dans le registre PSG Y (protocole BDIR/BC1 via VIA)
+;  psg_write / key_scan (clavier, inchanges)
 ; ---------------------------------------------------------------------------
 psg_write:
         sta KTMP
@@ -362,9 +522,6 @@ psg_write:
         sta VIA_PCR
         rts
 
-; ---------------------------------------------------------------------------
-;  key_scan - scanne la matrice 8x8, renvoie l'ASCII de la 1re touche (0 sinon)
-; ---------------------------------------------------------------------------
 key_scan:
         lda #0
         sta KCOL
@@ -415,11 +572,8 @@ ks_found:
 ; ---------------------------------------------------------------------------
 ;  Donnees
 ; ---------------------------------------------------------------------------
-; Masques R14 - un seul bit a 0 = rangee active (index = rangee)
 rowmask:
         .byt $FE,$FD,$FB,$F7,$EF,$DF,$BF,$7F
-
-; ASCII par position matrice, index = colonne*8 + rangee (0 = non mappe).
 asciitab:
         .byt $37,$6E,$35,$76,$00,$31,$78,$33
         .byt $6A,$74,$72,$66,$00,$00,$71,$64
@@ -430,13 +584,19 @@ asciitab:
         .byt $79,$68,$67,$65,$00,$61,$73,$77
         .byt $38,$6C,$30,$2F,$00,$0D,$00,$3D
 
-; Commande de numerotation
 at_atd:
-        .byt "ATD", $00
+        .byt "ATD",$00
 msg_dial:
         .byt $0D,$0A,$02,"Numerotation en cours...",$0D,$0A,$07,$00
 
-; Repertoire affiche ($03=jaune $06=cyan $07=blanc $02=vert)
+mm_text:
+        .byt "========================================",$0D,$0A
+        .byt $03,"           TYPE DE MODEM",$0D,$0A
+        .byt "========================================",$0D,$0A,$0D,$0A
+        .byt $06," 1  ",$07,"ACIA 6551 direct  (031C)",$0D,$0A
+        .byt $06," 2  ",$07,"LOCI / Pico W     (03A0)",$0D,$0A,$0D,$0A
+        .byt $02,"Votre choix (1-2) > ",$07,$00
+
 pb_text:
         .byt "========================================",$0D,$0A
         .byt $03,"          REPERTOIRE BBS ORIC",$0D,$0A
@@ -444,10 +604,22 @@ pb_text:
         .byt $06," 1  ",$07,"BBS Oric (prod)  pavi.3617.fr",$0D,$0A
         .byt $06," 2  ",$07,"ParticlesBBS",$0D,$0A
         .byt $06," 3  ",$07,"Altair",$0D,$0A
-        .byt $06," 4  ",$07,"Heatwave",$0D,$0A,$0D,$0A
-        .byt $02,"Votre choix (1-4) > ",$07,$00
+        .byt $06," 4  ",$07,"Heatwave",$0D,$0A
+        .byt $06," M  ",$07,"Saisie manuelle",$0D,$0A,$0D,$0A
+        .byt $02,"Choix (1-4, M) > ",$07,$00
 
-; Table d'adresses des cibles + chaines de numerotation
+me_host:
+        .byt "========================================",$0D,$0A
+        .byt $03,"           SAISIE MANUELLE",$0D,$0A
+        .byt "========================================",$0D,$0A,$0D,$0A
+        .byt $07,"Hote > ",$00
+me_port:
+        .byt $07,"Port > ",$00
+me_proto:
+        .byt $0D,$0A,$07,"Protocole  1=telnet  2=TLS > ",$00
+me_tlsnote:
+        .byt $0D,$0A,$01,"TLS gere par le modem (Pico W).",$0D,$0A,$07,$00
+
 dial_lo:
         .byt <dial0,<dial1,<dial2,<dial3
 dial_hi:
@@ -460,3 +632,9 @@ dial2:
         .byt "altair.virtualaltair.com:4667",$00
 dial3:
         .byt "heatwave.ddns.net:9640",$00
+
+; Tampons de saisie
+hostbuf:
+        .dsb 41,0
+portbuf:
+        .dsb 7,0

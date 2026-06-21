@@ -6,6 +6,25 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Terminal Oric — multi-modem + saisie manuelle host/port/protocole)
+- **Abstraction des E/S série** via `ACIAPTR` (pointeur ZP sur la base de l'ACIA) +
+  primitives `ser_tx`/`ser_rx_ready`/`ser_rx`. Un seul `.tap` gère 2 backends, sélectionnés
+  par un **menu modem** au démarrage :
+  - **1 = ACIA 6551 direct** (`$031C`)
+  - **2 = LOCI / Pico W** (`$03A0`) — même interface 6551, base différente.
+  (DTL2000 exclu : V23/Minitel, sans AT ni TCP moderne. Les deux backends validés
+  end-to-end → `CONNECT to pavi.3617.fr:6502`.)
+- **Saisie manuelle** (option `M` du répertoire) : champs **hôte**, **port**, **protocole**
+  (1=telnet/raw fonctionnel, 2=TLS), avec écho. Le terminal compose `ATD hôte:port`.
+  Routine `input_line` (saisie de ligne avec écho + anti-rebond `wait_release`).
+- **TLS** : noté comme assuré par le **modem** (Pico W) — l'Oric ne fait pas de crypto ;
+  côté Oric le protocole choisit la commande de numérotation. Non testable dans l'émulateur
+  (backend `modem` = TCP simple). Voir `oric-client/README.md`.
+- Captures : `docs/img/modem-menu.png`, `docs/img/manual-entry.png`.
+- Note de test : `--type-keys` maintient une touche enfoncée jusqu'à une touche identique
+  ou la fin de chaîne, ce qui rend la navigation multi-écrans difficile à automatiser
+  (artefact de l'outil, pas du terminal) ; chaque étape validée séparément.
+
 ### Ajouté (Terminal Oric — répertoire + numérotation AT autonome)
 - `oric-client/term.s` : **répertoire (phonebook)** au démarrage + **numérotation Hayes
   autonome**. Le terminal affiche une liste de BBS (BBS Oric prod, ParticlesBBS, Altair,
