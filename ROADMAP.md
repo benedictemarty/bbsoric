@@ -48,10 +48,14 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 - [ ] Programme client/terminal Oric minimal (BASIC ou cc65) si nécessaire
 - [ ] Test sur Oric réel ; écran d'accueil ASCII-art Oric
 
-## Sprint 5 — Déploiement
-- [ ] Conteneurisation (Docker) + persistance
-- [ ] Exposition publique + monitoring / logs
-- [ ] Documentation utilisateur (comment se connecter depuis un Oric)
+## Sprint 5 — Déploiement — ⏳ en cours (EN PRODUCTION ✅)
+- [x] **Déployé en production** sur le LXC pavi3617 (service systemd `bbsoric`, `enabled`+`active`)
+  via `make deploy` (mécanisme repris de telenet). Binaire Go statique linux/amd64, `DynamicUser`.
+- [x] **Exposition publique validée** : `pavi.3617.fr:6502` (telnet) — bannière + navigation OK
+  depuis l'Internet public.
+- [ ] Monitoring / alerting dédié (au-delà de journald + `Restart=on-failure`)
+- [ ] Conteneurisation (Docker) — optionnel (systemd suffit pour l'instant)
+- [ ] Documentation utilisateur (se connecter depuis un Oric réel : `ATD pavi.3617.fr:6502`)
 
 ---
 

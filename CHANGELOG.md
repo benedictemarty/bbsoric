@@ -13,6 +13,10 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 - `Makefile` : cibles `build`, `test`, `vet`, `run`, `oric-client`, `deploy`, `deploy-build`.
 - Déploiement comme service systemd dédié `bbsoric` sur le port 6502 (libre ; le service
   `telenet-bbs` préexistant était inactif), sans impacter `telenet-serveur`/`telenet-compagnon`.
+- **MISE EN PRODUCTION** : service `bbsoric` `enabled`+`active` sur le LXC pavi3617, exposé
+  publiquement et validé sur **`pavi.3617.fr:6502`** (bannière + navigation `1`/CR depuis
+  l'Internet public). `DynamicUser=yes` (l'utilisateur `bmarty` n'existe pas sur le LXC ;
+  évite de tourner en root).
 
 ### Ajouté (Sprint 2 — émission clavier / BBS interactif)
 - `oric-client/term.s` : **émission clavier (TX)**. Scan complet de la matrice 8×8

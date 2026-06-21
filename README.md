@@ -18,7 +18,18 @@ sériels de couleur). La machine Oric s'y connecte via un **modem WiFi** relié 
 
 ## État du projet
 
-🚧 **Sprint 0 — Cadrage & socle.** Voir [`ROADMAP.md`](ROADMAP.md) et [`docs/agile/backlog.md`](docs/agile/backlog.md).
+🟢 **EN PRODUCTION** — accessible en telnet sur **`pavi.3617.fr:6502`**.
+Depuis un Oric (modem WiFi) : `ATD pavi.3617.fr:6502`.
+
+Sprints 0→2 bouclés (socle réseau + couche OASCII + moteur de menus + terminal Oric RX/TX),
+déployé via `make deploy`. Voir [`ROADMAP.md`](ROADMAP.md) et [`docs/agile/backlog.md`](docs/agile/backlog.md).
+
+## Déploiement
+
+```bash
+make deploy        # compile (linux/amd64) + installe le service systemd bbsoric (port 6502)
+```
+Prérequis : VPN WireGuard mustang actif. Détails dans [`deploy/`](deploy/).
 
 ## Pourquoi c'est différent d'un BBS C64/Atari
 
