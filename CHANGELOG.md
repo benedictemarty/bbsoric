@@ -6,6 +6,17 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Validé (TLS vérifié bout-en-bout — AT$CV1)
+- Test émulateur (`--serial picowifi`) de l'entrée 5 du répertoire **avec vérification du
+  certificat** : le terminal charge le CA racine **ISRG Root X1** (`AT$CA=` → « CA stored:
+  1939 bytes »), active `AT$CV1`, puis dial `ATDT#pavi.3617.fr:6992`. Résultat :
+  **`TLS session up (TLSv1.3, verified)`** → `CONNECT` → bannière BBS servie à travers le
+  tunnel TLS vérifié (`docs/img/tls-verified-atcv1.png`).
+- Confirme que le cert Let's Encrypt servi par Caddy est de confiance et que la chaîne
+  (leaf → YE1 → Root YE → ISRG Root X2 → ISRG Root X1) valide côté Pico W.
+- Détail d'upload : le picowifi segmente la capture `AT$CA=` sur **LF** (`\n`), le `\r` est
+  ignoré — le PEM doit donc être envoyé en lignes terminées par `\n`.
+
 ### Modifié (Production — terminaison TLS par Caddy + Let's Encrypt)
 - Le TLS de `pavi.3617.fr:6992` est désormais **terminé par Caddy** (CT 130, module
   `caddy-l4`/layer4) avec un **vrai cert Let's Encrypt** (`subject=CN=pavi.3617.fr`), au lieu
