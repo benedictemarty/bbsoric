@@ -78,5 +78,27 @@ read_key() / read_line()  lecture clavier
 - Le client Oric devra gérer l'adresse ACIA selon le montage (`0x380` LOCI vs `#31C` Telestrat).
 - Commandes Hayes AT pour établir la connexion telnet vers le serveur.
 
-## 5. Décisions d'architecture (ADR) — à formaliser
+## 5. Exposition Internet (contrainte de premier ordre)
+
+Le BBS est un **serveur Internet public** : il écoute sur `0.0.0.0:<port>` et est joignable depuis
+n'importe quel Oric connecté via son WiFiModem. Conséquences à intégrer dès le départ :
+
+- **Port public** : le port 23 (telnet) est très scanné et souvent bloqué par les FAI en sortie.
+  Choisir un port (ex. `6502`, clin d'œil au CPU) et le documenter pour les utilisateurs.
+- **Pas de chiffrement** : les clients Oric ne font pas de TLS → le flux telnet est **en clair**.
+  Donc : jamais de secret sensible côté utilisateur, mots de passe BBS traités comme non confidentiels,
+  hachage côté serveur quand même.
+- **Surface d'attaque** : un port ouvert sur Internet est scanné en permanence.
+  - Binding maîtrisé, **rate limiting** par IP, **limite de connexions simultanées**.
+  - Lecture défensive des entrées (jamais d'`eval`, tailles bornées, timeouts agressifs).
+  - Journalisation des connexions (IP, horodatage) + rotation des logs.
+  - Isolation du process (utilisateur dédié non privilégié / conteneur).
+- **Hébergement** (à décider) : VPS cloud, machine perso derrière box (port-forwarding + DNS dynamique),
+  ou Raspberry Pi exposé. Si IP résidentielle : prévoir un **DNS dynamique** (nom stable pour les `ATD`).
+- **Disponibilité** : service `systemd` ou conteneur avec redémarrage auto.
+
+> Ces points remontent la sécurité et le déploiement comme préoccupations **transverses**, pas comme un
+> sprint final. Voir la ROADMAP mise à jour.
+
+## 6. Décisions d'architecture (ADR) — à formaliser
 Voir `ROADMAP.md` §« Décisions ouvertes ». Les ADR seront versionnés dans `docs/adr/`.

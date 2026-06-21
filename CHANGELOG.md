@@ -14,3 +14,8 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 - `docs/architecture.md` : architecture technique cible et couche de rendu « OASCII » (attributs Téletexte sériels).
 - `docs/agile/backlog.md` : backlog produit initial (user stories).
 - `.gitignore`.
+
+### Modifié
+- Prise en compte de la contrainte **serveur Internet public** : section « Exposition Internet »
+  dans `docs/architecture.md` (port public, absence de TLS, surface d'attaque, hébergement, dispo) ;
+  sécurité/exposition/hébergement remontées comme préoccupations transverses dans `ROADMAP.md`.

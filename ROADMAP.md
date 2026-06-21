@@ -2,12 +2,18 @@
 
 Approche **agile**, livraisons incrémentales. Chaque sprint produit un incrément testable.
 
+> **Contrainte transverse : serveur Internet public.** Le BBS est exposé sur Internet (écoute
+> `0.0.0.0`, joignable par tout Oric via WiFiModem). Sécurité, exposition et hébergement sont des
+> préoccupations de **chaque** sprint, pas seulement du Sprint 5. Voir `docs/architecture.md` §5.
+
 ## Sprint 0 — Cadrage & socle ⏳ (en cours)
 - [x] État de l'art des serveurs BBS rétro (`docs/etat-de-l-art.md`)
 - [x] Cadrage cibles : Oric-1/Atmos + LOCI + WiFiModem ; émulateurs Oricutron + Phosphoror
 - [x] Initialisation dépôt Git, documentation agile, CHANGELOG, ROADMAP
 - [ ] **DÉCISION** : confirmer le langage du serveur (recommandation : Python 3 / asyncio)
-- [ ] Serveur telnet « hello world » accessible via `nc` / SyncTerm
+- [ ] **DÉCISION** : hébergement (VPS / box+DNS dynamique / Raspberry) et port public
+- [ ] Serveur telnet « hello world » écoutant sur `0.0.0.0`, accessible via `nc` / SyncTerm
+- [ ] Exposition Internet minimale : rate limiting, limite de connexions, logs de connexion
 
 ## Sprint 1 — Couche terminal Oric (« OASCII ») 🎯 cœur du projet
 - [ ] Abstraction d'écran : `cls`, positionnement curseur, retour ligne
