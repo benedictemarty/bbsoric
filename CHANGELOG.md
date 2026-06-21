@@ -6,6 +6,16 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Modifié (Production — terminaison TLS par Caddy + Let's Encrypt)
+- Le TLS de `pavi.3617.fr:6992` est désormais **terminé par Caddy** (CT 130, module
+  `caddy-l4`/layer4) avec un **vrai cert Let's Encrypt** (`subject=CN=pavi.3617.fr`), au lieu
+  du cert auto-signé de bbsd. Caddy déchiffre et proxifie le telnet en clair vers `bbsd`
+  (`.2:6502`). NAT MikroTik `:6992` redirigé vers Caddy (`.130`). Chaîne et config
+  versionnées dans `deploy/caddy-tls.md`.
+- Le Pico W peut maintenant **vérifier le certificat** (`AT$CV1` + CA Let's Encrypt).
+- `bbsd -tls-addr 6992` devient redondant (hors chemin public) ; retrait possible au prochain
+  déploiement. Sites web de CT 130 (meteolib/3617/lamatronne…) vérifiés sans régression.
+
 ### Ajouté (Production — écoute TLS 6992, accès public ouvert)
 - **Déployé** : `bbsd -tls-addr 0.0.0.0:6992` sur le LXC pavi3617 (en plus du telnet 6502).
   Les deux ports écoutent (même process). Unité systemd mise à jour.
