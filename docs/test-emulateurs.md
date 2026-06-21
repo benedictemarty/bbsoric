@@ -1,16 +1,17 @@
-# Pipeline de test avec les émulateurs Oric locaux
+# Pipeline de test avec l'émulateur Oric local
 
-Ce projet bénéficie d'un environnement de test **100% local, sans matériel ni réseau externe**,
-grâce aux émulateurs déjà présents sur la machine de dev.
+Ce projet bénéficie d'un environnement de test **100% local, sans matériel ni réseau externe**.
+
+> ⚠️ **Émulateur de référence : `/home/bmarty/Oric1/oric1-emu` UNIQUEMENT.**
+> C'est le seul binaire à utiliser pour tester le BBS. Ne PAS utiliser `oric2/Phosphoric`
+> (sources/tests d'un autre projet) ni d'autres copies.
 
 ## Ressources locales disponibles
 
 | Ressource | Emplacement | Rôle |
 |-----------|-------------|------|
-| **oric1-emu** (Phosphoric v1.21.x) | `/home/bmarty/Oric1/oric1-emu` | Émulateur Oric-1 avec **ACIA + série configurable** |
-| Phosphoric (sources/tests) | `/home/bmarty/oric2/Phosphoric` | Base de l'émulateur, tests |
-| Oricutron | `/home/bmarty/oricutron` | Émulateur alternatif (backend ACIA `modem`/`loopback`) |
-| picowifi modem | `/home/bmarty/picowifi`, `~/.phosphoric_picowifi.cfg` | Modem WiFi émulé, déjà configuré en telnet |
+| **oric1-emu** (Phosphoric v1.21.x) | `/home/bmarty/Oric1/oric1-emu` | **Émulateur de référence** : Oric-1 avec ACIA + série configurable |
+| picowifi modem | `~/.phosphoric_picowifi.cfg` | Modem WiFi émulé, déjà configuré en telnet (carnet d'appels) |
 
 ## Support série de oric1-emu (Phosphoric)
 

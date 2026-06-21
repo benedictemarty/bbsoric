@@ -12,8 +12,8 @@ sériels de couleur). La machine Oric s'y connecte via un **modem WiFi** relié 
 
 | Élément | Choix |
 |---------|-------|
-| **Client** | Oric-1 / Atmos + [LOCI](https://www.raxiss.com/article/id/38-LOCI) + WiFiModem USB (ACIA modem @ `0x380`) |
-| **Émulateurs de test** | [Oricutron](https://github.com/pete-gordon/oricutron) (backend ACIA `modem`/`loopback`), Phosphoror |
+| **Client** | Oric-1 / Atmos + [LOCI](https://www.raxiss.com/article/id/38-LOCI) + WiFiModem USB (ACIA série ; MIA LOCI `$03A0-$03BF`, ACIA standard `$031C`) |
+| **Émulateur de test** | `Oric1/oric1-emu` (Phosphoric) **uniquement** — `--serial tcp:` vers le BBS. Voir [`docs/test-emulateurs.md`](docs/test-emulateurs.md) |
 | **Serveur** | Voir [`docs/architecture.md`](docs/architecture.md) — langage à confirmer (recommandation : Python 3 / asyncio) |
 
 ## État du projet

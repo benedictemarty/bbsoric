@@ -36,9 +36,13 @@ versionnage [SemVer](https://semver.org/lang/fr/).
   arrêt propre sur SIGINT/SIGTERM.
 - Tests : `internal/server` (écho, filtrage IAC, limite par IP), `internal/bbs` (bannière + QUIT, centrage).
   Tous verts (`go test ./...`).
-- `docs/test-emulateurs.md` : pipeline de test 100% local via les émulateurs Oric présents
-  (oric1-emu/Phosphoric `--serial tcp:`, Oricutron, modem picowifi).
+- `docs/test-emulateurs.md` : pipeline de test 100% local via l'émulateur **unique**
+  `Oric1/oric1-emu` (Phosphoric) en `--serial tcp:`, + modem picowifi émulé.
 
 ### Corrigé
 - Adressage ACIA précisé : `$031C` (Telestrat/oric1-emu) et `$03A0-$03BF` (LOCI MIA), en remplacement
   de la valeur `0x380` initiale.
+- **Émulateur de test unique** : toute la documentation (README, architecture, roadmap, état de l'art,
+  test-emulateurs) pointe désormais exclusivement vers `/home/bmarty/Oric1/oric1-emu`. Suppression des
+  références à `oric2/Phosphoric` et d'Oricutron comme outils de test (Oricutron reste cité au seul
+  titre du catalogue « état de l'art » des émulateurs publics).

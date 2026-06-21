@@ -9,20 +9,20 @@
 │             │                │                       │
 │ LOCI +      │                │  ┌─────────────────┐  │
 │ WiFiModem   │   AT / Hayes   │  │ Couche réseau   │  │  TCP, telnet (IAC),
-│ (ACIA 0x380)│                │  │ (1 tâche/conn.) │  │  timeout
+│ (ACIA série)│                │  │ (1 tâche/conn.) │  │  timeout
 └─────────────┘                │  ├─────────────────┤  │
        ▲                       │  │ Moteur BBS      │  │  menus, sessions, login
        │ test                  │  ├─────────────────┤  │
 ┌─────────────┐                │  │ Couche OASCII   │  │  rendu Téletexte Oric
-│ Oricutron / │  ACIA modem    │  │ (rendu écran)   │  │  (attributs sériels)
-│ Phosphoror  │◀──────────────▶│  └─────────────────┘  │
+│  oric1-emu  │ --serial tcp:  │  │ (rendu écran)   │  │  (attributs sériels)
+│  (Oric1)    │◀──────────────▶│  └─────────────────┘  │
 └─────────────┘                └──────────────────────┘
 ```
 
 ## 2. Couches
 
 ### 2.1 Couche réseau
-- Serveur TCP, **1 connexion = 1 tâche** (thread ou coroutine asyncio).
+- Serveur TCP en Go, **1 connexion = 1 goroutine**.
 - Négociation telnet minimale (IAC) ou « fake telnet » selon décision (cf. ROADMAP §Décisions).
 - Timeout d'inactivité, fermeture propre, journalisation des sessions.
 
@@ -67,10 +67,12 @@ read_key() / read_line()  lecture clavier
 
 ## 3. Pipeline de test (sans matériel)
 
-1. Lancer le serveur BBS sur `localhost:<port>`.
-2. Oricutron, backend ACIA `modem` : `ATD 127.0.0.1:<port>` (ou `ATS0=1` pour écouter).
-   - Adresse ACIA Oricutron : `#31C`.
-3. Variante simple : `loopback` pour tester l'ACIA seule ; client `nc`/SyncTerm pour tester le serveur seul.
+Émulateur de référence **unique** : `/home/bmarty/Oric1/oric1-emu` (Phosphoric). Détails et
+commandes dans [`test-emulateurs.md`](test-emulateurs.md).
+
+1. Lancer le serveur BBS sur `127.0.0.1:6502`.
+2. Connecter l'émulateur : `./oric1-emu --serial tcp:127.0.0.1:6502 --acia-addr 031C`.
+3. Variante : `--serial loopback` pour tester l'ACIA seule ; `nc 127.0.0.1 6502` pour le serveur seul.
 
 ## 4. Matériel réel (Sprint 4)
 

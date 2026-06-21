@@ -47,7 +47,8 @@ Aucun BBS Oric clé en main repéré. Les différences clés vs C64/Atari :
 
 - S'inspirer du modèle **1 connexion = 1 tâche** + API d'écran de petscii-bbs.
 - Construire une couche **« OASCII »** dédiée aux attributs Téletexte sériels Oric (cœur du Sprint 1).
-- Tester d'abord **dans Oricutron** (backend `modem`/`loopback`) avant tout matériel.
+- Tester d'abord **dans `Oric1/oric1-emu`** (Phosphoric, `--serial tcp:`) avant tout matériel
+  — c'est l'émulateur de référence du projet (cf. `test-emulateurs.md`).
 
 ## Sources
 - https://github.com/sblendorio/petscii-bbs

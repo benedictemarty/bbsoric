@@ -8,7 +8,7 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 
 ## Sprint 0 — Cadrage & socle ⏳ (en cours)
 - [x] État de l'art des serveurs BBS rétro (`docs/etat-de-l-art.md`)
-- [x] Cadrage cibles : Oric-1/Atmos + LOCI + WiFiModem ; émulateurs Oricutron + Phosphoror
+- [x] Cadrage cibles : Oric-1/Atmos + LOCI + WiFiModem ; émulateur de test = `Oric1/oric1-emu` (Phosphoric)
 - [x] Initialisation dépôt Git, documentation agile, CHANGELOG, ROADMAP
 - [x] **DÉCISION** : langage serveur = **Go** (1.26)
 - [x] **DÉCISION** : hébergement = **VPS cloud (IP fixe)** ; port public = **6502** (clin d'œil au CPU)
@@ -20,7 +20,7 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 - [ ] Abstraction d'écran : `cls`, positionnement curseur, retour ligne
 - [ ] Encodage des **attributs sériels Téletexte** : encre (8), fond (8), clignotement, double hauteur
 - [ ] Helpers : `ink()`, `paper()`, `at(x,y)`, `println()`, ASCII-art
-- [ ] Validation dans Oricutron (backend ACIA `loopback` puis `modem`)
+- [ ] Validation dans `Oric1/oric1-emu` (`--serial loopback` puis `--serial tcp:`)
 
 ## Sprint 2 — Moteur BBS
 - [ ] Boucle de session multi-clients (1 connexion = 1 tâche)
@@ -34,7 +34,7 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 - [ ] Mini-jeu interactif (ex. Puissance 4 / morpion) pour valider l'interactivité
 
 ## Sprint 4 — Connexion matérielle réelle
-- [ ] Doc de connexion WiFiModem + LOCI (AT, ACIA `0x380`)
+- [ ] Doc de connexion WiFiModem + LOCI (AT, MIA LOCI `$03A0-$03BF` / ACIA `$031C`)
 - [ ] Programme client/terminal Oric minimal (BASIC ou cc65) si nécessaire
 - [ ] Test sur Oric réel ; écran d'accueil ASCII-art Oric
 
@@ -49,7 +49,7 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 - **Langage serveur** : Go 1.26 (`cmd/bbsd`, `internal/server`, `internal/bbs`).
 - **Hébergement** : VPS cloud avec IP fixe (exposition Internet publique 24/7).
 - **Port public** : `6502`.
-- **Test** : émulateurs locaux (oric1-emu/Phosphoric, Oricutron) via socket TCP.
+- **Test** : émulateur **unique** `Oric1/oric1-emu` (Phosphoric) via socket TCP (`--serial tcp:`).
 
 ## Décisions ouvertes (ADR à formaliser)
 1. **Adressage ACIA** — supporter `$03A0-$03BF` (LOCI) et `$031C` (Telestrat/oric1-emu) côté client.

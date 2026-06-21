@@ -43,4 +43,4 @@
 - Code versionné, `CHANGELOG.md` et `ROADMAP.md` mis à jour.
 - Tests passants pour la fonctionnalité livrée.
 - Documentation à jour (`docs/`).
-- Validé dans Oricutron quand applicable.
+- Validé dans `Oric1/oric1-emu` (Phosphoric) quand applicable.
