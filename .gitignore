@@ -1,0 +1,22 @@
+# Système
+.DS_Store
+*.log
+*.tmp
+
+# Python (si stack Python retenue)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Rust (si stack Rust retenue)
+/target/
+
+# Node (si stack Node retenue)
+node_modules/
+
+# Données runtime du BBS (à versionner séparément si besoin)
+/data/
+*.db
