@@ -127,6 +127,15 @@ func (b *Builder) AltCharset(on bool) *Builder {
 	return b
 }
 
+// Attrs fixe en une seule fois clignotement / double hauteur / charset alternatif
+// (un seul octet d'attribut, contrairement à des appels Blink/DoubleHeight/AltCharset
+// successifs qui en émettraient plusieurs).
+func (b *Builder) Attrs(blink, doubleHeight, altCharset bool) *Builder {
+	b.blink, b.dbl, b.alt = blink, doubleHeight, altCharset
+	b.buf.WriteByte(TextAttr(blink, doubleHeight, altCharset))
+	return b
+}
+
 // Text écrit du texte ASCII. Les octets non imprimables (< 32 ou > 126) sont
 // remplacés par un espace pour ne pas être pris à tort pour des attributs.
 func (b *Builder) Text(s string) *Builder {

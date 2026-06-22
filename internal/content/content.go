@@ -41,10 +41,13 @@ type Page struct {
 	Next    string  `json:"next,omitempty"`    // page après succès de l'applet
 }
 
-// Line est une ligne de texte avec une couleur d'encre optionnelle.
+// Line est une ligne de texte avec des attributs Oric optionnels.
 type Line struct {
-	Text string `json:"text"`
-	Ink  string `json:"ink,omitempty"` // nom de couleur (défaut blanc)
+	Text         string `json:"text"`
+	Ink          string `json:"ink,omitempty"`          // encre (couleur du texte, défaut blanc)
+	Paper        string `json:"paper,omitempty"`        // fond (défaut noir si absent)
+	Blink        bool   `json:"blink,omitempty"`        // clignotement
+	DoubleHeight bool   `json:"doubleHeight,omitempty"` // double hauteur
 }
 
 // Entry est un choix de menu : une touche qui, soit navigue vers une cible

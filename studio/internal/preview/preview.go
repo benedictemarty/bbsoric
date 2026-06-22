@@ -37,6 +37,23 @@ func span(text string, c oascii.Color) string {
 	return fmt.Sprintf(`<span style="color:%s">%s</span>`, css(c), html.EscapeString(text))
 }
 
+// lineSpan rend une ligne de contenu avec ses attributs Oric : encre, fond,
+// clignotement (classe CSS), double hauteur.
+func lineSpan(ln content.Line) string {
+	style := "color:" + css(content.Ink(ln.Ink))
+	if ln.Paper != "" {
+		style += ";background:" + css(content.Ink(ln.Paper))
+	}
+	if ln.DoubleHeight {
+		style += ";font-size:1.7em;line-height:1"
+	}
+	cls := ""
+	if ln.Blink {
+		cls = ` class="blink"`
+	}
+	return fmt.Sprintf(`<span%s style="%s">%s</span>`, cls, style, html.EscapeString(ln.Text))
+}
+
 // rule trace une règle pleine largeur (40 colonnes), blanche.
 func rule() string { return span(strings.Repeat("=", oascii.Cols), oascii.White) }
 
@@ -69,7 +86,7 @@ func RenderHTML(site *content.Site, pageID string) (string, error) {
 		line(rule())
 		line("")
 		for _, ln := range p.Lines {
-			line(span(ln.Text, content.Ink(ln.Ink)))
+			line(lineSpan(ln))
 		}
 		line("")
 		line(span("[applet: "+p.Applet+"]", oascii.Magenta))
@@ -79,7 +96,7 @@ func RenderHTML(site *content.Site, pageID string) (string, error) {
 		line(rule())
 		line("")
 		for _, ln := range p.Lines {
-			line(span(ln.Text, content.Ink(ln.Ink)))
+			line(lineSpan(ln))
 		}
 		if len(p.Lines) > 0 {
 			line("")
@@ -95,7 +112,7 @@ func RenderHTML(site *content.Site, pageID string) (string, error) {
 		line(rule())
 		line("")
 		for _, ln := range p.Lines {
-			line(span(ln.Text, content.Ink(ln.Ink)))
+			line(lineSpan(ln))
 		}
 		line("")
 		line(span("Appuyez sur une touche...", oascii.Green))

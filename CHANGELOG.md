@@ -6,6 +6,16 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Contenu — attributs Oric par ligne : fond, clignotement, double hauteur)
+- `internal/content` : une `Line` accepte `paper` (fond), `blink` (clignotement) et
+  `doubleHeight` (double hauteur), en plus de `ink`.
+- `internal/oascii` : `Builder.Attrs(blink, doubleHeight, altCharset)` (un seul octet).
+- `server/internal/bbs` : rendu des lignes avec ces attributs (`writeLine`) — émission des
+  octets Téletexte vérifiée (hexdump : `paper`/`blink`/`ink`).
+- Studio : l'éditeur de lignes propose **Fond / Cli / 2×H** ; l'aperçu rend le fond, le
+  clignotement (animation CSS) et la double hauteur.
+- Docs `content.md` (attributs par ligne + rappel OASCII). Tests oascii + aperçu.
+
 ### Corrigé (Login : « Se connecter » revenait au menu via nc/clients ligne)
 - Un client en mode ligne (nc…) envoie « 1\r\n » : le menu lisait `1` (touche unique) mais
   le `\r\n` résiduel était lu comme **ligne vide** par le premier `ReadLine` de l'applet

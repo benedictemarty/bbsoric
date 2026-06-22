@@ -60,6 +60,27 @@ func TestRenderApplet(t *testing.T) {
 	}
 }
 
+func TestRenderLineAttributes(t *testing.T) {
+	site := &content.Site{Start: "p", Pages: map[string]*content.Page{
+		"p": {Title: "P", Lines: []content.Line{
+			{Text: "X", Ink: "white", Paper: "red", Blink: true, DoubleHeight: true},
+		}},
+	}}
+	out, err := RenderHTML(site, "p")
+	if err != nil {
+		t.Fatalf("RenderHTML: %v", err)
+	}
+	if !strings.Contains(out, "background:") {
+		t.Errorf("fond (paper) manquant:\n%s", out)
+	}
+	if !strings.Contains(out, `class="blink"`) {
+		t.Errorf("clignotement manquant:\n%s", out)
+	}
+	if !strings.Contains(out, "font-size") {
+		t.Errorf("double hauteur manquante:\n%s", out)
+	}
+}
+
 func TestRenderMissingPage(t *testing.T) {
 	if _, err := RenderHTML(testSite(), "absent"); err == nil {
 		t.Errorf("une page absente doit renvoyer une erreur")

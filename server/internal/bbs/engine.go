@@ -179,7 +179,7 @@ func renderMenu(s *server.Session, p *content.Page) error {
 	b.Text(rule()).Newline()
 	b.Newline()
 	for _, ln := range p.Lines { // texte d'intro éventuel, au-dessus des choix
-		b.Ink(content.Ink(ln.Ink)).Text(ln.Text).Newline()
+		writeLine(b, ln)
 	}
 	if len(p.Lines) > 0 {
 		b.Newline()
@@ -204,9 +204,21 @@ func renderContent(s *server.Session, p *content.Page) error {
 	b.Text(rule()).Newline()
 	b.Newline()
 	for _, ln := range p.Lines {
-		b.Ink(content.Ink(ln.Ink)).Text(ln.Text).Newline()
+		writeLine(b, ln)
 	}
 	b.Newline()
 	b.Ink(oascii.Green).Text("Appuyez sur une touche...").Newline()
 	return s.Write(b.String())
+}
+
+// writeLine ajoute une ligne de contenu avec ses attributs Oric : fond (paper),
+// clignotement / double hauteur (un seul octet), puis encre et texte.
+func writeLine(b *oascii.Builder, ln content.Line) {
+	if ln.Paper != "" {
+		b.Paper(content.Ink(ln.Paper))
+	}
+	if ln.Blink || ln.DoubleHeight {
+		b.Attrs(ln.Blink, ln.DoubleHeight, false)
+	}
+	b.Ink(content.Ink(ln.Ink)).Text(ln.Text).Newline()
 }

@@ -87,3 +87,10 @@ func TestNoStickyNoReemit(t *testing.T) {
 		t.Errorf("flux = % x, want % x", got, want)
 	}
 }
+
+func TestBuilderAttrs(t *testing.T) {
+	got := New().Attrs(true, false, false).Bytes()
+	if len(got) != 1 || got[0] != TextAttr(true, false, false) {
+		t.Errorf("Attrs doit émettre un seul octet d'attribut texte, got %v", got)
+	}
+}

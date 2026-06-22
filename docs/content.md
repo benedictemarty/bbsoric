@@ -34,11 +34,19 @@ Une page a un **titre** et, **optionnellement**, du **texte** (`lines`) et/ou de
 - **sans `entries`** → écran de **contenu** : une touche revient en arrière
   (mode caractère, cf. ADR-0002).
 
-**Lignes de texte** (`lines`) :
+**Lignes de texte** (`lines`) — attributs Oric par ligne :
 ```json
-{ "text": " Bonjour", "ink": "yellow" }
+{ "text": " ALERTE ", "ink": "white", "paper": "red", "blink": true, "doubleHeight": false }
 ```
-- `ink` (optionnel) : `black red green yellow blue magenta cyan white` (défaut blanc).
+- `ink` (optionnel) : couleur du texte — `black red green yellow blue magenta cyan white` (défaut blanc).
+- `paper` (optionnel) : couleur de **fond** (mêmes noms ; défaut noir si absent).
+- `blink` (optionnel) : **clignotement**.
+- `doubleHeight` (optionnel) : **double hauteur**.
+
+> Rappel Oric : chaque attribut **occupe une case écran** (un changement de couleur « mange »
+> une colonne) et l'ULA réinitialise encre/fond à chaque début de ligne — d'où l'application
+> des attributs **par ligne**. Pour des effets plus poussés (couleurs multiples sur une ligne,
+> ASCII-art, animation, interaction), écrire un **applet** (cf. `studio/README.md` / ADR-0001).
 
 **Choix** (`entries`) — une entrée **navigue** (`target`) **ou lance un applet** (`applet`
 + `next`). Un menu peut donc proposer plusieurs applets au choix.

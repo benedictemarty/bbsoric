@@ -251,14 +251,28 @@ function entriesEditor(p) {
 
 function linesEditor(p) {
   const tbl = el('table', { className: 'rows' });
-  tbl.append(el('tr', {}, [el('th', { textContent: 'Texte' }), el('th', { textContent: 'Encre' }), el('th')]));
+  tbl.append(el('tr', {}, ['Texte', 'Encre', 'Fond', 'Cli', '2×H', ''].map(t => el('th', { textContent: t }))));
   (p.lines || []).forEach((ln, i) => {
     const t = el('input', { type: 'text', value: ln.text || '' }); t.oninput = () => { ln.text = t.value; refreshPreview(); };
+
     const ink = el('select');
     for (const c of INKS) ink.append(el('option', { value: c, textContent: c, selected: (ln.ink || 'white') === c }));
     ink.onchange = () => { ln.ink = ink.value; refreshPreview(); };
+
+    // fond (paper) : « — » = aucun (noir par défaut)
+    const paper = el('select');
+    paper.append(el('option', { value: '', textContent: '—', selected: !ln.paper }));
+    for (const c of INKS) paper.append(el('option', { value: c, textContent: c, selected: ln.paper === c }));
+    paper.onchange = () => { if (paper.value) ln.paper = paper.value; else delete ln.paper; refreshPreview(); };
+
+    const blink = el('input', { type: 'checkbox', checked: !!ln.blink });
+    blink.onchange = () => { if (blink.checked) ln.blink = true; else delete ln.blink; refreshPreview(); };
+
+    const dh = el('input', { type: 'checkbox', checked: !!ln.doubleHeight });
+    dh.onchange = () => { if (dh.checked) ln.doubleHeight = true; else delete ln.doubleHeight; refreshPreview(); };
+
     const del = el('button', { className: 'del', textContent: '✕' }); del.onclick = () => { p.lines.splice(i, 1); renderForm(); refreshPreview(); };
-    tbl.append(el('tr', {}, [td(t), td(ink), td(del)]));
+    tbl.append(el('tr', {}, [td(t), td(ink), td(paper), td(blink), td(dh), td(del)]));
   });
   const add = el('button', { textContent: '+ ligne' });
   add.onclick = () => { p.lines.push({ text: '', ink: 'white' }); renderForm(); };
