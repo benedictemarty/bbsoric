@@ -30,7 +30,11 @@
   *(idle timeout couche `server`)*
 - [x] **C5** (3) En tant qu'utilisateur Oric, je veux **taper au clavier** pour naviguer (TX terminal).
   *(scan matrice complet + écho local + CR ; navigation validée à l'écran via `--type-keys`)*
-- [ ] **C4** (3) En tant qu'utilisateur, je veux **m'identifier** et retrouver mon profil.
+- [~] **C4** (3) En tant qu'utilisateur, je veux **m'identifier** et retrouver mon profil.
+  *(ADR-0001/0002 ; incréments 1–3 livrés : store haché `internal/user`, saisie touche
+  unique `ReadKey`, moteur d'applets (type de page `applet`), applets login/register/guest,
+  porte d'auth au CONNECT, câblage `-users` + déploiement. Validé end-to-end (`nc`). Reste
+  côté client : `term.s` en mode caractère + no-echo mot de passe.)*
 
 ## Épopée D — Contenu (Sprint 3)
 

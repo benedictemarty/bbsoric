@@ -36,7 +36,18 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 - [x] **Émission clavier (TX) côté terminal Oric** — scan matrice complet AY-via-VIA
   (`oric-client/term.s`), écho local, terminaison ligne sur CR. **Navigation interactive
   validée à l'écran** (`docs/img/sprint2-keyboard-nav.png`, test via `--type-keys`).
-- [ ] Login / profils utilisateurs (persistance)
+- [~] Login / profils utilisateurs (persistance) — **incréments 1–3 faits** (ADR-0001/0002) :
+  - `internal/user` : modèle + store haché atomique (PBKDF2 stdlib), tests `-race`.
+  - Saisie **touche unique** (menus) + **ligne/RETURN** (champs texte) : `server.ReadKey`.
+  - **Moteur d'applets** : type de page `applet` (JSON) → applet Go enregistré par nom.
+  - Applets **`login`/`register`/`guest`**, porte d'auth au CONNECT, accueil personnalisé.
+  - Câblage `cmd/bbsd -users` + déploiement (`StateDirectory`). Validé end-to-end (`nc`).
+  - **Terminal Oric** : vérifié — `term.s` émet **déjà** chaque frappe immédiatement (mode
+    caractère), aucune modif requise (cf. ADR-0002). L'émulateur confirme le pipeline
+    clavier→dial→CONNECT→RX.
+  - **Reste** : capture émulateur du nouvel écran de login (limite du backend modem émulé
+    qui compose les hôtes réels — prévoir entrée locale picowifi / test matériel) ;
+    no-echo du mot de passe (optionnel).
 
 ## Sprint 3 — Modules de contenu
 - [ ] Messagerie / forum (lecture, post)

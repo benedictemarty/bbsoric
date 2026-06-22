@@ -24,12 +24,19 @@ type Site struct {
 	Pages map[string]*Page `json:"pages"`           // pages indexées par identifiant
 }
 
-// Page est un menu (entries) ou un écran de contenu (lines).
+// Page est un menu (entries), un écran de contenu (lines) ou un applet.
+//
+// Type "applet" : la page (texte) délègue son comportement interactif à un
+// applet Go enregistré sous le nom Applet (login, jeu…). Lines, si présent, est
+// affiché en intro avant de lancer l'applet ; Next est la page où aller après
+// succès de l'applet (cf. ADR-0001/0002).
 type Page struct {
 	Title   string  `json:"title"`
-	Type    string  `json:"type"`              // "menu" ou "page"
-	Lines   []Line  `json:"lines,omitempty"`   // contenu (type "page")
+	Type    string  `json:"type"`              // "menu", "page" ou "applet"
+	Lines   []Line  `json:"lines,omitempty"`   // contenu (type "page" / intro "applet")
 	Entries []Entry `json:"entries,omitempty"` // choix (type "menu")
+	Applet  string  `json:"applet,omitempty"`  // nom de l'applet (type "applet")
+	Next    string  `json:"next,omitempty"`    // page après succès de l'applet
 }
 
 // Line est une ligne de texte avec une couleur d'encre optionnelle.
@@ -71,8 +78,17 @@ func (s *Site) Validate() error {
 	for id, p := range s.Pages {
 		switch p.Type {
 		case "menu", "page":
+		case "applet":
+			if p.Applet == "" {
+				return fmt.Errorf("page %q : type 'applet' sans champ 'applet'", id)
+			}
+			if p.Next != "" {
+				if _, ok := s.Pages[p.Next]; !ok {
+					return fmt.Errorf("page %q : 'next' %q introuvable", id, p.Next)
+				}
+			}
 		default:
-			return fmt.Errorf("page %q : type %q inconnu (menu|page)", id, p.Type)
+			return fmt.Errorf("page %q : type %q inconnu (menu|page|applet)", id, p.Type)
 		}
 		for _, e := range p.Entries {
 			if isSpecialTarget(e.Target) {

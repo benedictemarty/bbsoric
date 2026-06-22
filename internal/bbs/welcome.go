@@ -10,13 +10,16 @@ import (
 	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/internal/oascii"
 	"github.com/benedictemarty/bbsoric/internal/server"
+	"github.com/benedictemarty/bbsoric/internal/user"
 )
 
 // WelcomeHandler affiche la bannière d'accueil puis déroule le flux de pages
 // décrit par le Store (contenu JSON rechargeable à chaud ; contenu par défaut
-// si Store est nil).
+// si Store est nil). Users est le magasin de comptes injecté aux applets
+// (login, inscription…) ; il peut être nil si aucun applet ne l'exige.
 type WelcomeHandler struct {
 	Store *content.Store
+	Users *user.Store
 }
 
 // largeur utile de l'écran TEXT de l'Oric : 40 colonnes.
@@ -26,7 +29,7 @@ func (h WelcomeHandler) Handle(ctx context.Context, s *server.Session) {
 	if err := h.banner(s); err != nil {
 		return
 	}
-	runSite(ctx, s, h.Store)
+	runSite(ctx, s, h.Store, h.Users, &SessionState{})
 }
 
 // banner construit l'écran d'accueil avec attributs OASCII (couleurs Oric).

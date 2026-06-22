@@ -99,6 +99,33 @@ func (s *Session) ReadLine() (string, error) {
 	}
 }
 
+// ReadKey lit une seule touche significative et la renvoie. Utilisé pour les
+// choix de menu et les écrans « appuyez sur une touche » : la navigation réagit
+// à la première frappe, sans attendre RETURN (cf. ADR-0002).
+//
+// Filtre les commandes telnet IAC et ignore les CR/LF/NUL résiduels (qu'un
+// client « bête » comme nc laisse derrière une ligne précédente) afin qu'ils ne
+// soient pas pris pour une touche.
+func (s *Session) ReadKey() (byte, error) {
+	s.touch()
+	for {
+		c, err := s.reader.ReadByte()
+		if err != nil {
+			return 0, err
+		}
+		switch c {
+		case iac:
+			if err := s.skipTelnetCommand(); err != nil {
+				return 0, err
+			}
+		case '\r', '\n', 0:
+			// résidus de fin de ligne : ignorés
+		default:
+			return c, nil
+		}
+	}
+}
+
 // skipTelnetCommand consomme une commande telnet introduite par IAC (0xFF).
 // Gère les commandes à 2 octets (WILL/WONT/DO/DONT + option) et l'IAC échappé.
 func (s *Session) skipTelnetCommand() error {

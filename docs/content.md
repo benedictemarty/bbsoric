@@ -38,11 +38,27 @@ Liste de choix (`entries`). Chaque entrée :
   - `__home__` : page de départ.
 
 ### Page `type: "page"`
-Écran de contenu (`lines`) ; `RETURN` revient en arrière. Chaque ligne :
+Écran de contenu (`lines`) ; **une touche** revient en arrière (mode caractère,
+cf. ADR-0002). Chaque ligne :
 ```json
 { "text": " Bonjour", "ink": "yellow" }
 ```
 - `ink` (optionnel) : `black red green yellow blue magenta cyan white` (défaut blanc).
+
+### Page `type: "applet"`
+La page (texte/JSON) délègue un **comportement interactif** à un applet Go
+enregistré par son nom — sans coder de page entière. Idéal pour le login, un jeu, etc.
+```json
+{ "type": "applet", "applet": "login", "next": "main", "lines": [ ... ] }
+```
+- `applet` : nom de l'applet enregistré côté serveur (ex. `login`, `register`, `guest`).
+- `next` (optionnel) : page où aller **après succès** de l'applet.
+- `lines` (optionnel) : texte d'intro affiché **avant** de lancer l'applet.
+
+Un menu pointe vers une page applet comme vers n'importe quelle page
+(`{ "key": "1", "label": "Se connecter", "target": "login" }`). **Ajouter un applet**
+= écrire une petite fonction Go et l'enregistrer ; **le placer** = éditer ce JSON.
+Applets disponibles : `login`, `register`, `guest`.
 
 ## Rendu (rappel OASCII)
 

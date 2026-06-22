@@ -103,5 +103,12 @@ n'importe quel Oric connecté via son WiFiModem. Conséquences à intégrer dès
 > Ces points remontent la sécurité et le déploiement comme préoccupations **transverses**, pas comme un
 > sprint final. Voir la ROADMAP mise à jour.
 
-## 6. Décisions d'architecture (ADR) — à formaliser
-Voir `ROADMAP.md` §« Décisions ouvertes ». Les ADR seront versionnés dans `docs/adr/`.
+## 6. Décisions d'architecture (ADR)
+Les ADR sont versionnés dans `docs/adr/`.
+- **ADR-0001** — Login : porte au CONNECT déclenchée par la page de départ JSON (cible
+  spéciale → composant), persistance hachée PBKDF2 stdlib. (`docs/adr/0001-login-composant-page.md`)
+- **ADR-0002** — Modèle de saisie : terminal Oric en mode caractère, `ReadKey` (menus) +
+  `ReadLine` (champs texte). (`docs/adr/0002-modele-de-saisie.md`)
+
+Décisions encore ouvertes : voir `ROADMAP.md` §« Décisions ouvertes » (adressage ACIA,
+négociation telnet, table OASCII).

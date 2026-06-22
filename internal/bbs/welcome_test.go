@@ -96,23 +96,23 @@ func TestMenuNavigationAndQuit(t *testing.T) {
 
 	readUntil(t, r, conn, "Votre choix")
 
-	// Choix 1 -> écran Informations systeme
-	if _, err := conn.Write([]byte("1\r\n")); err != nil {
+	// Touche unique '1' (sans RETURN) -> écran Informations systeme
+	if _, err := conn.Write([]byte("1")); err != nil {
 		t.Fatalf("write: %v", err)
 	}
-	out := readUntil(t, r, conn, "retour au menu")
+	out := readUntil(t, r, conn, "une touche")
 	if !strings.Contains(out, "INFORMATIONS SYSTEME") {
 		t.Errorf("écran info attendu, reçu:\n%s", out)
 	}
 
-	// RETURN -> revient au menu
-	if _, err := conn.Write([]byte("\r\n")); err != nil {
+	// Une touche quelconque (espace) -> revient au menu
+	if _, err := conn.Write([]byte(" ")); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 	readUntil(t, r, conn, "Votre choix")
 
 	// Q -> quitte
-	if _, err := conn.Write([]byte("Q\r\n")); err != nil {
+	if _, err := conn.Write([]byte("Q")); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 	rest, _ := io.ReadAll(r)

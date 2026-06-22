@@ -1,7 +1,20 @@
 {
-  "_comment": "Flux de pages du BBS Oric. Modifiable a chaud : le serveur recharge ce fichier automatiquement. type=menu (entries) ou page (lines). Cibles speciales: __quit__, __back__, __home__. Couleurs ink: black red green yellow blue magenta cyan white.",
-  "start": "main",
+  "_comment": "Flux de pages du BBS Oric. Modifiable a chaud. type=menu (entries), page (lines) ou applet (applet+next). Cibles speciales: __quit__, __back__, __home__. Applets: login, register, guest. Couleurs ink: black red green yellow blue magenta cyan white.",
+  "start": "accueil",
   "pages": {
+    "accueil": {
+      "title": "BIENVENUE",
+      "type": "menu",
+      "entries": [
+        { "key": "1", "label": "Se connecter", "target": "login" },
+        { "key": "2", "label": "Creer un compte", "target": "register" },
+        { "key": "3", "label": "Entrer en invite", "target": "guest" },
+        { "key": "Q", "label": "Quitter", "target": "__quit__" }
+      ]
+    },
+    "login": { "type": "applet", "applet": "login", "next": "main" },
+    "register": { "type": "applet", "applet": "register", "next": "main" },
+    "guest": { "type": "applet", "applet": "guest", "next": "main" },
     "main": {
       "title": "MENU PRINCIPAL",
       "type": "menu",

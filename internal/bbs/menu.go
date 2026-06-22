@@ -23,6 +23,15 @@ func firstKey(line string) byte {
 	return c
 }
 
+// upperKey met une touche ASCII en majuscule (pour router les choix de menu de
+// façon insensible à la casse).
+func upperKey(c byte) byte {
+	if c >= 'a' && c <= 'z' {
+		c -= 'a' - 'A'
+	}
+	return c
+}
+
 // rule trace une règle pleine largeur (40 col) en couleur par défaut.
 func rule() string { return strings.Repeat("=", oascii.Cols) }
 

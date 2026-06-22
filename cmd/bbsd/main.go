@@ -21,6 +21,7 @@ import (
 	"github.com/benedictemarty/bbsoric/internal/bbs"
 	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/internal/server"
+	"github.com/benedictemarty/bbsoric/internal/user"
 )
 
 func main() {
@@ -37,6 +38,7 @@ func main() {
 	maxPerIP := flag.Int("max-conns-per-ip", 3, "connexions simultanées max par IP (0 = illimité)")
 	idle := flag.Duration("idle", 5*time.Minute, "délai d'inactivité avant déconnexion (0 = aucun)")
 	contentPath := flag.String("content", "", "fichier JSON du flux de pages (vide = contenu par défaut ; rechargé à chaud)")
+	usersPath := flag.String("users", "", "fichier JSON des comptes (vide = comptes en mémoire, non persistés)")
 	flag.Parse()
 
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
@@ -48,7 +50,17 @@ func main() {
 		IdleTimeout:   *idle,
 	}
 	store := content.NewStore(*contentPath, log)
-	srv := server.New(cfg, bbs.WelcomeHandler{Store: store}, log)
+
+	users, err := user.Open(*usersPath)
+	if err != nil {
+		log.Error("comptes : ouverture impossible", "path", *usersPath, "err", err)
+		os.Exit(1)
+	}
+	if *usersPath != "" {
+		log.Info("comptes chargés", "path", *usersPath, "comptes", users.Count())
+	}
+
+	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users}, log)
 
 	// Arrêt propre sur SIGINT/SIGTERM.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

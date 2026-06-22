@@ -5,9 +5,13 @@ After=network.target
 [Service]
 Type=simple
 # Utilisateur non privilégié éphémère créé par systemd (pas de compte dédié à
-# provisionner ; plus sûr que root). Le BBS n'écrit aucun fichier.
+# provisionner ; plus sûr que root). Le BBS lit le contenu (/etc, lecture seule)
+# et écrit les comptes dans son StateDirectory (/var/lib/bbsoric, RW).
 DynamicUser=yes
-ExecStart=/usr/local/bin/bbsoric -addr 0.0.0.0:6502 -content /etc/bbsoric/site.json -max-conns 50 -max-conns-per-ip 3 -idle 5m
+# Répertoire d'état RW, créé et possédé par le DynamicUser, persistant entre
+# redémarrages (autorisé malgré ProtectSystem=strict).
+StateDirectory=bbsoric
+ExecStart=/usr/local/bin/bbsoric -addr 0.0.0.0:6502 -content /etc/bbsoric/site.json -users /var/lib/bbsoric/users.json -max-conns 50 -max-conns-per-ip 3 -idle 5m
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal

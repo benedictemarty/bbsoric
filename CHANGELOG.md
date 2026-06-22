@@ -6,6 +6,57 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Login — incrément 3 : applets auth + câblage + déploiement)
+- `internal/bbs/login.go` : applets **`login`**, **`register`**, **`guest`** (enregistrés
+  via `init`). Pseudo + mot de passe saisis ligne par ligne (RETURN), **mot de passe visible
+  à l'écran** (averti ; TLS couvre le transport), 3 tentatives, annulation par champ vide.
+  Accueil personnalisé « Bonjour {pseudo} — Appel n°{N} » (façon BBS), accès invité en
+  lecture seule. Tests bout-en-bout (login OK, mauvais mot de passe, invité, inscription
+  persistée).
+- `content/site.json` : **porte d'auth au CONNECT** — page de départ `accueil`
+  (Se connecter / Créer un compte / Invité) menant aux applets, `next` vers `main`.
+- `cmd/bbsd` : flag **`-users <fichier.json>`** (comptes persistés ; vide = mémoire).
+- Déploiement : unité systemd `-users /var/lib/bbsoric/users.json` + **`StateDirectory=bbsoric`**
+  (répertoire RW possédé par le DynamicUser, autorisé malgré `ProtectSystem=strict`).
+- Validé end-to-end via `nc` : inscription → hachage persisté dans `users.json` →
+  reconnexion et login (pseudo insensible à la casse) → compteur d'appels incrémenté.
+- **Terminal Oric** : vérifié que `oric-client/term.s` émet **déjà** chaque frappe
+  immédiatement (boucle `main` : `key_scan` → `ser_tx`, pas de tampon de ligne) — la saisie
+  touche unique fonctionne **sans modifier le terminal** (ADR-0002 corrigé). `.tap`
+  réassemblée à l'identique (non-régression) ; l'émulateur confirme le pipeline
+  clavier→numérotation→CONNECT→réception.
+
+### Ajouté (Login — incrément 2 : moteur d'applets + saisie touche unique)
+- **ADR-0002** (`docs/adr/0002-modele-de-saisie.md`) : terminal Oric en **mode caractère**,
+  `ReadKey` (menus, « appuyez sur une touche ») + `ReadLine` (champs texte).
+- **ADR-0001 révisé** : le login devient un **applet** lancé par une page de type `applet`
+  (porte au CONNECT via la page de départ JSON), au lieu de cibles spéciales par fonction.
+- `server.ReadKey()` : lit une touche unique (filtre IAC, ignore CR/LF/NUL résiduels). Tests.
+- `internal/content` : nouveau **type de page `applet`** (champs `applet` + `next`) +
+  validation. La page reste du JSON ; elle référence un applet Go par son nom.
+- `internal/bbs` : **registre d'applets** (`Register`/`Applet`/`AppContext`/`Outcome`/
+  `SessionState`). Le moteur (`engine.go`) navigue désormais **menus et pages à la touche
+  unique** (ReadKey) et **dispatche les pages applet** (succès → page `next`, applet inconnu
+  géré proprement). Tests : dispatch + navigation `next`, applet inexistant non bloquant,
+  navigation menu touche unique validée (+ démo `nc`).
+
+### Ajouté (Login — incrément 1 : modèle utilisateur + store haché)
+- **ADR-0001** (`docs/adr/0001-login-composant-page.md`) : le login sera un **composant
+  interactif isolé** appelé par une **page via une cible spéciale** (`__login__`,
+  `__register__`, `__guest__`, `__logout__`), dans le prolongement de
+  `__quit__`/`__back__`/`__home__`. La page reste du JSON pur. Persistance hachée, mot de
+  passe en clair à l'écran assumé (TLS couvre le transport), no-echo repoussé.
+- `internal/user` : modèle `User` (`Handle`, `PassHash`, `Created`, `LastLogin`, `Calls`)
+  et `Store` fichier JSON avec **verrou** (accès concurrents) et **écriture atomique**
+  (fichier temporaire + `rename`). API : `Register`, `Authenticate`, `Get`, `Count`.
+- Mots de passe **jamais en clair** : hachage **PBKDF2-HMAC-SHA256** (`crypto/pbkdf2`,
+  **stdlib** Go 1.24+, **aucune dépendance ajoutée**), sel aléatoire par compte, format
+  encodé auto-descriptif `pbkdf2$sha256$<iter>$<sel>$<hash>`, comparaison à temps constant.
+- Validation pseudo (2–16 caractères ASCII alphanum + `-`/`_`) et mot de passe (≥ 4).
+- Tests : hash/verify, sel aléatoire, rejet des hachages malformés, validation, doublons
+  (insensible à la casse), incrément des appels + `LastLogin`, persistance après
+  réouverture, fichier absent, **accès concurrent** (suite verte avec `-race`).
+
 ### Ajouté (Contenu dynamique — flux de pages JSON rechargé à chaud)
 - `internal/content` : modèle `Site`/`Page`/`Entry`/`Line` + parsing/validation JSON +
   `Store` qui **recharge le fichier à chaud** (surveillance mtime ; en cas d'erreur,
