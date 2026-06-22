@@ -6,6 +6,16 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Modifié (Restructuration en 3 sous-projets : server / client / studio)
+- Le dépôt s'organise en **`server/`** (serveur Go : `server/cmd/bbsd` + `server/internal/`
+  bbs/server/user), **`client/`** (terminal Oric, ex `oric-client/`) et **`studio/`** (à venir).
+- Les paquets **partagés** `content` et `oascii` restent dans l'**`internal/` racine** afin
+  d'être réutilisables par le serveur **et** le studio (règle de visibilité Go) — zéro
+  duplication de validation/rendu.
+- Chemins d'import des paquets déplacés réécrits ; `Makefile` (`make client`, `make studio`),
+  `scripts/test-emulateur.sh`, `deploy/vps-deploy.sh`, `.gitignore` et `docs/architecture.md`
+  mis à jour. Déplacement pur : **suite de tests inchangée et verte**, `.tap` client identique.
+
 ### Ajouté (Login — incrément 3 : applets auth + câblage + déploiement)
 - `internal/bbs/login.go` : applets **`login`**, **`register`**, **`guest`** (enregistrés
   via `init`). Pseudo + mot de passe saisis ligne par ligne (RETURN), **mot de passe visible

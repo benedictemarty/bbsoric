@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/benedictemarty/bbsoric/internal/oascii"
-	"github.com/benedictemarty/bbsoric/internal/server"
-	"github.com/benedictemarty/bbsoric/internal/user"
+	"github.com/benedictemarty/bbsoric/server/internal/server"
+	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
 
 // maxLoginAttempts borne le nombre d'essais d'identification par passage.

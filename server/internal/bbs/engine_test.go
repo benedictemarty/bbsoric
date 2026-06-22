@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/benedictemarty/bbsoric/internal/content"
-	"github.com/benedictemarty/bbsoric/internal/server"
+	"github.com/benedictemarty/bbsoric/server/internal/server"
 )
 
 // startServerWithStore démarre un BBS avec un Store de contenu donné.

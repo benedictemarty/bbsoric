@@ -18,10 +18,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/benedictemarty/bbsoric/internal/bbs"
+	"github.com/benedictemarty/bbsoric/server/internal/bbs"
 	"github.com/benedictemarty/bbsoric/internal/content"
-	"github.com/benedictemarty/bbsoric/internal/server"
-	"github.com/benedictemarty/bbsoric/internal/user"
+	"github.com/benedictemarty/bbsoric/server/internal/server"
+	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
 
 func main() {

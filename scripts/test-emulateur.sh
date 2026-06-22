@@ -5,7 +5,7 @@
 #   3. prend une capture d'écran (PPM) du rendu OASCII
 #
 # Prérequis : Go, xa, et l'émulateur de référence Oric1/oric1-emu + sa ROM.
-# La .tap du terminal doit être construite au préalable : oric-client/build.sh
+# La .tap du terminal doit être construite au préalable : client/build.sh
 #
 # Usage : scripts/test-emulateur.sh [sortie.ppm]
 set -euo pipefail
@@ -13,13 +13,13 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 EMU="${ORIC_EMU:-$HOME/Oric1/oric1-emu}"
 ROM="${ORIC_ROM:-$HOME/Oric1/roms/basic11b.rom}"
-TAP="$ROOT/oric-client/term.tap"
+TAP="$ROOT/client/term.tap"
 PORT="${BBS_PORT:-6502}"
 OUT="${1:-/tmp/oric.ppm}"
 
-[ -f "$TAP" ] || { echo "term.tap manquant — lance d'abord oric-client/build.sh"; exit 1; }
+[ -f "$TAP" ] || { echo "term.tap manquant — lance d'abord client/build.sh"; exit 1; }
 
-go build -o /tmp/bbsd "$ROOT/cmd/bbsd"
+go build -o /tmp/bbsd "$ROOT/server/cmd/bbsd"
 /tmp/bbsd -addr "127.0.0.1:$PORT" &
 SRV=$!
 trap 'kill $SRV 2>/dev/null || true' EXIT

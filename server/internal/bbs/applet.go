@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/benedictemarty/bbsoric/internal/content"
-	"github.com/benedictemarty/bbsoric/internal/server"
-	"github.com/benedictemarty/bbsoric/internal/user"
+	"github.com/benedictemarty/bbsoric/server/internal/server"
+	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
 
 // SessionState porte l'état d'une session : utilisateur connecté (nil si pas

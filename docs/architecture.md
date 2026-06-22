@@ -1,5 +1,22 @@
 # Architecture technique — BBS Oric
 
+## 0. Organisation du dépôt (3 sous-projets)
+
+```
+bbsoric/
+  internal/            paquets PARTAGÉS (importables par server/ et studio/)
+    content/  oascii/
+  server/              le serveur BBS Go
+    cmd/bbsd/          binaire du démon
+    internal/          propre au serveur : bbs/ server/ user/
+  client/              le terminal Oric (term.s, build .tap)
+  studio/              le studio « forge » (édition + déploiement du contenu)
+  content/  deploy/  docs/  scripts/
+```
+
+`content` et `oascii` restent dans l'`internal/` racine (visibilité Go) afin que le studio
+réutilise **la même** validation et la même palette que le serveur, sans duplication.
+
 ## 1. Vue d'ensemble
 
 ```

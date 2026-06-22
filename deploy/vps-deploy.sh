@@ -45,7 +45,7 @@ fi
 # 1. Compilation
 echo "--- Compilation (linux/amd64, statique) ---"
 ( cd "$ROOT" && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -trimpath -ldflags='-s -w' -o /tmp/bbsoric ./cmd/bbsd )
+    go build -trimpath -ldflags='-s -w' -o /tmp/bbsoric ./server/cmd/bbsd )
 echo "  binaire : $(stat -c%s /tmp/bbsoric) octets"
 $BUILD_ONLY && { echo "(--build-only) arrêt avant déploiement"; exit 0; }
 

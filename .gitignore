@@ -21,10 +21,14 @@ node_modules/
 /data/
 *.db
 
-# Artefacts client Oric (regénérés par oric-client/build.sh)
-oric-client/term.bin
-oric-client/term.tap
+# Artefacts client Oric (regénérés par client/build.sh)
+client/term.bin
+client/term.tap
 
-# Config de déploiement réelle (infra prod) — utiliser deploy.conf.example
+# Config de déploiement réelle (infra prod) — utiliser les *.conf.example
 deploy/deploy.conf
+deploy/profiles/*.conf
+
+# Binaires
 bbsd
+forge

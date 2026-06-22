@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/benedictemarty/bbsoric/internal/content"
-	"github.com/benedictemarty/bbsoric/internal/server"
-	"github.com/benedictemarty/bbsoric/internal/user"
+	"github.com/benedictemarty/bbsoric/server/internal/server"
+	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
 
 // startServerFull démarre un BBS avec un Store de contenu et un Store de comptes.

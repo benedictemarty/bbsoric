@@ -5,8 +5,8 @@ import (
 
 	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/internal/oascii"
-	"github.com/benedictemarty/bbsoric/internal/server"
-	"github.com/benedictemarty/bbsoric/internal/user"
+	"github.com/benedictemarty/bbsoric/server/internal/server"
+	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
 
 // siteOf renvoie le Site courant du store (contenu par défaut si store nil).
