@@ -6,7 +6,16 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
-### Ajouté (Studio — compositeur de ligne caractère par caractère)
+### Ajouté (Éditeur d'écran plein 40×28 + page « écran brut »)
+- **Page « écran brut »** : nouveau champ `raw` (`internal/content`) — la page rend ses
+  `lines` **telles quelles**, sans barre de titre ni invite (`internal/render.RawScreen`,
+  pas de saut de ligne final pour éviter le scroll). Moteur : une touche pour sortir.
+- **Studio, onglet « Écran »** : éditeur **caractère par caractère** sur une grille 40×28
+  avec **aperçu ULA** en direct. Pinceau (glyphe std/BBS + encre/fond + clignotement/inverse),
+  **clic** pour peindre, **clavier** pour écrire (flèches/curseur, ⌫/Suppr), palette BBS pour
+  charger le pinceau. Créer / Charger / Enregistrer une page écran ; conversion grille ↔
+  lignes (segments groupés par style). `/api/screen` rend les pages `raw` via `RawScreen`.
+- Tests `render` (RawScreen sans chrome) ; validé serveur (`nc`) et studio.
 - Onglet Édition : un **compositeur** assemble une ligne caractère par caractère en mêlant
   **texte normal** (champ « + texte ») et **glyphes BBS** (clic dans la palette), avec
   **aperçu ULA en direct**. « Insérer comme ligne » ajoute la ligne à la page courante,

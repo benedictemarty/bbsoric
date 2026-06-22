@@ -83,6 +83,13 @@ button.del { padding: 4px 8px; color: var(--warn); }
 .style-ctl .tog { display: inline-flex; align-items: center; gap: 2px; min-width: auto; margin: 0; color: #9aa; }
 
 hr.sep { border: none; border-top: 1px solid var(--line); margin: 18px 0 12px; }
+/* éditeur d'écran */
+.screen-bar, .brush-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.screen-bar > input { width: 140px; }
+.brush-prev { width: 18px; height: 24px; image-rendering: pixelated; background: #000; border: 1px solid var(--line); }
+.screen-canvas { width: 560px; max-width: 100%; height: auto; image-rendering: pixelated; background: #000; border-radius: 4px; display: block; cursor: crosshair; outline: none; }
+.screen-canvas:focus { box-shadow: 0 0 0 2px var(--accent); }
+
 .composer-box { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 10px; }
 .comp-canvas { width: 480px; max-width: 100%; height: auto; image-rendering: pixelated; background: #000; border-radius: 4px; display: block; }
 .comp-row { display: flex; gap: 6px; align-items: center; margin: 8px 0; flex-wrap: wrap; }

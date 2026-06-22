@@ -39,6 +39,7 @@ type Page struct {
 	Entries []Entry `json:"entries,omitempty"` // choix (optionnel → menu)
 	Applet  string  `json:"applet,omitempty"`  // applet auto-lancé à l'arrivée (compat)
 	Next    string  `json:"next,omitempty"`    // page après succès de l'applet
+	Raw     bool    `json:"raw,omitempty"`     // écran brut : Lines rendues telles quelles
 }
 
 // Style regroupe les attributs sériels Oric (Téletexte). Chacun est optionnel ;

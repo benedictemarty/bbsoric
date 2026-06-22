@@ -51,6 +51,14 @@ func runSite(ctx context.Context, s *server.Session, store *content.Store, users
 			if !runAppletPage(ctx, s, page, &stack, users, state) {
 				return
 			}
+		case page.Raw: // écran brut : lignes telles quelles, une touche pour sortir
+			if s.Write(string(render.RawScreen(page))) != nil {
+				return
+			}
+			if _, err := s.ReadKey(); err != nil {
+				return
+			}
+			popOrHome(&stack, site)
 		case len(page.Entries) > 0: // écran interactif
 			if s.Write(string(render.Screen(page))) != nil {
 				return

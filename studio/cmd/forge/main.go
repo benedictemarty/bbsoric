@@ -125,7 +125,11 @@ func (s *server) handleScreen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/octet-stream")
-	_, _ = w.Write(render.Screen(p))
+	if p.Raw {
+		_, _ = w.Write(render.RawScreen(p))
+	} else {
+		_, _ = w.Write(render.Screen(p))
+	}
 }
 
 // handleProfiles : GET /api/profiles?site= -> profils (dev/int/prod) DU SITE.

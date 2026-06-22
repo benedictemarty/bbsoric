@@ -53,9 +53,9 @@ func emitStyle(b *oascii.Builder, cur *styleState, st content.Style) {
 	}
 }
 
-// writeLine rend une ligne : texte simple stylé, ou suite de segments stylés
-// (multicolore/multi-attribut). L'inverse pose le bit 7 par caractère.
-func writeLine(b *oascii.Builder, ln content.Line) {
+// emitLineSpans écrit les fragments stylés d'une ligne (sans saut de ligne).
+// L'inverse pose le bit 7 par caractère.
+func emitLineSpans(b *oascii.Builder, ln content.Line) {
 	spans := ln.Segments
 	if len(spans) == 0 {
 		spans = []content.Span{{Text: ln.Text, Style: ln.Style}}
@@ -69,7 +69,25 @@ func writeLine(b *oascii.Builder, ln content.Line) {
 			b.Text(sp.Text)
 		}
 	}
+}
+
+// writeLine rend une ligne complète (fragments + saut de ligne).
+func writeLine(b *oascii.Builder, ln content.Line) {
+	emitLineSpans(b, ln)
 	b.Newline()
+}
+
+// RawScreen rend une page « écran brut » : les lignes telles quelles, sans barre
+// de titre ni invite. Pas de saut de ligne après la dernière (évite le scroll).
+func RawScreen(p *content.Page) []byte {
+	b := oascii.New()
+	for i, ln := range p.Lines {
+		emitLineSpans(b, ln)
+		if i < len(p.Lines)-1 {
+			b.Newline()
+		}
+	}
+	return b.Bytes()
 }
 
 // Screen renvoie le flux OASCII de l'écran complet d'une page : barre de titre,

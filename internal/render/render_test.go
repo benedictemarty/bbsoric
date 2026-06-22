@@ -43,6 +43,18 @@ func TestScreenSegmentsMulticolor(t *testing.T) {
 	}
 }
 
+func TestRawScreen(t *testing.T) {
+	p := &content.Page{Raw: true, Lines: []content.Line{{Text: "AB"}, {Text: "CD"}}}
+	out := string(RawScreen(p))
+	// lignes telles quelles, pas de barre de titre ni d'invite, pas de NL final.
+	if out != "AB\r\nCD" {
+		t.Errorf("RawScreen = %q, attendu \"AB\\r\\nCD\"", out)
+	}
+	if strings.Contains(out, "=") || strings.Contains(out, "Appuyez") {
+		t.Errorf("écran brut ne doit pas avoir de chrome:\n%q", out)
+	}
+}
+
 func TestScreenInverseIsBit7(t *testing.T) {
 	// inverse = bit 7 sur le caractère, PAS un attribut sériel.
 	p := &content.Page{Title: "T", Lines: []content.Line{
