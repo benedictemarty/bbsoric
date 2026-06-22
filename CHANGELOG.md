@@ -16,8 +16,9 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 - Studio : le simulateur ULA rend les cellules `altCharset` avec la police BBS (les filets se
   raccordent), et une **palette** (onglet Édition) insère les glyphes dans le champ courant.
 - Accès via `altCharset: true` (ligne ou segment). Rendu validé (cadre `┌───┐`).
-- Reste : chargement de la police dans `$B800` par le terminal Oric (`term.s`) pour le rendu
-  sur Oric réel.
+- **Terminal Oric** (`client/term.s`) : `load_altcharset` copie la police dans `$B800` au
+  démarrage ; `client/build.sh` concatène `term.s` + `altcharset.s`. **Validé dans
+  l'émulateur** : un Oric affiche un cadre dessiné en police BBS (rendu ULA réel).
 
 ### Ajouté (Studio — aperçu fidèle « simulateur ULA » + rendu partagé)
 - **`internal/render`** : paquet **partagé** produisant le flux OASCII d'un écran de page

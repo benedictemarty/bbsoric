@@ -67,6 +67,8 @@ start:
         jsr psg_write
         lda #0
         sta LASTKEY
+        ; charge la police BBS dans le charset alternatif ($B800)
+        jsr load_altcharset
 
 ; ---------------------------------------------------------------------------
 ;  Menu modem -> choisit ACIAPTR puis initialise l'ACIA
@@ -361,6 +363,32 @@ wait_release:
         jsr key_scan
         cmp #0
         bne wait_release
+        rts
+
+; ---------------------------------------------------------------------------
+;  load_altcharset - copie la police BBS (1024 o) dans le charset alt $B800.
+;  Donnees fournies par altcharset.s (label altcharset_data), concatene au build.
+; ---------------------------------------------------------------------------
+load_altcharset:
+        lda #<altcharset_data
+        sta SRC
+        lda #>altcharset_data
+        sta SRC+1
+        lda #$00
+        sta DST
+        lda #$B8
+        sta DST+1
+        ldx #4                   ; 4 pages de 256 octets = 1024
+        ldy #0
+lac_copy:
+        lda (SRC),y
+        sta (DST),y
+        iny
+        bne lac_copy
+        inc SRC+1
+        inc DST+1
+        dex
+        bne lac_copy
         rts
 
 ; ---------------------------------------------------------------------------
