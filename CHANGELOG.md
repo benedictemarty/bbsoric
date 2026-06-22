@@ -6,6 +6,18 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Contenu — entrées-applet : un menu peut proposer plusieurs applets)
+- `internal/content` : une `Entry` de menu peut désormais porter `applet` (+ `next`) **au
+  lieu** de `target` — une page (menu) peut donc **contenir plusieurs applets**, présentés
+  comme des choix. Validation adaptée (target **ou** applet requis).
+- `server/internal/bbs/engine.go` : une entrée-applet lance l'applet via le registre puis,
+  en cas de succès, navigue vers `next` (sinon reste sur le menu). Factorisation `runApplet`.
+- `content/site.json` : la porte d'auth utilise des **entrées-applet** (`login`/`register`/
+  `guest` directement sur le menu `accueil`) ; pages applet séparées supprimées.
+- Studio : l'éditeur d'entrées propose le type **→ page** ou **▶ applet** (nom + `next`) ;
+  le graphe de navigation relie les entrées-applet à leur `next` et affiche `▶applet`.
+- Tests : entrée-applet (lancement + navigation `next`), validation. Validé via `nc`.
+
 ### Modifié (Studio Forge — profils PAR SITE + enregistrement indenté)
 - Les profils de déploiement sont désormais **propres à chaque site** :
   `deploy/profiles/<site>/<env>.conf` (chaque site a son trio `dev`/`int`/`prod`), au lieu

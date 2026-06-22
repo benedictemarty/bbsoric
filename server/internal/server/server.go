@@ -34,9 +34,9 @@ type Server struct {
 	handler Handler
 	log     *slog.Logger
 
-	mu        sync.Mutex
-	perIP     map[string]int // nombre de connexions actives par IP
-	slots     chan struct{}  // sémaphore global de connexions
+	mu    sync.Mutex
+	perIP map[string]int // nombre de connexions actives par IP
+	slots chan struct{}  // sémaphore global de connexions
 }
 
 // New construit un serveur. Si log est nil, le logger par défaut est utilisé.

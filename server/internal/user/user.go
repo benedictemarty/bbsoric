@@ -26,8 +26,8 @@ import (
 // encodé porte sa propre valeur, donc les anciens hachages restent vérifiables.
 const (
 	iterCount = 100_000 // itérations PBKDF2
-	saltLen   = 16       // octets de sel
-	keyLen    = 32       // octets de clé dérivée (SHA-256)
+	saltLen   = 16      // octets de sel
+	keyLen    = 32      // octets de clé dérivée (SHA-256)
 )
 
 // Contraintes sur le pseudo (handle), adaptées à l'écran Oric 40 colonnes.

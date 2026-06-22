@@ -1,5 +1,5 @@
 {
-  "_comment": "Flux de pages du BBS Oric. Modifiable a chaud. type=menu (entries), page (lines) ou applet (applet+next). Cibles speciales: __quit__, __back__, __home__. Applets: login, register, guest. Couleurs ink: black red green yellow blue magenta cyan white.",
+  "_comment": "Flux de pages du BBS Oric. Modifiable a chaud. type=menu (entries), page (lines) ou applet (applet+next). Une entree de menu navigue (target) OU lance un applet (applet+next). Cibles speciales: __quit__, __back__, __home__. Applets: login, register, guest. Couleurs ink: black red green yellow blue magenta cyan white.",
   "start": "accueil",
   "pages": {
     "accueil": {
@@ -9,17 +9,20 @@
         {
           "key": "1",
           "label": "Se connecter",
-          "target": "login"
+          "applet": "login",
+          "next": "main"
         },
         {
           "key": "2",
           "label": "Creer un compte",
-          "target": "register"
+          "applet": "register",
+          "next": "main"
         },
         {
           "key": "3",
           "label": "Entrer en invite",
-          "target": "guest"
+          "applet": "guest",
+          "next": "main"
         },
         {
           "key": "Q",
@@ -27,21 +30,6 @@
           "target": "__quit__"
         }
       ]
-    },
-    "login": {
-      "type": "applet",
-      "applet": "login",
-      "next": "main"
-    },
-    "register": {
-      "type": "applet",
-      "applet": "register",
-      "next": "main"
-    },
-    "guest": {
-      "type": "applet",
-      "applet": "guest",
-      "next": "main"
     },
     "main": {
       "title": "MENU PRINCIPAL",

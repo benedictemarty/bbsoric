@@ -44,7 +44,7 @@ func runSite(ctx context.Context, s *server.Session, store *content.Store, users
 
 		switch page.Type {
 		case "menu":
-			if !navigateMenu(s, page, &stack, site) {
+			if !navigateMenu(ctx, s, page, &stack, site, users, state) {
 				return
 			}
 		case "applet":
@@ -63,9 +63,11 @@ func runSite(ctx context.Context, s *server.Session, store *content.Store, users
 	}
 }
 
-// navigateMenu affiche un menu, lit une touche et applique le choix. Renvoie
-// false si la session doit se terminer (erreur I/O ou quitter).
-func navigateMenu(s *server.Session, page *content.Page, stack *[]string, site *content.Site) bool {
+// navigateMenu affiche un menu, lit une touche et applique le choix. Une entrée
+// peut lancer un applet (e.Applet) au lieu de naviguer (e.Target) — un menu peut
+// donc proposer plusieurs applets au choix. Renvoie false si la session doit se
+// terminer (erreur I/O ou quitter).
+func navigateMenu(ctx context.Context, s *server.Session, page *content.Page, stack *[]string, site *content.Site, users *user.Store, state *SessionState) bool {
 	if err := renderMenu(s, page); err != nil {
 		return false
 	}
@@ -79,6 +81,20 @@ func navigateMenu(s *server.Session, page *content.Page, stack *[]string, site *
 		b.Ink(oascii.Red).Text("Choix invalide.").Newline()
 		return s.Write(b.String()) == nil
 	}
+
+	// Entrée-applet : on lance l'applet ; succès -> page Next (si définie),
+	// sinon on reste sur le menu.
+	if e.Applet != "" {
+		out := runApplet(ctx, s, e.Applet, page, users, state)
+		if out.Quit {
+			return false
+		}
+		if out.Done && e.Next != "" {
+			*stack = append(*stack, e.Next)
+		}
+		return true
+	}
+
 	switch e.Target {
 	case content.TargetQuit:
 		b := oascii.New()
@@ -97,6 +113,19 @@ func navigateMenu(s *server.Session, page *content.Page, stack *[]string, site *
 	return true
 }
 
+// runApplet résout un applet par son nom et l'exécute. Si l'applet est inconnu,
+// affiche une erreur et renvoie un Outcome neutre.
+func runApplet(ctx context.Context, s *server.Session, name string, page *content.Page, users *user.Store, state *SessionState) Outcome {
+	app, ok := lookupApplet(name)
+	if !ok {
+		b := oascii.New()
+		b.Ink(oascii.Red).Text("Applet \"" + name + "\" indisponible.").Newline()
+		_ = s.Write(b.String())
+		return Outcome{}
+	}
+	return app(ctx, s, &AppContext{Users: users, State: state, Page: page})
+}
+
 // runAppletPage affiche l'intro éventuelle, exécute l'applet et applique son
 // Outcome. Renvoie false si la session doit se terminer.
 func runAppletPage(ctx context.Context, s *server.Session, page *content.Page, stack *[]string, users *user.Store, state *SessionState) bool {
@@ -105,15 +134,7 @@ func runAppletPage(ctx context.Context, s *server.Session, page *content.Page, s
 			return false
 		}
 	}
-	app, ok := lookupApplet(page.Applet)
-	if !ok {
-		b := oascii.New()
-		b.Ink(oascii.Red).Text("Applet \"" + page.Applet + "\" indisponible.").Newline()
-		_ = s.Write(b.String())
-		*stack = (*stack)[:len(*stack)-1] // on quitte la page applet
-		return len(*stack) > 0
-	}
-	out := app(ctx, s, &AppContext{Users: users, State: state, Page: page})
+	out := runApplet(ctx, s, page.Applet, page, users, state)
 	if out.Quit {
 		return false
 	}

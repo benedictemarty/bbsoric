@@ -27,7 +27,10 @@ des sessions en cours).
 - **`pages`** : dictionnaire `identifiant → page`.
 
 ### Page `type: "menu"`
-Liste de choix (`entries`). Chaque entrée :
+Liste de choix (`entries`). Une entrée **navigue** (`target`) **ou lance un applet**
+(`applet` + `next`) — un même menu peut donc proposer plusieurs applets au choix.
+
+Entrée de navigation :
 ```json
 { "key": "1", "label": "Informations", "target": "info" }
 ```
@@ -36,6 +39,13 @@ Liste de choix (`entries`). Chaque entrée :
   - `__quit__` : termine la session,
   - `__back__` : page précédente (pile),
   - `__home__` : page de départ.
+
+Entrée-applet :
+```json
+{ "key": "1", "label": "Se connecter", "applet": "login", "next": "main" }
+```
+- `applet` : nom de l'applet à lancer quand l'entrée est choisie.
+- `next` (optionnel) : page où aller **après succès** de l'applet (vide = on reste sur le menu).
 
 ### Page `type: "page"`
 Écran de contenu (`lines`) ; **une touche** revient en arrière (mode caractère,

@@ -106,6 +106,48 @@ func TestAppletDispatchAndNext(t *testing.T) {
 	}
 }
 
+// TestMenuEntryApplet : une ENTRÉE de menu peut lancer un applet (au lieu de
+// naviguer) ; un même menu peut donc proposer plusieurs applets au choix.
+func TestMenuEntryApplet(t *testing.T) {
+	Register("entrylogin", func(ctx context.Context, s *server.Session, ac *AppContext) Outcome {
+		_ = s.Write("ENTRY-OK ")
+		return Outcome{Done: true}
+	})
+	const json = `{
+      "start": "accueil",
+      "pages": {
+        "accueil": { "type": "menu", "title": "BIENVENUE", "entries": [
+          { "key": "1", "label": "Se connecter", "applet": "entrylogin", "next": "main" },
+          { "key": "Q", "label": "Quitter", "target": "__quit__" }
+        ]},
+        "main": { "type": "menu", "title": "MENU PRINCIPAL", "entries": [
+          { "key": "Q", "label": "Quitter", "target": "__quit__" }
+        ]}
+      }
+    }`
+	addr, stop := startServerWithStore(t, storeFromJSON(t, json))
+	defer stop()
+
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+	r := bufio.NewReader(conn)
+
+	readUntil(t, r, conn, "Votre choix")
+	if _, err := conn.Write([]byte("1")); err != nil { // lance l'applet de l'entrée
+		t.Fatalf("write: %v", err)
+	}
+	out := readUntil(t, r, conn, "MENU PRINCIPAL")
+	if !strings.Contains(out, "ENTRY-OK") {
+		t.Errorf("l'applet de l'entrée n'a pas tourné:\n%s", out)
+	}
+	if !strings.Contains(out, "MENU PRINCIPAL") {
+		t.Errorf("navigation vers 'next' après l'applet échouée:\n%s", out)
+	}
+}
+
 // TestUnknownAppletIsGraceful : un applet non enregistré ne casse pas la session.
 func TestUnknownAppletIsGraceful(t *testing.T) {
 	const json = `{

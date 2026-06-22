@@ -38,7 +38,7 @@ func TestParseValid(t *testing.T) {
 
 func TestValidateErrors(t *testing.T) {
 	cases := map[string]string{
-		"start manquant":   `{"pages": {"a": {"type": "page"}}}`,
+		"start manquant":    `{"pages": {"a": {"type": "page"}}}`,
 		"start introuvable": `{"start": "x", "pages": {"a": {"type": "page"}}}`,
 		"cible introuvable": `{"start": "a", "pages": {"a": {"type": "menu", "entries": [{"key": "1", "target": "zzz"}]}}}`,
 		"type inconnu":      `{"start": "a", "pages": {"a": {"type": "truc"}}}`,

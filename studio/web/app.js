@@ -21,6 +21,7 @@ const el = (tag, props = {}, children = []) => {
 function setStatus(msg, kind) {
   const s = $('status'); s.textContent = msg || ''; s.className = 'status ' + (kind || '');
 }
+const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 // --- chargement ---
 async function loadSites() {
@@ -42,16 +43,83 @@ async function loadSite(name) {
   setStatus('chargé : ' + name, 'ok');
 }
 
-// --- liste des pages ---
-function renderPageList() {
-  const ul = $('page-list'); ul.innerHTML = '';
-  for (const id of Object.keys(site.pages)) {
-    const star = (id === site.start) ? '★ ' : '';
-    const b = el('button', { textContent: star + id + '  (' + (site.pages[id].type || '?') + ')' });
-    if (id === current) b.classList.add('sel');
-    b.onclick = () => { current = id; renderPageList(); renderForm(); refreshPreview(); };
-    ul.append(el('li', {}, b));
+// --- onglets ---
+function showTab(name) {
+  for (const p of document.querySelectorAll('.tabpane')) p.classList.toggle('active', p.id === 'tab-' + name);
+  for (const t of document.querySelectorAll('.tab')) t.classList.toggle('active', t.dataset.tab === name);
+}
+
+// --- graphe de navigation (onglet Navigation) ---
+const SPEC_LABEL = { '__quit__': '⏏ quitter', '__back__': '↩ retour', '__home__': '⌂ accueil' };
+
+// entryIsApplet : une entrée lance-t-elle un applet (vs naviguer) ?
+const entryIsApplet = (e) => Object.prototype.hasOwnProperty.call(e, 'applet');
+
+// targetsOf renvoie les pages réelles vers lesquelles pointe une page : cible
+// d'une entrée de navigation, page `next` d'une entrée-applet, ou next de page applet.
+function targetsOf(id) {
+  const p = site.pages[id] || {}; const t = [];
+  for (const e of p.entries || []) {
+    if (entryIsApplet(e)) { if (e.next && site.pages[e.next]) t.push(e.next); }
+    else if (site.pages[e.target]) t.push(e.target);
   }
+  if (p.next && site.pages[p.next]) t.push(p.next);
+  return t;
+}
+
+function renderPageList() {
+  const svg = $('graph'); if (!svg) return;
+  const ids = Object.keys(site.pages);
+  if (!ids.length) { svg.innerHTML = ''; return; }
+  const start = (site.start && site.pages[site.start]) ? site.start : ids[0];
+
+  // niveaux par parcours en largeur depuis la page de départ
+  const level = { [start]: 0 }; const q = [start];
+  while (q.length) { const id = q.shift(); for (const t of targetsOf(id)) if (level[t] == null) { level[t] = level[id] + 1; q.push(t); } }
+  let maxLv = 0; for (const id of ids) { if (level[id] == null) level[id] = 0; maxLv = Math.max(maxLv, level[id]); }
+  const byLv = {}; for (const id of ids) (byLv[level[id]] ||= []).push(id);
+
+  const NW = 168, NH = 48, GX = 72, GY = 28; const pos = {}; let rows = 0;
+  for (let lv = 0; lv <= maxLv; lv++) {
+    const arr = byLv[lv] || [];
+    arr.forEach((id, i) => { pos[id] = { x: lv * (NW + GX) + 16, y: i * (NH + GY) + 16 }; });
+    rows = Math.max(rows, arr.length);
+  }
+  const W = (maxLv + 1) * (NW + GX) + 16, H = Math.max(1, rows) * (NH + GY) + 16;
+
+  let edges = '';
+  for (const id of ids) {
+    const a = pos[id];
+    for (const t of targetsOf(id)) {
+      const b = pos[t];
+      const x1 = a.x + NW, y1 = a.y + NH / 2, x2 = b.x, y2 = b.y + NH / 2, mx = (x1 + x2) / 2;
+      edges += `<path d="M${x1} ${y1} C ${mx} ${y1} ${mx} ${y2} ${x2} ${y2}" class="edge" marker-end="url(#arrow)"/>`;
+    }
+  }
+  let nodes = '';
+  for (const id of ids) {
+    const p = site.pages[id], a = pos[id];
+    const specs = (p.entries || []).filter(e => SPEC_LABEL[e.target]).map(e => SPEC_LABEL[e.target]);
+    const apps = (p.entries || []).filter(entryIsApplet).map(e => '▶' + (e.applet || '?'));
+    if (p.type === 'applet') apps.push('▶' + (p.applet || '?'));
+    const extra = [...apps, ...specs].join('  ');
+    const sub = p.type + (extra ? '   ' + extra : '');
+    const cls = 'node' + (id === current ? ' sel' : '') + (id === start ? ' start' : '');
+    nodes += `<g class="${cls}" data-id="${esc(id)}" transform="translate(${a.x},${a.y})">`
+      + `<rect width="${NW}" height="${NH}" rx="6"/>`
+      + `<text x="10" y="20" class="nid">${id === start ? '★ ' : ''}${esc(id)}</text>`
+      + `<text x="10" y="37" class="nsub">${esc(sub)}</text>`
+      + `<text x="${NW - 13}" y="18" class="ndel" data-del="${esc(id)}">✕</text></g>`;
+  }
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+  svg.innerHTML = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="arrowhd"/></marker></defs>${edges}${nodes}`;
+
+  svg.querySelectorAll('g.node').forEach(g => g.addEventListener('click', ev => {
+    const id = g.getAttribute('data-id');
+    if (ev.target.hasAttribute('data-del')) { if (confirm('Supprimer « ' + id + ' » ?')) deletePage(id); return; }
+    current = id; renderPageList(); renderForm(); refreshPreview(); showTab('edit');
+  }));
 }
 
 function addPage(type) {
@@ -64,7 +132,7 @@ function addPage(type) {
   site.pages[id] = p;
   if (!site.start) site.start = id;
   current = id;
-  renderPageList(); renderForm(); refreshPreview();
+  renderPageList(); renderForm(); refreshPreview(); showTab('edit');
 }
 
 function deletePage(id) {
@@ -92,7 +160,8 @@ function renamePage(oldId, newId) {
 // --- formulaire d'édition de la page courante ---
 function renderForm() {
   const host = $('page-form'); host.innerHTML = '';
-  if (!current || !site.pages[current]) { host.append(el('p', { className: 'hint', textContent: 'Sélectionne une page.' })); return; }
+  $('edit-page-name').textContent = current || '(aucune)';
+  if (!current || !site.pages[current]) { host.append(el('p', { className: 'hint', textContent: 'Sélectionne une page dans Navigation.' })); return; }
   const p = site.pages[current];
 
   // id
@@ -156,13 +225,34 @@ function targetSelect(value, onChange) {
 
 function entriesEditor(p) {
   const tbl = el('table', { className: 'rows' });
-  tbl.append(el('tr', {}, [el('th', { textContent: 'Touche' }), el('th', { textContent: 'Libellé' }), el('th', { textContent: 'Cible' }), el('th')]));
+  tbl.append(el('tr', {}, ['Touche', 'Libellé', 'Type', 'Destination', ''].map(t => el('th', { textContent: t }))));
   (p.entries || []).forEach((e, i) => {
     const k = el('input', { type: 'text', value: e.key || '' }); k.oninput = () => { e.key = k.value; refreshPreview(); };
     const l = el('input', { type: 'text', value: e.label || '' }); l.oninput = () => { e.label = l.value; refreshPreview(); };
-    const t = targetSelect(e.target, v => { e.target = v; });
-    const del = el('button', { className: 'del', textContent: '✕' }); del.onclick = () => { p.entries.splice(i, 1); renderForm(); refreshPreview(); };
-    tbl.append(el('tr', {}, [td(k), td(l), td(t), td(del)]));
+
+    // Type d'entrée : navigation (→ page) ou applet (▶ applet)
+    const kind = el('select');
+    kind.append(el('option', { value: 'page', textContent: '→ page', selected: !entryIsApplet(e) }));
+    kind.append(el('option', { value: 'applet', textContent: '▶ applet', selected: entryIsApplet(e) }));
+    kind.onchange = () => {
+      if (kind.value === 'applet') { delete e.target; e.applet = e.applet || ''; e.next = e.next || ''; }
+      else { delete e.applet; delete e.next; e.target = e.target || Object.keys(site.pages)[0] || '__quit__'; }
+      renderForm(); refreshPreview();
+    };
+
+    let dest;
+    if (entryIsApplet(e)) {
+      const ap = el('input', { type: 'text', value: e.applet || '', placeholder: 'nom applet' });
+      ap.oninput = () => { e.applet = ap.value; refreshPreview(); };
+      const nx = pageSelect(e.next, v => { e.next = v; }, true); // page après succès
+      dest = el('div', { className: 'dest-applet' }, [ap, nx]);
+    } else {
+      dest = targetSelect(e.target, v => { e.target = v; });
+    }
+
+    const del = el('button', { className: 'del', textContent: '✕' });
+    del.onclick = () => { p.entries.splice(i, 1); renderForm(); refreshPreview(); };
+    tbl.append(el('tr', {}, [td(k), td(l), td(kind), td(dest), td(del)]));
   });
   const add = el('button', { textContent: '+ entrée' });
   add.onclick = () => { p.entries.push({ key: '', label: '', target: Object.keys(site.pages)[0] || '__quit__' }); renderForm(); };
@@ -237,4 +327,6 @@ $('btn-save').onclick = save;
 $('btn-dryrun').onclick = () => deploy(true);
 $('btn-deploy').onclick = () => deploy(false);
 for (const b of document.querySelectorAll('.add-row button')) b.onclick = () => addPage(b.dataset.type);
+for (const t of document.querySelectorAll('.tab')) t.onclick = () => showTab(t.dataset.tab);
+showTab('nav');
 loadSites(); // charge le 1er site, qui charge ses propres profils

@@ -41,10 +41,10 @@ func (h WelcomeHandler) Handle(ctx context.Context, s *server.Session) {
 func (h WelcomeHandler) banner(s *server.Session) error {
 	line := strings.Repeat("=", oricCols)
 	b := oascii.New()
-	b.Text(line).Newline()                                       // blanc (défaut ULA)
+	b.Text(line).Newline() // blanc (défaut ULA)
 	b.Ink(oascii.Yellow).Text(center("B B S   O R I C")).Newline()
 	b.Ink(oascii.Cyan).Text(center("bienvenue !")).Newline()
-	b.Text(line).Newline()                                       // blanc
+	b.Text(line).Newline() // blanc
 	b.Newline()
 	b.Ink(oascii.Green).Text("Serveur en ligne (" + bbsVersion + ").").Newline()
 	return s.Write(b.String())

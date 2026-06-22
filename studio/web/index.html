@@ -16,41 +16,58 @@
       <button id="btn-load">Charger</button>
       <span id="status" class="status"></span>
     </div>
+    <nav class="tabs">
+      <button class="tab" data-tab="nav">Navigation</button>
+      <button class="tab" data-tab="edit">Édition</button>
+      <button class="tab" data-tab="config">Configuration</button>
+    </nav>
   </header>
 
   <main>
-    <section class="col pages">
-      <h2>Pages</h2>
-      <ul id="page-list"></ul>
-      <div class="add-row">
-        <button data-type="menu">+ menu</button>
-        <button data-type="page">+ page</button>
-        <button data-type="applet">+ applet</button>
+    <!-- ONGLET NAVIGATION : graphe des pages -->
+    <section id="tab-nav" class="tabpane">
+      <div class="col">
+        <h2>Navigation du site</h2>
+        <div class="add-row">
+          <button data-type="menu">+ menu</button>
+          <button data-type="page">+ page</button>
+          <button data-type="applet">+ applet</button>
+        </div>
+        <div id="graph-wrap"><svg id="graph" xmlns="http://www.w3.org/2000/svg"></svg></div>
+        <p class="hint">★ départ · les flèches = cibles (menu/next) · clique un nœud pour l'éditer · ✕ supprime</p>
       </div>
     </section>
 
-    <section class="col editor">
-      <h2>Édition</h2>
-      <div id="page-form"><p class="hint">Sélectionne une page.</p></div>
-      <div class="actions">
-        <button id="btn-validate">Valider</button>
-        <button id="btn-save" class="primary">Enregistrer</button>
+    <!-- ONGLET ÉDITION : contenu de la page courante -->
+    <section id="tab-edit" class="tabpane two">
+      <div class="col editor">
+        <h2>Édition — <span id="edit-page-name">(aucune)</span></h2>
+        <div id="page-form"><p class="hint">Sélectionne une page dans Navigation.</p></div>
+        <div class="actions">
+          <button id="btn-validate">Valider</button>
+          <button id="btn-save" class="primary">Enregistrer</button>
+        </div>
       </div>
+      <div class="col preview">
+        <h2>Aperçu Oric (40 col)</h2>
+        <pre id="preview" class="oric"></pre>
+      </div>
+    </section>
 
-      <div class="deploy">
-        <h2>Déploiement</h2>
+    <!-- ONGLET CONFIGURATION : déploiement -->
+    <section id="tab-config" class="tabpane">
+      <div class="col">
+        <h2>Déploiement du site</h2>
+        <p class="hint">Profils propres au site courant (<code>deploy/profiles/&lt;site&gt;/</code>).</p>
         <div class="deploy-bar">
-          <select id="profile-select"></select>
+          <label>Profil
+            <select id="profile-select"></select>
+          </label>
           <button id="btn-dryrun">Simuler</button>
           <button id="btn-deploy" class="warn">Déployer</button>
         </div>
         <pre id="deploy-log" class="log"></pre>
       </div>
-    </section>
-
-    <section class="col preview">
-      <h2>Aperçu Oric (40 col)</h2>
-      <pre id="preview" class="oric"></pre>
     </section>
   </main>
 

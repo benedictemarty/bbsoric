@@ -20,8 +20,8 @@ const (
 
 // Site est l'ensemble du contenu navigable.
 type Site struct {
-	Start string           `json:"start"`           // identifiant de la page de départ
-	Pages map[string]*Page `json:"pages"`           // pages indexées par identifiant
+	Start string           `json:"start"` // identifiant de la page de départ
+	Pages map[string]*Page `json:"pages"` // pages indexées par identifiant
 }
 
 // Page est un menu (entries), un écran de contenu (lines) ou un applet.
@@ -45,11 +45,16 @@ type Line struct {
 	Ink  string `json:"ink,omitempty"` // nom de couleur (défaut blanc)
 }
 
-// Entry est un choix de menu : une touche qui mène à une cible.
+// Entry est un choix de menu : une touche qui, soit navigue vers une cible
+// (Target = page ou cible spéciale), soit lance un applet (Applet), auquel cas
+// Next est la page où aller après succès (vide = on reste sur le menu). Un même
+// menu peut ainsi proposer plusieurs applets au choix.
 type Entry struct {
 	Key    string `json:"key"`
 	Label  string `json:"label"`
-	Target string `json:"target"` // identifiant de page ou cible spéciale
+	Target string `json:"target,omitempty"` // identifiant de page ou cible spéciale
+	Applet string `json:"applet,omitempty"` // applet à lancer (au lieu de naviguer)
+	Next   string `json:"next,omitempty"`   // page après succès de l'applet
 }
 
 // Parse décode et valide un Site depuis du JSON.
@@ -91,6 +96,18 @@ func (s *Site) Validate() error {
 			return fmt.Errorf("page %q : type %q inconnu (menu|page|applet)", id, p.Type)
 		}
 		for _, e := range p.Entries {
+			if e.Applet != "" {
+				// Entrée-applet : Next (si présent) doit désigner une page.
+				if e.Next != "" {
+					if _, ok := s.Pages[e.Next]; !ok {
+						return fmt.Errorf("page %q : 'next' %q introuvable", id, e.Next)
+					}
+				}
+				continue
+			}
+			if e.Target == "" {
+				return fmt.Errorf("page %q : entrée %q sans 'target' ni 'applet'", id, e.Key)
+			}
 			if isSpecialTarget(e.Target) {
 				continue
 			}

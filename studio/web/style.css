@@ -17,15 +17,34 @@ h2 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing
 .status.ok { color: var(--primary); }
 .status.err { color: var(--warn); }
 
-main { display: grid; grid-template-columns: 220px 1fr 1fr; gap: 12px; padding: 12px; }
+/* onglets */
+.tabs { display: flex; gap: 4px; margin-top: 10px; }
+.tab { background: transparent; border: 1px solid var(--line); border-bottom: none;
+  border-radius: 6px 6px 0 0; padding: 7px 16px; }
+.tab.active { background: var(--bg); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+
+main { padding: 12px; }
+.tabpane { display: none; }
+.tabpane.active { display: block; }
+.tabpane.two.active { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .col { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
 
-#page-list { list-style: none; margin: 0 0 10px; padding: 0; }
-#page-list li { margin: 2px 0; }
-#page-list button { width: 100%; text-align: left; }
-#page-list button.sel { outline: 2px solid var(--accent); }
-.add-row { display: flex; gap: 6px; }
+.add-row { display: flex; gap: 6px; max-width: 360px; margin-bottom: 10px; }
 .add-row button { flex: 1; }
+
+/* graphe de navigation */
+#graph-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 6px; background: #15171b; max-height: 70vh; }
+#graph { display: block; }
+.edge { fill: none; stroke: #5a6; stroke-width: 1.6; }
+.arrowhd { fill: #5a6; }
+g.node { cursor: pointer; }
+g.node rect { fill: #2b2f37; stroke: var(--line); stroke-width: 1.5; }
+g.node:hover rect { stroke: var(--accent); }
+g.node.sel rect { stroke: var(--accent); stroke-width: 2.5; }
+g.node.start rect { fill: #2d3a2d; }
+.nid { fill: var(--fg); font: 600 13px system-ui, sans-serif; }
+.nsub { fill: #9aa; font: 11px system-ui, sans-serif; }
+.ndel { fill: var(--warn); font: 13px system-ui, sans-serif; text-anchor: middle; cursor: pointer; }
 
 label { display: block; margin: 8px 0; }
 label > span.lbl { display: inline-block; min-width: 70px; color: #9aa; }
@@ -37,6 +56,7 @@ table.rows { width: 100%; border-collapse: collapse; margin: 6px 0; }
 table.rows th { text-align: left; font-size: 12px; color: #9aa; font-weight: normal; }
 table.rows td { padding: 2px; }
 table.rows input, table.rows select { width: 100%; }
+.dest-applet { display: flex; gap: 4px; }
 
 button { background: #30343c; color: var(--fg); border: 1px solid var(--line);
   border-radius: 4px; padding: 6px 10px; cursor: pointer; }
