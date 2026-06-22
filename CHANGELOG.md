@@ -6,6 +6,13 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Studio — compositeur de ligne caractère par caractère)
+- Onglet Édition : un **compositeur** assemble une ligne caractère par caractère en mêlant
+  **texte normal** (champ « + texte ») et **glyphes BBS** (clic dans la palette), avec
+  **aperçu ULA en direct**. « Insérer comme ligne » ajoute la ligne à la page courante,
+  **regroupée en segments** selon le mode (alt vs normal). Remplace l'insertion glyphe-à-glyphe
+  dans le champ focalisé.
+
 ### Ajouté (Police « BBS Oric » — charset alternatif redéfini, art BBS)
 - L'Oric n'ayant pas de glyphes orientés BBS (contrairement à PETSCII/ATASCII), on
   **redéfinit son charset alternatif** : nouvelle **police BBS 6×8** (filets/cadres simples

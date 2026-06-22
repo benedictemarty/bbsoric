@@ -387,9 +387,53 @@ function drawScreen(buf) {
   ctx.putImageData(img, 0, 0);
 }
 
-// --- palette de glyphes BBS (charset alternatif) ---
-let lastInput = null; // dernier champ texte de l'éditeur ayant eu le focus
+// --- compositeur de ligne (texte normal + glyphes BBS) ---
+let comp = []; // suite d'items { ch, alt }
 
+function compGlyphRow(it, r) {
+  if (it.alt && window.ORIC_ALTCHARSET) return window.ORIC_ALTCHARSET[it.ch.charCodeAt(0) * 8 + r];
+  const c = it.ch.charCodeAt(0);
+  return (c >= 0x20 && c <= 0x7F && window.ORIC_CHARSET) ? window.ORIC_CHARSET[(c - 0x20) * 8 + r] : 0;
+}
+
+function drawComp() {
+  const cv = $('comp-canvas'); if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const img = ctx.createImageData(COLS * CW, CH);
+  for (let col = 0; col < COLS; col++) {
+    const it = comp[col];
+    for (let r = 0; r < CH; r++) {
+      const g = it ? compGlyphRow(it, r) : 0;
+      for (let x = 0; x < CW; x++) {
+        const on = (g >> (5 - x)) & 1, o = (r * COLS * CW + col * CW + x) * 4;
+        img.data[o] = img.data[o + 1] = img.data[o + 2] = on ? 238 : 0; img.data[o + 3] = 255;
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+function compAdd(ch, alt) { if (comp.length < COLS) comp.push({ ch, alt }); drawComp(); }
+
+function compInsert() {
+  if (!current || !site.pages[current]) { setStatus('sélectionne une page', 'err'); return; }
+  if (!comp.length) return;
+  // regroupe en segments par mode (alt vs normal)
+  const segs = [];
+  for (const it of comp) {
+    const last = segs[segs.length - 1];
+    if (last && last.alt === it.alt) last.text += it.ch;
+    else segs.push({ text: it.ch, alt: it.alt });
+  }
+  const line = { segments: segs.map(s => s.alt ? { text: s.text, altCharset: true } : { text: s.text }) };
+  const p = site.pages[current];
+  p.lines = p.lines || [];
+  p.lines.push(line);
+  comp = []; drawComp(); renderForm(); refreshPreview();
+  setStatus('ligne insérée ✓', 'ok');
+}
+
+// --- palette de glyphes BBS (alimente le compositeur) ---
 function glyphCanvas(code) {
   const cv = document.createElement('canvas'); cv.width = CW; cv.height = CH; cv.className = 'gly';
   const ctx = cv.getContext('2d'); const img = ctx.createImageData(CW, CH);
@@ -410,20 +454,11 @@ function renderPalette() {
     let blank = true;
     for (let r = 0; r < 8; r++) if (window.ORIC_ALTCHARSET[c * 8 + r]) { blank = false; break; }
     if (blank) continue;
-    const btn = el('button', { className: 'gly-btn', title: 'code « ' + String.fromCharCode(c) + ' » (0x' + c.toString(16) + ')' });
+    const btn = el('button', { className: 'gly-btn', title: 'glyphe « ' + String.fromCharCode(c) + ' » (0x' + c.toString(16) + ')' });
     btn.append(glyphCanvas(c));
-    btn.onclick = () => insertGlyph(String.fromCharCode(c));
+    btn.onclick = () => compAdd(String.fromCharCode(c), true);
     host.append(btn);
   }
-}
-
-function insertGlyph(ch) {
-  const inp = lastInput;
-  if (!inp) { setStatus('place le curseur dans un champ texte', 'err'); return; }
-  const s = inp.selectionStart ?? inp.value.length, e = inp.selectionEnd ?? s;
-  inp.value = inp.value.slice(0, s) + ch + inp.value.slice(e);
-  inp.dispatchEvent(new Event('input'));
-  inp.focus(); inp.setSelectionRange(s + ch.length, s + ch.length);
 }
 
 let previewTimer = null;
@@ -531,10 +566,12 @@ $('btn-save-profile').onclick = saveProfile;
 $('profile-select').onchange = () => loadProfile($('profile-select').value);
 $('btn-add-page').onclick = () => addPage();
 for (const t of document.querySelectorAll('.tab')) t.onclick = () => showTab(t.dataset.tab);
-// mémorise le dernier champ texte focalisé (pour l'insertion de glyphes).
-$('page-form').addEventListener('focusin', (e) => {
-  if (e.target.tagName === 'INPUT' && e.target.type === 'text') lastInput = e.target;
-});
+// compositeur de ligne
+$('comp-add-text').onclick = () => { const v = $('comp-text').value; for (const ch of v) compAdd(ch, false); $('comp-text').value = ''; };
+$('comp-text').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('comp-add-text').click(); });
+$('comp-bs').onclick = () => { comp.pop(); drawComp(); };
+$('comp-clear').onclick = () => { comp = []; drawComp(); };
+$('comp-insert').onclick = compInsert;
 showTab('nav');
 renderPalette();
 loadSites(); // charge le 1er site, qui charge ses propres profils

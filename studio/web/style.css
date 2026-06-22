@@ -83,7 +83,10 @@ button.del { padding: 4px 8px; color: var(--warn); }
 .style-ctl .tog { display: inline-flex; align-items: center; gap: 2px; min-width: auto; margin: 0; color: #9aa; }
 
 hr.sep { border: none; border-top: 1px solid var(--line); margin: 18px 0 12px; }
-.palette-box { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 10px; }
+.composer-box { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 10px; }
+.comp-canvas { width: 480px; max-width: 100%; height: auto; image-rendering: pixelated; background: #000; border-radius: 4px; display: block; }
+.comp-row { display: flex; gap: 6px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
+.comp-row > input { flex: 1; min-width: 120px; }
 .palette { display: flex; flex-wrap: wrap; gap: 4px; }
 .gly-btn { padding: 3px; line-height: 0; background: #1b1d22; }
 .gly-btn:hover { border-color: var(--accent); }
