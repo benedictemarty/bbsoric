@@ -41,13 +41,29 @@ type Page struct {
 	Next    string  `json:"next,omitempty"`    // page après succès de l'applet
 }
 
-// Line est une ligne de texte avec des attributs Oric optionnels.
-type Line struct {
-	Text         string `json:"text"`
-	Ink          string `json:"ink,omitempty"`          // encre (couleur du texte, défaut blanc)
-	Paper        string `json:"paper,omitempty"`        // fond (défaut noir si absent)
+// Style regroupe les attributs sériels Oric (Téletexte). Chacun est optionnel ;
+// non renseigné = valeur par défaut (encre blanche, fond noir, pas d'effet).
+type Style struct {
+	Ink          string `json:"ink,omitempty"`          // encre (couleur du texte)
+	Paper        string `json:"paper,omitempty"`        // fond
 	Blink        bool   `json:"blink,omitempty"`        // clignotement
 	DoubleHeight bool   `json:"doubleHeight,omitempty"` // double hauteur
+	AltCharset   bool   `json:"altCharset,omitempty"`   // charset alternatif (semi-graphiques)
+	Inverse      bool   `json:"inverse,omitempty"`      // vidéo inverse
+}
+
+// Span est un fragment de texte stylé (pour le multicolore sur une même ligne).
+type Span struct {
+	Text  string `json:"text"`
+	Style        // attributs promus au niveau du fragment
+}
+
+// Line est une ligne d'écran. Soit du texte simple (Text + Style), soit une
+// suite de fragments stylés (Segments) pour mêler plusieurs styles sur la ligne.
+type Line struct {
+	Text     string `json:"text,omitempty"`
+	Style           // attributs promus (ligne simple)
+	Segments []Span `json:"segments,omitempty"`
 }
 
 // Entry est un choix de menu : une touche qui, soit navigue vers une cible
@@ -157,11 +173,11 @@ func DefaultSite() *Site {
 				{Text: " l'esprit des serveurs retro type"},
 				{Text: " PETSCII BBS / ATASCII."},
 				{Text: ""},
-				{Text: " Contenu pilote par un fichier JSON", Ink: "cyan"},
-				{Text: " modifiable a chaud.", Ink: "cyan"},
+				{Text: " Contenu pilote par un fichier JSON", Style: Style{Ink: "cyan"}},
+				{Text: " modifiable a chaud.", Style: Style{Ink: "cyan"}},
 			}},
 			"guestbook": {Title: "LIVRE D'OR", Lines: []Line{
-				{Text: " (bientot disponible)", Ink: "magenta"},
+				{Text: " (bientot disponible)", Style: Style{Ink: "magenta"}},
 				{Text: " La messagerie arrive au Sprint 3."},
 			}},
 		},

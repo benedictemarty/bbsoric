@@ -72,6 +72,18 @@ pre.oric {
 }
 @keyframes oric-blink { 50% { opacity: 0; } }
 pre.oric .blink { animation: oric-blink 1s step-start infinite; }
+/* approximation du charset alternatif (semi-graphiques) : rendu fidèle = émulateur */
+pre.oric .alt { border-bottom: 1px dotted currentColor; }
+
+/* éditeur de lignes / segments */
+.lines { margin: 6px 0; }
+.line-card { border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; margin: 6px 0; }
+.line-head { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
+.line-head .lbl { flex: 1; min-width: auto; }
+.seg-row { display: flex; gap: 4px; align-items: center; margin: 3px 0; flex-wrap: wrap; }
+.seg-row > input[type=text] { flex: 1; min-width: 120px; }
+.style-ctl { display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.style-ctl .tog { display: inline-flex; align-items: center; gap: 2px; min-width: auto; margin: 0; color: #9aa; }
 
 hr.sep { border: none; border-top: 1px solid var(--line); margin: 18px 0 12px; }
 .deploy { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }

@@ -34,19 +34,31 @@ Une page a un **titre** et, **optionnellement**, du **texte** (`lines`) et/ou de
 - **sans `entries`** → écran de **contenu** : une touche revient en arrière
   (mode caractère, cf. ADR-0002).
 
-**Lignes de texte** (`lines`) — attributs Oric par ligne :
+**Lignes de texte** (`lines`). Une ligne porte un **style** Oric (tous optionnels) :
 ```json
-{ "text": " ALERTE ", "ink": "white", "paper": "red", "blink": true, "doubleHeight": false }
+{ "text": " ALERTE ", "ink": "white", "paper": "red", "blink": true,
+  "doubleHeight": false, "altCharset": false, "inverse": false }
 ```
-- `ink` (optionnel) : couleur du texte — `black red green yellow blue magenta cyan white` (défaut blanc).
-- `paper` (optionnel) : couleur de **fond** (mêmes noms ; défaut noir si absent).
-- `blink` (optionnel) : **clignotement**.
-- `doubleHeight` (optionnel) : **double hauteur**.
+- `ink` : couleur du texte — `black red green yellow blue magenta cyan white` (défaut blanc).
+- `paper` : couleur de **fond** (mêmes noms ; défaut noir).
+- `blink` : **clignotement** · `doubleHeight` : **double hauteur** ·
+  `altCharset` : **charset alternatif (semi-graphiques)** · `inverse` : **vidéo inverse**.
 
-> Rappel Oric : chaque attribut **occupe une case écran** (un changement de couleur « mange »
-> une colonne) et l'ULA réinitialise encre/fond à chaque début de ligne — d'où l'application
-> des attributs **par ligne**. Pour des effets plus poussés (couleurs multiples sur une ligne,
-> ASCII-art, animation, interaction), écrire un **applet** (cf. `studio/README.md` / ADR-0001).
+**Multicolore sur une ligne** — découper en `segments`, chacun avec son propre style :
+```json
+{ "segments": [
+  { "text": "Score ", "ink": "white" },
+  { "text": "42", "ink": "yellow", "blink": true },
+  { "text": " GAME OVER ", "ink": "white", "paper": "red", "inverse": true }
+]}
+```
+Dans une ligne à segments, un attribut non renseigné reprend la **valeur par défaut**
+(encre blanche, fond noir, pas d'effet) ; le moteur n'émet que les **changements** d'attribut.
+
+> Rappel Oric : chaque octet d'attribut **occupe une case écran** (un changement « mange » une
+> colonne) et l'ULA réinitialise les attributs à chaque début de ligne. Pour du **dynamique**
+> (animation, valeurs calculées, interaction, positionnement, art semi-graphique élaboré),
+> écrire un **applet** (cf. `studio/README.md` / ADR-0001).
 
 **Choix** (`entries`) — une entrée **navigue** (`target`) **ou lance un applet** (`applet`
 + `next`). Un menu peut donc proposer plusieurs applets au choix.

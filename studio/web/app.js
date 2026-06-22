@@ -249,34 +249,78 @@ function entriesEditor(p) {
   return el('div', {}, [el('span', { className: 'lbl', textContent: 'Entrées' }), tbl, add]);
 }
 
+const STYLE_KEYS = ['ink', 'paper', 'blink', 'doubleHeight', 'altCharset', 'inverse'];
+function assignStyle(dst, src) { for (const k of STYLE_KEYS) if (src[k] !== undefined) dst[k] = src[k]; }
+function clearLineStyle(ln) { delete ln.text; for (const k of STYLE_KEYS) delete ln[k]; }
+
+// styleControls : encre, fond, et bascules C(lignotement)/H(auteur)/A(lt)/I(nverse),
+// liées à l'objet o (ligne simple ou segment).
+function styleControls(o) {
+  const ink = el('select');
+  for (const c of INKS) ink.append(el('option', { value: c, textContent: c, selected: (o.ink || 'white') === c }));
+  ink.onchange = () => { o.ink = ink.value; refreshPreview(); };
+
+  const paper = el('select');
+  paper.append(el('option', { value: '', textContent: 'fond —', selected: !o.paper }));
+  for (const c of INKS) paper.append(el('option', { value: c, textContent: 'fond ' + c, selected: o.paper === c }));
+  paper.onchange = () => { if (paper.value) o.paper = paper.value; else delete o.paper; refreshPreview(); };
+
+  const tog = (key, label, title) => {
+    const cb = el('input', { type: 'checkbox', checked: !!o[key] });
+    cb.onchange = () => { if (cb.checked) o[key] = true; else delete o[key]; refreshPreview(); };
+    return el('label', { className: 'tog', title }, [cb, document.createTextNode(label)]);
+  };
+  return el('span', { className: 'style-ctl' }, [
+    ink, paper,
+    tog('blink', 'C', 'Clignotement'),
+    tog('doubleHeight', 'H', 'Double hauteur'),
+    tog('altCharset', 'A', 'Semi-graphiques'),
+    tog('inverse', 'I', 'Inverse'),
+  ]);
+}
+
 function linesEditor(p) {
-  const tbl = el('table', { className: 'rows' });
-  tbl.append(el('tr', {}, ['Texte', 'Encre', 'Fond', 'Cli', '2×H', ''].map(t => el('th', { textContent: t }))));
+  const wrap = el('div', { className: 'lines' });
   (p.lines || []).forEach((ln, i) => {
-    const t = el('input', { type: 'text', value: ln.text || '' }); t.oninput = () => { ln.text = t.value; refreshPreview(); };
+    const card = el('div', { className: 'line-card' });
+    const head = el('div', { className: 'line-head' });
+    head.append(el('span', { className: 'lbl', textContent: 'Ligne ' + (i + 1) + (ln.segments ? ' (segments)' : '') }));
 
-    const ink = el('select');
-    for (const c of INKS) ink.append(el('option', { value: c, textContent: c, selected: (ln.ink || 'white') === c }));
-    ink.onchange = () => { ln.ink = ink.value; refreshPreview(); };
+    if (ln.segments) {
+      const merge = el('button', { textContent: 'fusionner' });
+      merge.onclick = () => { const s0 = ln.segments[0] || {}; const np = { text: s0.text || '' }; assignStyle(np, s0); delete ln.segments; Object.assign(ln, np); renderForm(); refreshPreview(); };
+      head.append(merge);
+    } else {
+      const split = el('button', { textContent: 'segments' });
+      split.onclick = () => { const seg = { text: ln.text || '' }; assignStyle(seg, ln); clearLineStyle(ln); ln.segments = [seg]; renderForm(); refreshPreview(); };
+      head.append(split);
+    }
+    const delL = el('button', { className: 'del', textContent: '✕' });
+    delL.onclick = () => { p.lines.splice(i, 1); renderForm(); refreshPreview(); };
+    head.append(delL);
+    card.append(head);
 
-    // fond (paper) : « — » = aucun (noir par défaut)
-    const paper = el('select');
-    paper.append(el('option', { value: '', textContent: '—', selected: !ln.paper }));
-    for (const c of INKS) paper.append(el('option', { value: c, textContent: c, selected: ln.paper === c }));
-    paper.onchange = () => { if (paper.value) ln.paper = paper.value; else delete ln.paper; refreshPreview(); };
-
-    const blink = el('input', { type: 'checkbox', checked: !!ln.blink });
-    blink.onchange = () => { if (blink.checked) ln.blink = true; else delete ln.blink; refreshPreview(); };
-
-    const dh = el('input', { type: 'checkbox', checked: !!ln.doubleHeight });
-    dh.onchange = () => { if (dh.checked) ln.doubleHeight = true; else delete ln.doubleHeight; refreshPreview(); };
-
-    const del = el('button', { className: 'del', textContent: '✕' }); del.onclick = () => { p.lines.splice(i, 1); renderForm(); refreshPreview(); };
-    tbl.append(el('tr', {}, [td(t), td(ink), td(paper), td(blink), td(dh), td(del)]));
+    if (ln.segments) {
+      ln.segments.forEach((seg, j) => {
+        const t = el('input', { type: 'text', value: seg.text || '', placeholder: 'fragment' });
+        t.oninput = () => { seg.text = t.value; refreshPreview(); };
+        const delS = el('button', { className: 'del', textContent: '✕' });
+        delS.onclick = () => { ln.segments.splice(j, 1); if (!ln.segments.length) delete ln.segments; renderForm(); refreshPreview(); };
+        card.append(el('div', { className: 'seg-row' }, [t, styleControls(seg), delS]));
+      });
+      const addS = el('button', { textContent: '+ segment' });
+      addS.onclick = () => { ln.segments.push({ text: '' }); renderForm(); };
+      card.append(addS);
+    } else {
+      const t = el('input', { type: 'text', value: ln.text || '' });
+      t.oninput = () => { ln.text = t.value; refreshPreview(); };
+      card.append(el('div', { className: 'seg-row' }, [t, styleControls(ln)]));
+    }
+    wrap.append(card);
   });
   const add = el('button', { textContent: '+ ligne' });
-  add.onclick = () => { p.lines.push({ text: '', ink: 'white' }); renderForm(); };
-  return el('div', {}, [el('span', { className: 'lbl', textContent: 'Lignes' }), tbl, add]);
+  add.onclick = () => { p.lines.push({ text: '' }); renderForm(); };
+  return el('div', {}, [el('span', { className: 'lbl', textContent: 'Lignes' }), wrap, add]);
 }
 
 const td = (c) => el('td', {}, c);

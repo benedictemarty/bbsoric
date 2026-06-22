@@ -37,21 +37,46 @@ func span(text string, c oascii.Color) string {
 	return fmt.Sprintf(`<span style="color:%s">%s</span>`, css(c), html.EscapeString(text))
 }
 
-// lineSpan rend une ligne de contenu avec ses attributs Oric : encre, fond,
-// clignotement (classe CSS), double hauteur.
-func lineSpan(ln content.Line) string {
-	style := "color:" + css(content.Ink(ln.Ink))
-	if ln.Paper != "" {
-		style += ";background:" + css(content.Ink(ln.Paper))
+// spanHTML rend un fragment stylé : encre/fond (inverse = échange), double
+// hauteur, clignotement et charset alternatif (classes CSS ; semi-graphiques
+// seulement APPROXIMÉS — rendu fidèle = émulateur/Oric).
+func spanHTML(text string, st content.Style) string {
+	fg := content.Ink(st.Ink)
+	bg := oascii.Black
+	if st.Paper != "" {
+		bg = content.Ink(st.Paper)
 	}
-	if ln.DoubleHeight {
+	if st.Inverse {
+		fg, bg = bg, fg
+	}
+	style := "color:" + css(fg) + ";background:" + css(bg)
+	if st.DoubleHeight {
 		style += ";font-size:1.7em;line-height:1"
 	}
-	cls := ""
-	if ln.Blink {
-		cls = ` class="blink"`
+	var classes []string
+	if st.Blink {
+		classes = append(classes, "blink")
 	}
-	return fmt.Sprintf(`<span%s style="%s">%s</span>`, cls, style, html.EscapeString(ln.Text))
+	if st.AltCharset {
+		classes = append(classes, "alt")
+	}
+	cls := ""
+	if len(classes) > 0 {
+		cls = ` class="` + strings.Join(classes, " ") + `"`
+	}
+	return fmt.Sprintf(`<span%s style="%s">%s</span>`, cls, style, html.EscapeString(text))
+}
+
+// lineSpan rend une ligne : texte simple stylé, ou suite de segments stylés.
+func lineSpan(ln content.Line) string {
+	if len(ln.Segments) == 0 {
+		return spanHTML(ln.Text, ln.Style)
+	}
+	var b strings.Builder
+	for _, sp := range ln.Segments {
+		b.WriteString(spanHTML(sp.Text, sp.Style))
+	}
+	return b.String()
 }
 
 // rule trace une règle pleine largeur (40 colonnes), blanche.

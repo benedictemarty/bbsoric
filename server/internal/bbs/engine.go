@@ -211,14 +211,55 @@ func renderContent(s *server.Session, p *content.Page) error {
 	return s.Write(b.String())
 }
 
-// writeLine ajoute une ligne de contenu avec ses attributs Oric : fond (paper),
-// clignotement / double hauteur (un seul octet), puis encre et texte.
+// styleState suit les attributs courants le long d'une ligne pour n'émettre que
+// les changements (un octet d'attribut occupe une case écran : on minimise).
+type styleState struct {
+	ink, paper               oascii.Color
+	blink, dbl, alt, inverse bool
+}
+
+// defaultStyleState : état d'une nouvelle ligne (l'ULA réinitialise à chaque CR).
+func defaultStyleState() styleState {
+	return styleState{ink: oascii.White, paper: oascii.Black}
+}
+
+// emitStyle émet les attributs nécessaires pour passer de cur à st (valeurs non
+// renseignées = défaut), puis met cur à jour.
+func emitStyle(b *oascii.Builder, cur *styleState, st content.Style) {
+	ink := content.Ink(st.Ink) // blanc si vide
+	paper := oascii.Black
+	if st.Paper != "" {
+		paper = content.Ink(st.Paper)
+	}
+	if paper != cur.paper {
+		b.Paper(paper)
+		cur.paper = paper
+	}
+	if st.Blink != cur.blink || st.DoubleHeight != cur.dbl || st.AltCharset != cur.alt {
+		b.Attrs(st.Blink, st.DoubleHeight, st.AltCharset)
+		cur.blink, cur.dbl, cur.alt = st.Blink, st.DoubleHeight, st.AltCharset
+	}
+	if st.Inverse != cur.inverse {
+		b.Inverse(st.Inverse)
+		cur.inverse = st.Inverse
+	}
+	if ink != cur.ink {
+		b.Ink(ink)
+		cur.ink = ink
+	}
+}
+
+// writeLine rend une ligne : texte simple stylé, ou suite de segments stylés
+// (multicolore/multi-attribut sur la même ligne).
 func writeLine(b *oascii.Builder, ln content.Line) {
-	if ln.Paper != "" {
-		b.Paper(content.Ink(ln.Paper))
+	spans := ln.Segments
+	if len(spans) == 0 {
+		spans = []content.Span{{Text: ln.Text, Style: ln.Style}}
 	}
-	if ln.Blink || ln.DoubleHeight {
-		b.Attrs(ln.Blink, ln.DoubleHeight, false)
+	cur := defaultStyleState()
+	for _, sp := range spans {
+		emitStyle(b, &cur, sp.Style)
+		b.Text(sp.Text)
 	}
-	b.Ink(content.Ink(ln.Ink)).Text(ln.Text).Newline()
+	b.Newline()
 }

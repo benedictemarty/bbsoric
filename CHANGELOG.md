@@ -6,15 +6,20 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
-### Ajouté (Contenu — attributs Oric par ligne : fond, clignotement, double hauteur)
-- `internal/content` : une `Line` accepte `paper` (fond), `blink` (clignotement) et
-  `doubleHeight` (double hauteur), en plus de `ink`.
-- `internal/oascii` : `Builder.Attrs(blink, doubleHeight, altCharset)` (un seul octet).
-- `server/internal/bbs` : rendu des lignes avec ces attributs (`writeLine`) — émission des
-  octets Téletexte vérifiée (hexdump : `paper`/`blink`/`ink`).
-- Studio : l'éditeur de lignes propose **Fond / Cli / 2×H** ; l'aperçu rend le fond, le
-  clignotement (animation CSS) et la double hauteur.
-- Docs `content.md` (attributs par ligne + rappel OASCII). Tests oascii + aperçu.
+### Ajouté (Contenu — style Oric complet + multicolore par segments)
+- `internal/content` : un **`Style`** (encre, fond, **clignotement**, **double hauteur**,
+  **charset alternatif/semi-graphiques**, **inverse**) porté par une ligne **et** par chaque
+  **`Span`** ; une `Line` peut être un texte simple ou une suite de `segments` stylés →
+  **plusieurs couleurs/attributs sur une même ligne**.
+- `internal/oascii` : `InverseAttr`/`Builder.Inverse` (vidéo inverse) ; `Builder.Attrs`
+  (clignotement/double hauteur/charset alt en un octet).
+- `server/internal/bbs` : rendu par **delta de style** (`writeLine`/`emitStyle`) — n'émet que
+  les changements d'attribut le long de la ligne (économie de cases écran).
+- Studio : éditeur de lignes **par carte** avec contrôles encre/fond + bascules C/H/A/I et
+  **découpage en segments** ; l'aperçu rend fond, clignotement, double hauteur, inverse
+  (échange encre/fond) et approxime les semi-graphiques.
+- Docs `content.md`. Tests : oascii (Inverse), aperçu (segments/inverse/alt), moteur
+  (multicolore). Octets Téletexte vérifiés (hexdump).
 
 ### Corrigé (Login : « Se connecter » revenait au menu via nc/clients ligne)
 - Un client en mode ligne (nc…) envoie « 1\r\n » : le menu lisait `1` (touche unique) mais

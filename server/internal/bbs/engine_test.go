@@ -2,6 +2,7 @@ package bbs
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"io"
 	"log/slog"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/benedictemarty/bbsoric/internal/content"
+	"github.com/benedictemarty/bbsoric/internal/oascii"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 )
 
@@ -145,6 +147,23 @@ func TestMenuEntryApplet(t *testing.T) {
 	}
 	if !strings.Contains(out, "MENU PRINCIPAL") {
 		t.Errorf("navigation vers 'next' après l'applet échouée:\n%s", out)
+	}
+}
+
+// TestWriteLineSegments : une ligne à segments émet des encres différentes sur
+// la même ligne (multicolore), une seule fois chacune (delta de style).
+func TestWriteLineSegments(t *testing.T) {
+	b := oascii.New()
+	writeLine(b, content.Line{Segments: []content.Span{
+		{Text: "A", Style: content.Style{Ink: "yellow"}},
+		{Text: "B", Style: content.Style{Ink: "white"}},
+	}})
+	out := b.Bytes()
+	if !bytes.Contains(out, []byte{oascii.InkAttr(oascii.Yellow), 'A'}) {
+		t.Errorf("segment jaune 'A' attendu : %v", out)
+	}
+	if !bytes.Contains(out, []byte{oascii.InkAttr(oascii.White), 'B'}) {
+		t.Errorf("segment blanc 'B' attendu : %v", out)
 	}
 }
 

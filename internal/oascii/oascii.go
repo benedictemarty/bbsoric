@@ -53,6 +53,15 @@ func InkAttr(c Color) byte { return byte(c) & 0x07 } // 0–7
 // PaperAttr renvoie l'octet d'attribut qui fixe la couleur de fond.
 func PaperAttr(c Color) byte { return 0x10 | (byte(c) & 0x07) } // 16–23
 
+// InverseAttr renvoie l'octet d'attribut vidéo inverse (groupe 24–31) :
+// 29 active la vidéo inverse, 28 la désactive.
+func InverseAttr(on bool) byte {
+	if on {
+		return 29
+	}
+	return 28
+}
+
 // TextAttr renvoie l'octet d'attribut texte (clignotement / double hauteur /
 // charset alternatif).
 func TextAttr(blink, doubleHeight, altCharset bool) byte {
@@ -133,6 +142,12 @@ func (b *Builder) AltCharset(on bool) *Builder {
 func (b *Builder) Attrs(blink, doubleHeight, altCharset bool) *Builder {
 	b.blink, b.dbl, b.alt = blink, doubleHeight, altCharset
 	b.buf.WriteByte(TextAttr(blink, doubleHeight, altCharset))
+	return b
+}
+
+// Inverse active/désactive la vidéo inverse.
+func (b *Builder) Inverse(on bool) *Builder {
+	b.buf.WriteByte(InverseAttr(on))
 	return b
 }
 
