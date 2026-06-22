@@ -24,18 +24,20 @@ type Site struct {
 	Pages map[string]*Page `json:"pages"` // pages indexées par identifiant
 }
 
-// Page est un menu (entries), un écran de contenu (lines) ou un applet.
+// Page est un écran du BBS. Type unique : elle affiche optionnellement du texte
+// (Lines) et/ou des choix (Entries).
+//   - avec Entries  → écran interactif (menu) : une touche route vers la cible
+//     de l'entrée (ou lance son applet) ;
+//   - sans Entries  → écran de contenu : une touche revient en arrière.
 //
-// Type "applet" : la page (texte) délègue son comportement interactif à un
-// applet Go enregistré sous le nom Applet (login, jeu…). Lines, si présent, est
-// affiché en intro avant de lancer l'applet ; Next est la page où aller après
-// succès de l'applet (cf. ADR-0001/0002).
+// Applet (optionnel, compat JSON écrit à la main) : à l'arrivée sur la page, on
+// lance l'applet nommé puis on va vers Next. Le studio ne crée plus de telles
+// pages — les applets se lancent via une entrée de menu (Entry.Applet).
 type Page struct {
 	Title   string  `json:"title"`
-	Type    string  `json:"type"`              // "menu", "page" ou "applet"
-	Lines   []Line  `json:"lines,omitempty"`   // contenu (type "page" / intro "applet")
-	Entries []Entry `json:"entries,omitempty"` // choix (type "menu")
-	Applet  string  `json:"applet,omitempty"`  // nom de l'applet (type "applet")
+	Lines   []Line  `json:"lines,omitempty"`   // texte (optionnel)
+	Entries []Entry `json:"entries,omitempty"` // choix (optionnel → menu)
+	Applet  string  `json:"applet,omitempty"`  // applet auto-lancé à l'arrivée (compat)
 	Next    string  `json:"next,omitempty"`    // page après succès de l'applet
 }
 
@@ -81,19 +83,11 @@ func (s *Site) Validate() error {
 		return fmt.Errorf("page de départ %q introuvable", s.Start)
 	}
 	for id, p := range s.Pages {
-		switch p.Type {
-		case "menu", "page":
-		case "applet":
-			if p.Applet == "" {
-				return fmt.Errorf("page %q : type 'applet' sans champ 'applet'", id)
+		// Page applet (auto-lancé) : Next, si présent, doit désigner une page.
+		if p.Applet != "" && p.Next != "" {
+			if _, ok := s.Pages[p.Next]; !ok {
+				return fmt.Errorf("page %q : 'next' %q introuvable", id, p.Next)
 			}
-			if p.Next != "" {
-				if _, ok := s.Pages[p.Next]; !ok {
-					return fmt.Errorf("page %q : 'next' %q introuvable", id, p.Next)
-				}
-			}
-		default:
-			return fmt.Errorf("page %q : type %q inconnu (menu|page|applet)", id, p.Type)
 		}
 		for _, e := range p.Entries {
 			if e.Applet != "" {
@@ -143,19 +137,19 @@ func DefaultSite() *Site {
 	return &Site{
 		Start: "main",
 		Pages: map[string]*Page{
-			"main": {Title: "MENU PRINCIPAL", Type: "menu", Entries: []Entry{
+			"main": {Title: "MENU PRINCIPAL", Entries: []Entry{
 				{Key: "1", Label: "Informations systeme", Target: "info"},
 				{Key: "2", Label: "A propos du BBS", Target: "about"},
 				{Key: "3", Label: "Livre d'or", Target: "guestbook"},
 				{Key: "Q", Label: "Quitter", Target: TargetQuit},
 			}},
-			"info": {Title: "INFORMATIONS SYSTEME", Type: "page", Lines: []Line{
+			"info": {Title: "INFORMATIONS SYSTEME", Lines: []Line{
 				{Text: " Serveur  - BBS Oric (Go)"},
 				{Text: " Ecran    - TEXT 40x28, OASCII"},
 				{Text: " Port     - 6502 (telnet) / 6992 (TLS)"},
 				{Text: " Encodage - ASCII + attributs Teletexte"},
 			}},
-			"about": {Title: "A PROPOS", Type: "page", Lines: []Line{
+			"about": {Title: "A PROPOS", Lines: []Line{
 				{Text: " BBS pour ordinateurs Oric, dans"},
 				{Text: " l'esprit des serveurs retro type"},
 				{Text: " PETSCII BBS / ATASCII."},
@@ -163,7 +157,7 @@ func DefaultSite() *Site {
 				{Text: " Contenu pilote par un fichier JSON", Ink: "cyan"},
 				{Text: " modifiable a chaud.", Ink: "cyan"},
 			}},
-			"guestbook": {Title: "LIVRE D'OR", Type: "page", Lines: []Line{
+			"guestbook": {Title: "LIVRE D'OR", Lines: []Line{
 				{Text: " (bientot disponible)", Ink: "magenta"},
 				{Text: " La messagerie arrive au Sprint 3."},
 			}},

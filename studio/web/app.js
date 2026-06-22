@@ -101,9 +101,10 @@ function renderPageList() {
     const p = site.pages[id], a = pos[id];
     const specs = (p.entries || []).filter(e => SPEC_LABEL[e.target]).map(e => SPEC_LABEL[e.target]);
     const apps = (p.entries || []).filter(entryIsApplet).map(e => '▶' + (e.applet || '?'));
-    if (p.type === 'applet') apps.push('▶' + (p.applet || '?'));
+    if (p.applet !== undefined) apps.push('▶' + (p.applet || '?'));
+    const kind = (p.applet !== undefined) ? 'applet' : ((p.entries && p.entries.length) ? 'menu' : 'page');
     const extra = [...apps, ...specs].join('  ');
-    const sub = p.type + (extra ? '   ' + extra : '');
+    const sub = kind + (extra ? '   ' + extra : '');
     const cls = 'node' + (id === current ? ' sel' : '') + (id === start ? ' start' : '');
     nodes += `<g class="${cls}" data-id="${esc(id)}" transform="translate(${a.x},${a.y})">`
       + `<rect width="${NW}" height="${NH}" rx="6"/>`
@@ -122,14 +123,11 @@ function renderPageList() {
   }));
 }
 
-function addPage(type) {
-  let i = 1, id = type + i;
-  while (site.pages[id]) id = type + (++i);
-  const p = { title: id.toUpperCase(), type };
-  if (type === 'menu') p.entries = [];
-  else if (type === 'applet') { p.applet = ''; p.next = ''; p.lines = []; }
-  else p.lines = [];
-  site.pages[id] = p;
+function addPage() {
+  let i = 1, id = 'page' + i;
+  while (site.pages[id]) id = 'page' + (++i);
+  // Une page peut avoir du texte (lines) et/ou des choix (entries).
+  site.pages[id] = { title: id.toUpperCase(), lines: [], entries: [] };
   if (!site.start) site.start = id;
   current = id;
   renderPageList(); renderForm(); refreshPreview(); showTab('edit');
@@ -179,29 +177,20 @@ function renderForm() {
   titleIn.oninput = () => { p.title = titleIn.value; refreshPreview(); };
   host.append(field('Titre', titleIn));
 
-  // type (les applets se lancent via une entrée de menu, pas une page dédiée)
-  const typeSel = el('select');
-  const types = (p.type === 'applet') ? ['menu', 'page', 'applet'] : ['menu', 'page'];
-  for (const t of types) typeSel.append(el('option', { value: t, textContent: t, selected: p.type === t }));
-  typeSel.onchange = () => { p.type = typeSel.value; normalizePage(p); renderForm(); renderPageList(); refreshPreview(); };
-  host.append(field('Type', typeSel));
-
-  if (p.type === 'menu') host.append(entriesEditor(p));
-  else {
-    if (p.type === 'applet') {
-      const apIn = el('input', { type: 'text', value: p.applet || '' });
-      apIn.oninput = () => { p.applet = apIn.value; refreshPreview(); };
-      host.append(field('Applet', apIn));
-      host.append(field('Après succès (next)', pageSelect(p.next, v => { p.next = v; }, true)));
-    }
+  // Page applet « auto-lancée » (compat JSON manuel) : édition de l'applet + next.
+  if (p.applet !== undefined) {
+    host.append(el('p', { className: 'hint', textContent: 'Page applet (lancé à l\'arrivée). Préférez une entrée de menu ▶ applet.' }));
+    const apIn = el('input', { type: 'text', value: p.applet || '' });
+    apIn.oninput = () => { p.applet = apIn.value; refreshPreview(); };
+    host.append(field('Applet', apIn));
+    host.append(field('Après succès (next)', pageSelect(p.next, v => { p.next = v; }, true)));
     host.append(linesEditor(p));
+    return;
   }
-}
 
-function normalizePage(p) {
-  if (p.type === 'menu') { p.entries = p.entries || []; delete p.lines; delete p.applet; delete p.next; }
-  else if (p.type === 'applet') { p.lines = p.lines || []; p.applet = p.applet || ''; p.next = p.next || ''; delete p.entries; }
-  else { p.lines = p.lines || []; delete p.entries; delete p.applet; delete p.next; }
+  // Page normale : texte (lines) ET/OU choix (entries).
+  host.append(linesEditor(p));
+  host.append(entriesEditor(p));
 }
 
 function field(label, control) {
@@ -327,7 +316,7 @@ $('btn-validate').onclick = validate;
 $('btn-save').onclick = save;
 $('btn-dryrun').onclick = () => deploy(true);
 $('btn-deploy').onclick = () => deploy(false);
-for (const b of document.querySelectorAll('.add-row button')) b.onclick = () => addPage(b.dataset.type);
+$('btn-add-page').onclick = () => addPage();
 for (const t of document.querySelectorAll('.tab')) t.onclick = () => showTab(t.dataset.tab);
 showTab('nav');
 loadSites(); // charge le 1er site, qui charge ses propres profils

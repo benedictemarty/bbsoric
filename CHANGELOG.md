@@ -6,6 +6,20 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Modifié (Contenu — fusion menu/page en un seul type de page)
+- Suppression du champ `type` : une **page** a un titre et, optionnellement, du **texte**
+  (`lines`) **et/ou** des **choix** (`entries`). Avec `entries` → écran interactif (le texte
+  s'affiche au-dessus des choix) ; sans `entries` → écran de contenu. Permet **texte + choix
+  sur le même écran** (impossible avant).
+- `internal/content` : `Page` sans `Type` ; validation simplifiée. `server/internal/bbs` et
+  `studio/internal/preview` : rendu/navigation basés sur la présence d'`entries`/`applet`.
+- `content/site.json` : champs `type` retirés (le `type` reste ignoré s'il traîne dans un
+  vieux JSON — compat lecture).
+- Studio : plus de sélecteur de type ni de boutons `+ menu`/`+ page`/`+ applet` ; un seul
+  **« + page »**, le formulaire édite texte **et** choix. Le graphe dérive l'étiquette
+  (menu/page/applet) de la structure.
+- Tests : page menu avec texte d'intro, validation, parsing. Vérifié via `nc`.
+
 ### Ajouté (Contenu — entrées-applet : un menu peut proposer plusieurs applets)
 - `internal/content` : une `Entry` de menu peut désormais porter `applet` (+ `next`) **au
   lieu** de `target` — une page (menu) peut donc **contenir plusieurs applets**, présentés

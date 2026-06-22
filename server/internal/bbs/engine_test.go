@@ -148,6 +148,35 @@ func TestMenuEntryApplet(t *testing.T) {
 	}
 }
 
+// TestMenuWithIntroLines : une page unifiée peut afficher du texte (lines)
+// au-dessus de ses choix (entries).
+func TestMenuWithIntroLines(t *testing.T) {
+	const json = `{
+      "start": "accueil",
+      "pages": {
+        "accueil": { "title": "BIENVENUE",
+          "lines": [ { "text": "Texte d intro", "ink": "cyan" } ],
+          "entries": [ { "key": "Q", "label": "Quitter", "target": "__quit__" } ] }
+      }
+    }`
+	addr, stop := startServerWithStore(t, storeFromJSON(t, json))
+	defer stop()
+
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+	r := bufio.NewReader(conn)
+	out := readUntil(t, r, conn, "Votre choix")
+	if !strings.Contains(out, "Texte d intro") {
+		t.Errorf("le texte d'intro doit s'afficher sur le menu:\n%s", out)
+	}
+	if !strings.Contains(out, "Quitter") {
+		t.Errorf("les choix doivent s'afficher:\n%s", out)
+	}
+}
+
 // TestUnknownAppletIsGraceful : un applet non enregistré ne casse pas la session.
 func TestUnknownAppletIsGraceful(t *testing.T) {
 	const json = `{

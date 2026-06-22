@@ -42,20 +42,20 @@ func runSite(ctx context.Context, s *server.Session, store *content.Store, users
 			return
 		}
 
-		switch page.Type {
-		case "menu":
-			if !navigateMenu(ctx, s, page, &stack, site, users, state) {
-				return
-			}
-		case "applet":
+		switch {
+		case page.Applet != "": // page applet auto-lancée (compat JSON manuel)
 			if !runAppletPage(ctx, s, page, &stack, users, state) {
 				return
 			}
-		default: // "page" : écran de contenu
+		case len(page.Entries) > 0: // écran interactif (menu, avec texte optionnel)
+			if !navigateMenu(ctx, s, page, &stack, site, users, state) {
+				return
+			}
+		default: // écran de contenu : une touche pour revenir
 			if err := renderContent(s, page); err != nil {
 				return
 			}
-			if _, err := s.ReadKey(); err != nil { // une touche pour revenir
+			if _, err := s.ReadKey(); err != nil {
 				return
 			}
 			popOrHome(&stack, site)
@@ -170,13 +170,20 @@ func findEntry(p *content.Page, key byte) *content.Entry {
 	return nil
 }
 
-// renderMenu affiche un menu en OASCII et l'invite de saisie.
+// renderMenu affiche un écran interactif : titre, texte d'intro optionnel
+// (Lines), choix (Entries) et invite de saisie.
 func renderMenu(s *server.Session, p *content.Page) error {
 	b := oascii.New()
 	b.Text(rule()).Newline()
 	b.Ink(oascii.Yellow).Text(center(p.Title)).Newline()
 	b.Text(rule()).Newline()
 	b.Newline()
+	for _, ln := range p.Lines { // texte d'intro éventuel, au-dessus des choix
+		b.Ink(content.Ink(ln.Ink)).Text(ln.Text).Newline()
+	}
+	if len(p.Lines) > 0 {
+		b.Newline()
+	}
 	for _, e := range p.Entries {
 		b.Ink(oascii.Cyan).Text(" " + e.Key)
 		b.Ink(oascii.White).Text(" - " + e.Label).Newline()

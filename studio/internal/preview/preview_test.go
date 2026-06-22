@@ -11,13 +11,13 @@ func testSite() *content.Site {
 	return &content.Site{
 		Start: "main",
 		Pages: map[string]*content.Page{
-			"main": {Title: "MENU", Type: "menu", Entries: []content.Entry{
+			"main": {Title: "MENU", Entries: []content.Entry{
 				{Key: "1", Label: "Infos", Target: "info"},
 			}},
-			"info": {Title: "INFOS", Type: "page", Lines: []content.Line{
+			"info": {Title: "INFOS", Lines: []content.Line{
 				{Text: "Bonjour", Ink: "cyan"},
 			}},
-			"login": {Title: "AUTH", Type: "applet", Applet: "login", Next: "main"},
+			"login": {Title: "AUTH", Applet: "login", Next: "main"},
 		},
 	}
 }

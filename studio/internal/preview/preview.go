@@ -62,19 +62,8 @@ func RenderHTML(site *content.Site, pageID string) (string, error) {
 	var b strings.Builder
 	line := func(s string) { b.WriteString(s); b.WriteByte('\n') }
 
-	switch p.Type {
-	case "menu":
-		line(rule())
-		line(span(center(p.Title), oascii.Yellow))
-		line(rule())
-		line("")
-		for _, e := range p.Entries {
-			line(span(" "+e.Key, oascii.Cyan) + span(" - "+e.Label, oascii.White))
-		}
-		line("")
-		line(span("Votre choix", oascii.Green) + span("> ", oascii.White))
-	default: // "page" et "applet" (intro)
-		line("")
+	switch {
+	case p.Applet != "": // page applet auto-lancée (compat)
 		line(rule())
 		line(span(center(p.Title), oascii.Yellow))
 		line(rule())
@@ -83,11 +72,33 @@ func RenderHTML(site *content.Site, pageID string) (string, error) {
 			line(span(ln.Text, content.Ink(ln.Ink)))
 		}
 		line("")
-		if p.Type == "applet" {
-			line(span("[applet: "+p.Applet+"]", oascii.Magenta))
-		} else {
-			line(span("Appuyez sur une touche...", oascii.Green))
+		line(span("[applet: "+p.Applet+"]", oascii.Magenta))
+	case len(p.Entries) > 0: // écran interactif (menu) : texte optionnel + choix
+		line(rule())
+		line(span(center(p.Title), oascii.Yellow))
+		line(rule())
+		line("")
+		for _, ln := range p.Lines {
+			line(span(ln.Text, content.Ink(ln.Ink)))
 		}
+		if len(p.Lines) > 0 {
+			line("")
+		}
+		for _, e := range p.Entries {
+			line(span(" "+e.Key, oascii.Cyan) + span(" - "+e.Label, oascii.White))
+		}
+		line("")
+		line(span("Votre choix", oascii.Green) + span("> ", oascii.White))
+	default: // écran de contenu
+		line(rule())
+		line(span(center(p.Title), oascii.Yellow))
+		line(rule())
+		line("")
+		for _, ln := range p.Lines {
+			line(span(ln.Text, content.Ink(ln.Ink)))
+		}
+		line("")
+		line(span("Appuyez sur une touche...", oascii.Green))
 	}
 	return b.String(), nil
 }

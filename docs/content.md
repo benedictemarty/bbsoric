@@ -17,8 +17,8 @@ des sessions en cours).
 {
   "start": "main",
   "pages": {
-    "main":  { "title": "MENU PRINCIPAL", "type": "menu", "entries": [ ... ] },
-    "info":  { "title": "INFOS", "type": "page", "lines": [ ... ] }
+    "main": { "title": "MENU PRINCIPAL", "entries": [ ... ] },
+    "info": { "title": "INFOS", "lines": [ ... ] }
   }
 }
 ```
@@ -26,9 +26,22 @@ des sessions en cours).
 - **`start`** : identifiant de la page de départ.
 - **`pages`** : dictionnaire `identifiant → page`.
 
-### Page `type: "menu"`
-Liste de choix (`entries`). Une entrée **navigue** (`target`) **ou lance un applet**
-(`applet` + `next`) — un même menu peut donc proposer plusieurs applets au choix.
+### La page (type unique)
+Une page a un **titre** et, **optionnellement**, du **texte** (`lines`) et/ou des
+**choix** (`entries`) :
+- **avec `entries`** → écran **interactif** : une touche route vers l'entrée choisie ;
+  le texte (`lines`) éventuel s'affiche **au-dessus** des choix ;
+- **sans `entries`** → écran de **contenu** : une touche revient en arrière
+  (mode caractère, cf. ADR-0002).
+
+**Lignes de texte** (`lines`) :
+```json
+{ "text": " Bonjour", "ink": "yellow" }
+```
+- `ink` (optionnel) : `black red green yellow blue magenta cyan white` (défaut blanc).
+
+**Choix** (`entries`) — une entrée **navigue** (`target`) **ou lance un applet** (`applet`
++ `next`). Un menu peut donc proposer plusieurs applets au choix.
 
 Entrée de navigation :
 ```json
@@ -44,31 +57,13 @@ Entrée-applet :
 ```json
 { "key": "1", "label": "Se connecter", "applet": "login", "next": "main" }
 ```
-- `applet` : nom de l'applet à lancer quand l'entrée est choisie.
-- `next` (optionnel) : page où aller **après succès** de l'applet (vide = on reste sur le menu).
+- `applet` : nom de l'applet à lancer quand l'entrée est choisie (`login`, `register`,
+  `guest`…). **Ajouter un applet** = écrire une petite fonction Go et l'enregistrer.
+- `next` (optionnel) : page où aller **après succès** de l'applet (vide = on reste).
 
-### Page `type: "page"`
-Écran de contenu (`lines`) ; **une touche** revient en arrière (mode caractère,
-cf. ADR-0002). Chaque ligne :
-```json
-{ "text": " Bonjour", "ink": "yellow" }
-```
-- `ink` (optionnel) : `black red green yellow blue magenta cyan white` (défaut blanc).
-
-### Page `type: "applet"`
-La page (texte/JSON) délègue un **comportement interactif** à un applet Go
-enregistré par son nom — sans coder de page entière. Idéal pour le login, un jeu, etc.
-```json
-{ "type": "applet", "applet": "login", "next": "main", "lines": [ ... ] }
-```
-- `applet` : nom de l'applet enregistré côté serveur (ex. `login`, `register`, `guest`).
-- `next` (optionnel) : page où aller **après succès** de l'applet.
-- `lines` (optionnel) : texte d'intro affiché **avant** de lancer l'applet.
-
-Un menu pointe vers une page applet comme vers n'importe quelle page
-(`{ "key": "1", "label": "Se connecter", "target": "login" }`). **Ajouter un applet**
-= écrire une petite fonction Go et l'enregistrer ; **le placer** = éditer ce JSON.
-Applets disponibles : `login`, `register`, `guest`.
+> Compat : une page peut aussi porter `applet` (+ `next`) au niveau **page** (applet
+> auto-lancé à l'arrivée). Mécanisme historique conservé pour les JSON écrits à la main ;
+> préférez une **entrée-applet**.
 
 ## Rendu (rappel OASCII)
 
