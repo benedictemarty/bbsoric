@@ -291,12 +291,61 @@ async function save() {
   if (r.ok) setStatus('enregistré ✓ ' + siteName, 'ok'); else setStatus('échec : ' + r.error, 'err');
 }
 
-// --- déploiement par profils (propres au site courant) ---
+// --- profils & déploiement (propres au site courant) ---
+let currentProfile = null;
+
 async function loadProfiles() {
   const sel = $('profile-select'); sel.innerHTML = '';
+  $('profile-form').innerHTML = '';
   if (!siteName) return;
   const names = await fetch('/api/profiles?site=' + encodeURIComponent(siteName)).then(r => r.json()).catch(() => []);
   for (const n of names) sel.append(el('option', { value: n, textContent: n }));
+  if (sel.value) loadProfile(sel.value);
+}
+
+async function loadProfile(env) {
+  if (!siteName || !env) { $('profile-form').innerHTML = ''; return; }
+  currentProfile = await fetch('/api/profile?site=' + encodeURIComponent(siteName) + '&env=' + encodeURIComponent(env)).then(r => r.json()).catch(() => null);
+  renderProfileForm();
+}
+
+function renderProfileForm() {
+  const host = $('profile-form'); host.innerHTML = '';
+  const p = currentProfile; if (!p) return;
+
+  const localCb = el('input', { type: 'checkbox', checked: !!p.local });
+  localCb.onchange = () => { p.local = localCb.checked; renderProfileForm(); };
+  host.append(field('Local (copie)', localCb));
+
+  if (p.local) {
+    host.append(field('Fichier cible', textField(p, 'contentPath', 'ex. content/site.json')));
+    host.append(el('p', { className: 'hint', textContent: 'Profil local : copie de fichier, le bbsd recharge à chaud.' }));
+  } else {
+    host.append(field('Hôte (SSH)', textField(p, 'host', 'ex. 10.0.0.1')));
+    host.append(field('Utilisateur', textField(p, 'user', 'ex. root')));
+    host.append(field('Port', textField(p, 'port', '22')));
+    host.append(field('Fichier cible', textField(p, 'contentPath', 'ex. /etc/bbsoric/site.json')));
+    host.append(field('Service systemd', textField(p, 'service', 'ex. bbsoric')));
+  }
+
+  const reload = el('select');
+  for (const r of ['none', 'reload', 'restart']) reload.append(el('option', { value: r, textContent: r, selected: (p.reload || 'none') === r }));
+  reload.onchange = () => { p.reload = reload.value; };
+  host.append(field('Reload', reload));
+}
+
+// textField : champ texte lié à une clé d'un objet.
+function textField(obj, key, placeholder) {
+  const i = el('input', { type: 'text', value: obj[key] || '', placeholder: placeholder || '' });
+  i.oninput = () => { obj[key] = i.value; };
+  return i;
+}
+
+async function saveProfile() {
+  const env = $('profile-select').value;
+  if (!siteName || !env || !currentProfile) { setStatus('aucun profil sélectionné', 'err'); return; }
+  const r = await fetch('/api/profile?site=' + encodeURIComponent(siteName) + '&env=' + encodeURIComponent(env), { method: 'POST', body: JSON.stringify(currentProfile) }).then(r => r.json());
+  setStatus(r.ok ? 'profil enregistré ✓ ' + env : 'échec : ' + (r.error || ''), r.ok ? 'ok' : 'err');
 }
 
 async function deploy(dryRun) {
@@ -316,6 +365,8 @@ $('btn-validate').onclick = validate;
 $('btn-save').onclick = save;
 $('btn-dryrun').onclick = () => deploy(true);
 $('btn-deploy').onclick = () => deploy(false);
+$('btn-save-profile').onclick = saveProfile;
+$('profile-select').onchange = () => loadProfile($('profile-select').value);
 $('btn-add-page').onclick = () => addPage();
 for (const t of document.querySelectorAll('.tab')) t.onclick = () => showTab(t.dataset.tab);
 showTab('nav');

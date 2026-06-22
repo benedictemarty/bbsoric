@@ -57,6 +57,31 @@ func TestLoadSiteProfiles(t *testing.T) {
 	}
 }
 
+func TestSaveProfileRoundTrip(t *testing.T) {
+	base := t.TempDir()
+	p := &Profile{Local: false, Host: "h1", User: "root", Port: "2222",
+		ContentPath: "/etc/bbsoric/site.json", Service: "bbsoric", Reload: "restart"}
+	if err := SaveProfile(base, "site.json", "prod", p); err != nil {
+		t.Fatalf("SaveProfile: %v", err)
+	}
+	// relecture via LoadSiteProfiles
+	profs, err := LoadSiteProfiles(base, "site.json")
+	if err != nil {
+		t.Fatalf("LoadSiteProfiles: %v", err)
+	}
+	got := profs["prod"]
+	if got == nil || got.Host != "h1" || got.Port != "2222" || got.Reload != "restart" || got.Service != "bbsoric" {
+		t.Fatalf("profil relu incorrect : %+v", got)
+	}
+	// site/env invalides -> erreur
+	if err := SaveProfile(base, "../x.json", "prod", p); err == nil {
+		t.Errorf("site avec traversée doit être refusé")
+	}
+	if err := SaveProfile(base, "site.json", "../evil", p); err == nil {
+		t.Errorf("env avec traversée doit être refusé")
+	}
+}
+
 func TestSiteKey(t *testing.T) {
 	for in, want := range map[string]string{"site.json": "site", "bbs2.json": "bbs2", "x": "x"} {
 		if got := SiteKey(in); got != want {

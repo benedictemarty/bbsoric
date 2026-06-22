@@ -6,6 +6,16 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Studio — édition des profils de déploiement)
+- L'onglet Configuration permet d'**éditer les profils** (LOCAL, HOST, USER, PORT,
+  CONTENT_PATH, SERVICE, RELOAD) et de les **enregistrer** dans
+  `deploy/profiles/<site>/<env>.conf` — plus besoin d'éditer les `.conf` à la main.
+- `studio/internal/deploy` : `Profile.Marshal` (format `.conf`) + `SaveProfile` (écriture
+  atomique, anti-traversée) + tags JSON. `studio/cmd/forge` : `GET`/`POST /api/profile`.
+- UI : sélecteur de profil → formulaire (champs masqués selon LOCAL) → « Enregistrer le
+  profil » ; bloc Déployer (Simuler/Déployer) en dessous.
+- Tests : `SaveProfile` aller-retour + refus de traversée (site/env). Vérifié via `curl`.
+
 ### Modifié (Contenu — fusion menu/page en un seul type de page)
 - Suppression du champ `type` : une **page** a un titre et, optionnellement, du **texte**
   (`lines`) **et/ou** des **choix** (`entries`). Avec `entries` → écran interactif (le texte

@@ -23,14 +23,67 @@ import (
 
 // Profile décrit un environnement de déploiement.
 type Profile struct {
-	Name        string // identifiant (dev, int, prod…)
-	Local       bool   // true = copie de fichier locale (pas de SSH)
-	Host        string // hôte SSH (distant)
-	User        string // utilisateur SSH
-	Port        string // port SSH (défaut 22)
-	ContentPath string // chemin cible du site.json
-	Service     string // service systemd (pour reload/restart)
-	Reload      string // none | reload | restart
+	Name        string `json:"name"`        // identifiant (dev, int, prod…)
+	Local       bool   `json:"local"`       // true = copie de fichier locale (pas de SSH)
+	Host        string `json:"host"`        // hôte SSH (distant)
+	User        string `json:"user"`        // utilisateur SSH
+	Port        string `json:"port"`        // port SSH (défaut 22)
+	ContentPath string `json:"contentPath"` // chemin cible du site.json
+	Service     string `json:"service"`     // service systemd (pour reload/restart)
+	Reload      string `json:"reload"`      // none | reload | restart
+}
+
+// Marshal sérialise le profil au format .conf (KEY=VALUE).
+func (p *Profile) Marshal() []byte {
+	var b strings.Builder
+	fmt.Fprintf(&b, "# Profil %s — généré par le studio\n", p.Name)
+	if p.Local {
+		b.WriteString("LOCAL=1\n")
+	}
+	for _, kv := range [][2]string{
+		{"HOST", p.Host}, {"USER", p.User}, {"PORT", p.Port},
+		{"CONTENT_PATH", p.ContentPath}, {"SERVICE", p.Service},
+	} {
+		if kv[1] != "" {
+			fmt.Fprintf(&b, "%s=%s\n", kv[0], kv[1])
+		}
+	}
+	reload := p.Reload
+	if reload == "" {
+		reload = "none"
+	}
+	fmt.Fprintf(&b, "RELOAD=%s\n", reload)
+	return []byte(b.String())
+}
+
+// SaveProfile écrit le profil dans <baseDir>/<site>/<env>.conf (écriture atomique).
+func SaveProfile(baseDir, siteFile, env string, p *Profile) error {
+	if siteFile == "" || strings.ContainsAny(siteFile, `/\`) || strings.Contains(siteFile, "..") {
+		return fmt.Errorf("site invalide : %q", siteFile)
+	}
+	if env == "" || strings.ContainsAny(env, `/\`) || strings.Contains(env, "..") {
+		return fmt.Errorf("environnement invalide : %q", env)
+	}
+	dir := filepath.Join(baseDir, SiteKey(siteFile))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	p.Name = env
+	path := filepath.Join(dir, env+".conf")
+	tmp, err := os.CreateTemp(dir, ".profile-*.conf.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName)
+	if _, err := tmp.Write(p.Marshal()); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmpName, path)
 }
 
 // LoadProfiles lit les profils d'un répertoire. Chaque fichier `<nom>.conf` ou

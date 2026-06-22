@@ -71,6 +71,7 @@ pre.oric {
   font: 15px/1.25 "DejaVu Sans Mono", monospace; white-space: pre; overflow-x: auto;
 }
 
+hr.sep { border: none; border-top: 1px solid var(--line); margin: 18px 0 12px; }
 .deploy { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
 .deploy-bar { display: flex; gap: 8px; align-items: center; }
 button.warn { background: #5a2; border-color: #5a2; color: #021; font-weight: 600; }
