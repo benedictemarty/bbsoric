@@ -76,7 +76,9 @@ func (s *Store) watch() {
 			continue // fichier temporairement absent (édition) : on réessaie
 		}
 		s.mu.RLock()
-		changed := fi.ModTime().After(s.mtime)
+		// Tout changement de mtime (y compris vers une date plus ancienne, ex.
+		// restauration par mv/cp d'une sauvegarde) déclenche un rechargement.
+		changed := !fi.ModTime().Equal(s.mtime)
 		s.mu.RUnlock()
 		if !changed {
 			continue
