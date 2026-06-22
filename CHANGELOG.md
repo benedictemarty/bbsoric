@@ -6,6 +6,13 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Corrigé (Login : « Se connecter » revenait au menu via nc/clients ligne)
+- Un client en mode ligne (nc…) envoie « 1\r\n » : le menu lisait `1` (touche unique) mais
+  le `\r\n` résiduel était lu comme **ligne vide** par le premier `ReadLine` de l'applet
+  login → annulation immédiate → retour au menu. `ReadKey` **draine désormais les CR/LF/NUL
+  déjà bufferisés** derrière la touche (sans bloquer). Sans effet sur un terminal Oric en
+  mode caractère (pas de résidu). Test `ReadKey` dédié ; flux inscription/login revérifié `nc`.
+
 ### Ajouté (Studio — édition des profils de déploiement)
 - L'onglet Configuration permet d'**éditer les profils** (LOCAL, HOST, USER, PORT,
   CONTENT_PATH, SERVICE, RELOAD) et de les **enregistrer** dans

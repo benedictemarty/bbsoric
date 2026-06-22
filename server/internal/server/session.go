@@ -121,7 +121,27 @@ func (s *Session) ReadKey() (byte, error) {
 		case '\r', '\n', 0:
 			// résidus de fin de ligne : ignorés
 		default:
+			// Draine les CR/LF/NUL DÉJÀ bufferisés derrière la touche (clients en
+			// mode ligne comme nc envoient « 1\r\n ») pour qu'ils ne soient pas
+			// lus comme une ligne vide par un ReadLine suivant (saisie d'applet).
+			// Non bloquant : on ne consomme que ce qui est déjà disponible.
+			s.drainBufferedEOL()
 			return c, nil
+		}
+	}
+}
+
+// drainBufferedEOL consomme les CR/LF/NUL immédiatement disponibles dans le
+// tampon, sans jamais lire sur le réseau (donc sans bloquer).
+func (s *Session) drainBufferedEOL() {
+	for s.reader.Buffered() > 0 {
+		c, err := s.reader.ReadByte()
+		if err != nil {
+			return
+		}
+		if c != '\r' && c != '\n' && c != 0 {
+			_ = s.reader.UnreadByte()
+			return
 		}
 	}
 }

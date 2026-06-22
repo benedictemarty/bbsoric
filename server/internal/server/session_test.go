@@ -53,6 +53,24 @@ func TestReadKeyFiltersTelnetIAC(t *testing.T) {
 	}
 }
 
+func TestReadKeyDrainsTrailingEOL(t *testing.T) {
+	// Un client en mode ligne (nc) envoie « 1\r\n » puis la saisie : le CR/LF
+	// derrière la touche ne doit pas être lu comme une ligne vide par ReadLine.
+	s, cli := pipeSession(t)
+	go func() { cli.Write([]byte("1\r\nbob\r")) }()
+	k, err := s.ReadKey()
+	if err != nil || k != '1' {
+		t.Fatalf("ReadKey : %q err %v", k, err)
+	}
+	line, err := s.ReadLine()
+	if err != nil {
+		t.Fatalf("ReadLine : %v", err)
+	}
+	if line != "bob" {
+		t.Errorf("ligne attendue \"bob\" (pas vide), got %q", line)
+	}
+}
+
 func TestReadKeyThenReadLine(t *testing.T) {
 	// Scénario réel : une touche de menu, puis une saisie ligne (champ texte).
 	s, cli := pipeSession(t)
