@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BBS Oric — Studio Forge</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>BBS Oric — Studio <span class="forge">Forge</span></h1>
+    <div class="site-bar">
+      <label>Site
+        <select id="site-select"></select>
+      </label>
+      <button id="btn-load">Charger</button>
+      <span id="status" class="status"></span>
+    </div>
+  </header>
+
+  <main>
+    <section class="col pages">
+      <h2>Pages</h2>
+      <ul id="page-list"></ul>
+      <div class="add-row">
+        <button data-type="menu">+ menu</button>
+        <button data-type="page">+ page</button>
+        <button data-type="applet">+ applet</button>
+      </div>
+    </section>
+
+    <section class="col editor">
+      <h2>Édition</h2>
+      <div id="page-form"><p class="hint">Sélectionne une page.</p></div>
+      <div class="actions">
+        <button id="btn-validate">Valider</button>
+        <button id="btn-save" class="primary">Enregistrer</button>
+      </div>
+    </section>
+
+    <section class="col preview">
+      <h2>Aperçu Oric (40 col)</h2>
+      <pre id="preview" class="oric"></pre>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

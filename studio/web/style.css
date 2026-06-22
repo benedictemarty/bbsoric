@@ -1,0 +1,52 @@
+:root {
+  --bg: #1a1c20; --panel: #24272d; --line: #353941; --fg: #d7dae0;
+  --accent: #22dddd; --primary: #2a7; --warn: #f55;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font: 14px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--fg);
+}
+header {
+  padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line);
+}
+h1 { margin: 0 0 8px; font-size: 18px; }
+h1 .forge { color: var(--accent); }
+h2 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #9aa; }
+.site-bar { display: flex; gap: 10px; align-items: center; }
+.status { font-size: 13px; }
+.status.ok { color: var(--primary); }
+.status.err { color: var(--warn); }
+
+main { display: grid; grid-template-columns: 220px 1fr 1fr; gap: 12px; padding: 12px; }
+.col { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+
+#page-list { list-style: none; margin: 0 0 10px; padding: 0; }
+#page-list li { margin: 2px 0; }
+#page-list button { width: 100%; text-align: left; }
+#page-list button.sel { outline: 2px solid var(--accent); }
+.add-row { display: flex; gap: 6px; }
+.add-row button { flex: 1; }
+
+label { display: block; margin: 8px 0; }
+label > span.lbl { display: inline-block; min-width: 70px; color: #9aa; }
+input, select, textarea { background: #1b1d22; color: var(--fg); border: 1px solid var(--line);
+  border-radius: 4px; padding: 5px 7px; font: inherit; }
+input[type=text] { width: 100%; }
+
+table.rows { width: 100%; border-collapse: collapse; margin: 6px 0; }
+table.rows th { text-align: left; font-size: 12px; color: #9aa; font-weight: normal; }
+table.rows td { padding: 2px; }
+table.rows input, table.rows select { width: 100%; }
+
+button { background: #30343c; color: var(--fg); border: 1px solid var(--line);
+  border-radius: 4px; padding: 6px 10px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--primary); border-color: var(--primary); color: #061; font-weight: 600; }
+button.del { padding: 4px 8px; color: var(--warn); }
+.actions { margin-top: 12px; display: flex; gap: 8px; }
+.hint { color: #889; }
+
+pre.oric {
+  background: #000; padding: 10px; border-radius: 4px; min-height: 320px;
+  font: 15px/1.25 "DejaVu Sans Mono", monospace; white-space: pre; overflow-x: auto;
+}

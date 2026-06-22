@@ -6,6 +6,20 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Studio Forge — incrément 1 : éditeur web + aperçu OASCII)
+- Nouveau sous-projet **`studio/`** : app web **Go** locale (stdlib, assets embarqués) pour
+  éditer le(s) `site*.json` (pages `menu`/`page`/`applet`, porte d'auth).
+- `studio/internal/store` : liste/charge/enregistre les sites ; **valide via `internal/content`
+  (même validation que le serveur)** avant écriture atomique ; refuse la traversée de chemin.
+- `studio/internal/preview` : rend une page en **HTML coloré 40 colonnes**, fidèle au moteur
+  (réutilise la palette `internal/oascii` + `content.Ink`).
+- `studio/cmd/forge` : serveur `net/http` (bind **127.0.0.1**, sans auth) ; API
+  `GET /api/sites|site`, `POST /api/validate|save|preview`.
+- `studio/web` : éditeur vanilla JS (sélection site/page, formulaires par type, aperçu live,
+  Valider/Enregistrer).
+- Cible Make `make studio`. Tests : store (valide-avant-écriture, anti-traversée), preview
+  (rendu menu/page/applet, échappement HTML), handlers HTTP (`httptest`). Smoke test `curl` OK.
+
 ### Modifié (Restructuration en 3 sous-projets : server / client / studio)
 - Le dépôt s'organise en **`server/`** (serveur Go : `server/cmd/bbsd` + `server/internal/`
   bbs/server/user), **`client/`** (terminal Oric, ex `oric-client/`) et **`studio/`** (à venir).
