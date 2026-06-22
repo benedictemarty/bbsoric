@@ -6,6 +6,22 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Contenu dynamique — flux de pages JSON rechargé à chaud)
+- `internal/content` : modèle `Site`/`Page`/`Entry`/`Line` + parsing/validation JSON +
+  `Store` qui **recharge le fichier à chaud** (surveillance mtime ; en cas d'erreur,
+  l'ancienne version est conservée). Cibles de navigation `__quit__`/`__back__`/`__home__`,
+  couleurs d'encre par nom. Contenu intégré par défaut si aucun fichier.
+- `internal/bbs/engine.go` : moteur générique piloté par le `Site` (rendu menus/pages +
+  navigation par pile) — remplace le menu codé en dur.
+- `cmd/bbsd` : flag `-content <fichier.json>`.
+- `content/site.json` : flux de pages éditable (menus, pages, sous-menu `Services`).
+- `docs/content.md` : format JSON documenté.
+- Déploiement : unité systemd `-content /etc/bbsoric/site.json` ; le script **sème** le JSON
+  à l'initialisation seulement (les éditions à chaud sur le serveur ne sont jamais écrasées).
+- Tests : parsing/validation, rechargement à chaud, conservation sur fichier invalide,
+  validité de `content/site.json`. Rechargement validé end-to-end (ajout d'une entrée au
+  menu visible sans redémarrage).
+
 ### Validé (TLS vérifié bout-en-bout — AT$CV1)
 - Test émulateur (`--serial picowifi`) de l'entrée 5 du répertoire **avec vérification du
   certificat** : le terminal charge le CA racine **ISRG Root X1** (`AT$CA=` → « CA stored:

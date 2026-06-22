@@ -7,12 +7,17 @@ import (
 	"context"
 	"strings"
 
+	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/internal/oascii"
 	"github.com/benedictemarty/bbsoric/internal/server"
 )
 
-// WelcomeHandler affiche la bannière d'accueil puis lance le menu principal.
-type WelcomeHandler struct{}
+// WelcomeHandler affiche la bannière d'accueil puis déroule le flux de pages
+// décrit par le Store (contenu JSON rechargeable à chaud ; contenu par défaut
+// si Store est nil).
+type WelcomeHandler struct {
+	Store *content.Store
+}
 
 // largeur utile de l'écran TEXT de l'Oric : 40 colonnes.
 const oricCols = oascii.Cols
@@ -21,7 +26,7 @@ func (h WelcomeHandler) Handle(ctx context.Context, s *server.Session) {
 	if err := h.banner(s); err != nil {
 		return
 	}
-	menuLoop(s)
+	runSite(ctx, s, h.Store)
 }
 
 // banner construit l'écran d'accueil avec attributs OASCII (couleurs Oric).

@@ -61,6 +61,17 @@ echo "--- Copie du binaire ---"
 $SCP /tmp/bbsoric "$VPS_USER@$VPS_HOST:$BINAIRE_REMOTE.new"
 $SSH "chmod 755 $BINAIRE_REMOTE.new && mv -f $BINAIRE_REMOTE.new $BINAIRE_REMOTE"
 
+# 3b. Contenu JSON — SEMÉ UNE SEULE FOIS. Les éditions à chaud faites directement
+# sur le serveur (/etc/bbsoric/site.json) ne sont jamais écrasées par le déploiement.
+echo "--- Contenu site.json ---"
+$SSH "mkdir -p /etc/bbsoric"
+if $SSH "test -f /etc/bbsoric/site.json"; then
+    echo "  /etc/bbsoric/site.json existe déjà — conservé (éditions à chaud préservées)"
+else
+    $SCP "$ROOT/content/site.json" "$VPS_USER@$VPS_HOST:/etc/bbsoric/site.json"
+    echo "  /etc/bbsoric/site.json installé (contenu initial)"
+fi
+
 # 4. Unité systemd
 echo "--- Unité systemd $SERVICE.service ---"
 $SCP "$SCRIPT_DIR/bbsoric.service" "$VPS_USER@$VPS_HOST:/etc/systemd/system/$SERVICE.service"

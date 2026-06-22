@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/benedictemarty/bbsoric/internal/bbs"
+	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/internal/server"
 )
 
@@ -35,6 +36,7 @@ func main() {
 	maxConns := flag.Int("max-conns", 50, "connexions simultanées max (0 = illimité)")
 	maxPerIP := flag.Int("max-conns-per-ip", 3, "connexions simultanées max par IP (0 = illimité)")
 	idle := flag.Duration("idle", 5*time.Minute, "délai d'inactivité avant déconnexion (0 = aucun)")
+	contentPath := flag.String("content", "", "fichier JSON du flux de pages (vide = contenu par défaut ; rechargé à chaud)")
 	flag.Parse()
 
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
@@ -45,7 +47,8 @@ func main() {
 		MaxConnsPerIP: *maxPerIP,
 		IdleTimeout:   *idle,
 	}
-	srv := server.New(cfg, bbs.WelcomeHandler{}, log)
+	store := content.NewStore(*contentPath, log)
+	srv := server.New(cfg, bbs.WelcomeHandler{Store: store}, log)
 
 	// Arrêt propre sur SIGINT/SIGTERM.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
