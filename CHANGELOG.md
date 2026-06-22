@@ -6,6 +6,22 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Studio — aperçu fidèle « simulateur ULA » + rendu partagé)
+- **`internal/render`** : paquet **partagé** produisant le flux OASCII d'un écran de page
+  (`Screen`) — **source unique** réutilisée par le serveur (`server/internal/bbs`) et le
+  studio ; supprime la duplication serveur/aperçu.
+- Studio : l'aperçu HTML approximatif est remplacé par un **simulateur ULA** en JS/canvas
+  reproduisant `oric1-emu/src/video/video.c` (attributs encre/fond, double hauteur,
+  clignotement, inverse, charset alt approximé) — **sans ROM ni émulateur au runtime** :
+  la **police Oric standard** est extraite une fois du ROM (offset `0x3C78`, 96×8) et
+  embarquée (`studio/web/charset.js`). Endpoint `GET/POST /api/screen` → octets OASCII ;
+  rendu client (`240×224`, mise à l'échelle pixelisée).
+- **Corrigé** : l'**inverse** est désormais **par caractère (bit 7)**, conforme à l'ULA
+  (`InverseText`), et non un attribut sériel erroné (l'octet 29 réglait en fait le mode
+  vidéo). `oascii.InverseAttr`/`Builder.Inverse` retirés.
+- Tests : `render` (menu/contenu/segments/inverse bit 7), `oascii` (InverseText). Rendu de
+  la police validé (ASCII-art « BIENVENUE »). Engine refactoré sur `render.Screen` (suite verte).
+
 ### Ajouté (Contenu — style Oric complet + multicolore par segments)
 - `internal/content` : un **`Style`** (encre, fond, **clignotement**, **double hauteur**,
   **charset alternatif/semi-graphiques**, **inverse**) porté par une ligne **et** par chaque

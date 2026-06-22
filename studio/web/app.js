@@ -325,17 +325,80 @@ function linesEditor(p) {
 
 const td = (c) => el('td', {}, c);
 
-// --- aperçu / validation / sauvegarde ---
+// --- aperçu : simulateur ULA (rend le flux OASCII sur un canvas) ---
+const COLS = 40, ROWS = 28, CW = 6, CH = 8;
+// palette Oric : bit0=R, bit1=G, bit2=B (couleurs pures RVB).
+const PAL = Array.from({ length: 8 }, (_, c) => [(c & 1) ? 255 : 0, (c & 2) ? 255 : 0, (c & 4) ? 255 : 0]);
+let lastScreen = null;   // dernier buffer 40×28 rendu
+let blinkOn = false;
+
+// layoutScreen : reproduit putbyte du terminal (CR/LF/scroll/clamp 40) pour
+// poser le flux OASCII dans un buffer 40×28.
+function layoutScreen(bytes) {
+  const buf = new Uint8Array(COLS * ROWS).fill(0x20);
+  let col = 0, row = 0;
+  for (const b of bytes) {
+    if (b === 0x0D) { col = 0; }
+    else if (b === 0x0A) {
+      row++;
+      if (row >= ROWS) { buf.copyWithin(0, COLS); buf.fill(0x20, COLS * (ROWS - 1)); row = ROWS - 1; }
+    } else if (b === 0) { /* NUL ignoré */ }
+    else if (col < COLS) { buf[row * COLS + col] = b; col++; }
+  }
+  return buf;
+}
+
+// drawScreen : rend le buffer 40×28 sur le canvas selon l'ULA (cf. video.c).
+function drawScreen(buf) {
+  const cv = $('oric-screen'); if (!cv || !window.ORIC_CHARSET) return;
+  const ctx = cv.getContext('2d');
+  const img = ctx.createImageData(COLS * CW, ROWS * CH);
+  const put = (x, y, rgb) => { const o = (y * COLS * CW + x) * 4; img.data[o] = rgb[0]; img.data[o + 1] = rgb[1]; img.data[o + 2] = rgb[2]; img.data[o + 3] = 255; };
+
+  for (let row = 0; row < ROWS; row++) {
+    let ink = 7, paper = 0, attr = 0; // reset début de ligne (ULA)
+    for (let col = 0; col < COLS; col++) {
+      const b = buf[row * COLS + col];
+      if ((b & 0x60) === 0) {                 // attribut
+        const v = b & 0x1F;
+        if ((v & 0x18) === 0x00) ink = v & 7;
+        else if ((v & 0x18) === 0x08) attr = v & 7;
+        else if ((v & 0x18) === 0x10) paper = v & 7;
+        for (let cy = 0; cy < CH; cy++) for (let bx = 0; bx < CW; bx++) put(col * CW + bx, row * CH + cy, PAL[paper]);
+      } else {                                 // caractère
+        const idx = b & 0x7F;
+        let inv = (b & 0x80) !== 0;
+        if ((attr & 4) && blinkOn) inv = !inv;
+        const fg = PAL[ink], bg = PAL[paper];
+        for (let cy = 0; cy < CH; cy++) {
+          const erow = (attr & 2) ? ((cy >> 1) + (row & 1 ? 4 : 0)) : cy;
+          const glyph = (idx >= 0x20 && idx <= 0x7F) ? window.ORIC_CHARSET[(idx - 0x20) * 8 + erow] : 0;
+          for (let bx = 0; bx < CW; bx++) {
+            let on = (glyph >> (5 - bx)) & 1;
+            if (inv) on = on ? 0 : 1;
+            put(col * CW + bx, row * CH + cy, on ? fg : bg);
+          }
+        }
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
 let previewTimer = null;
 function refreshPreview() {
   clearTimeout(previewTimer);
-  previewTimer = setTimeout(doPreview, 150);
+  previewTimer = setTimeout(doPreview, 120);
 }
 async function doPreview() {
-  if (!current) { $('preview').innerHTML = ''; return; }
-  const r = await fetch('/api/preview?page=' + encodeURIComponent(current), { method: 'POST', body: JSON.stringify(site) });
-  $('preview').innerHTML = r.ok ? await r.text() : '<span style="color:#f55">' + (await r.text()) + '</span>';
+  if (!current) return;
+  const r = await fetch('/api/screen?page=' + encodeURIComponent(current), { method: 'POST', body: JSON.stringify(site) });
+  if (!r.ok) return;
+  lastScreen = layoutScreen(new Uint8Array(await r.arrayBuffer()));
+  drawScreen(lastScreen);
 }
+// clignotement : ré-affiche périodiquement le dernier écran.
+setInterval(() => { blinkOn = !blinkOn; if (lastScreen) drawScreen(lastScreen); }, 320);
 
 async function validate() {
   const r = await fetch('/api/validate', { method: 'POST', body: JSON.stringify(site) }).then(r => r.json());

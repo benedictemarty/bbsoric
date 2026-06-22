@@ -21,7 +21,10 @@ uniquement (non exposé, pas d'authentification).
 - Charger un site, lister/ajouter/renommer/supprimer des pages.
 - Éditer par formulaire selon le type : `menu` (entrées touche/libellé/cible),
   `page` (lignes texte + encre), `applet` (nom d'applet + page `next` + intro).
-- Aperçu couleur 40 colonnes fidèle au rendu serveur.
+- **Aperçu « simulateur ULA »** (canvas 240×224) : rend le flux OASCII de la page comme la
+  puce vidéo Oric (police Oric embarquée, attributs, inverse, double hauteur, clignotement ;
+  semi-graphiques approximés). Sans ROM ni émulateur. Le rendu provient de `internal/render`
+  (même flux d'octets que le serveur).
 - **Valider** (refuse un JSON incohérent) et **Enregistrer** (écriture atomique).
 - **Déployer** vers un environnement via un **profil** (Simuler / Déployer).
 

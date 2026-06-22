@@ -29,6 +29,6 @@ client/term.tap
 deploy/deploy.conf
 deploy/profiles/**/*.conf
 
-# Binaires
-bbsd
-forge
+# Binaires (à la racine uniquement — ne pas ignorer le dossier cmd/forge/)
+/bbsd
+/forge

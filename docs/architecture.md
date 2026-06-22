@@ -5,7 +5,7 @@
 ```
 bbsoric/
   internal/            paquets PARTAGÉS (importables par server/ et studio/)
-    content/  oascii/
+    content/  oascii/  render/
   server/              le serveur BBS Go
     cmd/bbsd/          binaire du démon
     internal/          propre au serveur : bbs/ server/ user/

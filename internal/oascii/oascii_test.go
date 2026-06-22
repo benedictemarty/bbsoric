@@ -95,12 +95,11 @@ func TestBuilderAttrs(t *testing.T) {
 	}
 }
 
-func TestInverseAttr(t *testing.T) {
-	if InverseAttr(true) != 29 || InverseAttr(false) != 28 {
-		t.Errorf("InverseAttr: on=%d off=%d (attendu 29/28)", InverseAttr(true), InverseAttr(false))
-	}
-	got := New().Inverse(true).Bytes()
-	if len(got) != 1 || got[0] != 29 {
-		t.Errorf("Inverse(true) doit émettre l'octet 29, got %v", got)
+func TestInverseText(t *testing.T) {
+	// Sur Oric l'inverse est par caractère (bit 7), pas un attribut sériel.
+	got := New().InverseText("AB").Bytes()
+	want := []byte{'A' | 0x80, 'B' | 0x80}
+	if !bytes.Equal(got, want) {
+		t.Errorf("InverseText: got %v, want %v", got, want)
 	}
 }

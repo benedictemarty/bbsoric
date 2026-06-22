@@ -47,8 +47,9 @@
         </div>
       </div>
       <div class="col preview">
-        <h2>Aperçu Oric (40 col)</h2>
-        <pre id="preview" class="oric"></pre>
+        <h2>Aperçu Oric (ULA, 240×224)</h2>
+        <canvas id="oric-screen" class="oric-screen" width="240" height="224"></canvas>
+        <p class="hint">Rendu fidèle ULA (police Oric, attributs, inverse, double hauteur, clignotement). Semi-graphiques approximés.</p>
       </div>
     </section>
 
@@ -76,6 +77,7 @@
     </section>
   </main>
 
+  <script src="/charset.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

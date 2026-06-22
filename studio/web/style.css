@@ -66,14 +66,11 @@ button.del { padding: 4px 8px; color: var(--warn); }
 .actions { margin-top: 12px; display: flex; gap: 8px; }
 .hint { color: #889; }
 
-pre.oric {
-  background: #000; padding: 10px; border-radius: 4px; min-height: 320px;
-  font: 15px/1.25 "DejaVu Sans Mono", monospace; white-space: pre; overflow-x: auto;
+/* canvas du simulateur ULA : rendu 240×224 mis à l'échelle, pixels nets */
+.oric-screen {
+  width: 480px; max-width: 100%; height: auto; image-rendering: pixelated;
+  background: #000; border-radius: 4px; display: block;
 }
-@keyframes oric-blink { 50% { opacity: 0; } }
-pre.oric .blink { animation: oric-blink 1s step-start infinite; }
-/* approximation du charset alternatif (semi-graphiques) : rendu fidèle = émulateur */
-pre.oric .alt { border-bottom: 1px dotted currentColor; }
 
 /* éditeur de lignes / segments */
 .lines { margin: 6px 0; }
