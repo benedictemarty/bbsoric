@@ -370,9 +370,11 @@ function drawScreen(buf) {
         let inv = (b & 0x80) !== 0;
         if ((attr & 4) && blinkOn) inv = !inv;
         const fg = PAL[ink], bg = PAL[paper];
+        const altFont = (attr & 1) && window.ORIC_ALTCHARSET; // charset alternatif (police BBS)
         for (let cy = 0; cy < CH; cy++) {
           const erow = (attr & 2) ? ((cy >> 1) + (row & 1 ? 4 : 0)) : cy;
-          const glyph = (idx >= 0x20 && idx <= 0x7F) ? window.ORIC_CHARSET[(idx - 0x20) * 8 + erow] : 0;
+          const glyph = altFont ? window.ORIC_ALTCHARSET[idx * 8 + erow]
+            : ((idx >= 0x20 && idx <= 0x7F) ? window.ORIC_CHARSET[(idx - 0x20) * 8 + erow] : 0);
           for (let bx = 0; bx < CW; bx++) {
             let on = (glyph >> (5 - bx)) & 1;
             if (inv) on = on ? 0 : 1;
@@ -383,6 +385,45 @@ function drawScreen(buf) {
     }
   }
   ctx.putImageData(img, 0, 0);
+}
+
+// --- palette de glyphes BBS (charset alternatif) ---
+let lastInput = null; // dernier champ texte de l'éditeur ayant eu le focus
+
+function glyphCanvas(code) {
+  const cv = document.createElement('canvas'); cv.width = CW; cv.height = CH; cv.className = 'gly';
+  const ctx = cv.getContext('2d'); const img = ctx.createImageData(CW, CH);
+  for (let r = 0; r < CH; r++) {
+    const b = window.ORIC_ALTCHARSET[code * 8 + r];
+    for (let x = 0; x < CW; x++) {
+      const on = (b >> (5 - x)) & 1, o = (r * CW + x) * 4;
+      img.data[o] = img.data[o + 1] = img.data[o + 2] = on ? 238 : 0; img.data[o + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0); return cv;
+}
+
+function renderPalette() {
+  const host = $('glyph-palette'); if (!host || !window.ORIC_ALTCHARSET) return;
+  host.innerHTML = '';
+  for (let c = 0x20; c < 0x80; c++) {
+    let blank = true;
+    for (let r = 0; r < 8; r++) if (window.ORIC_ALTCHARSET[c * 8 + r]) { blank = false; break; }
+    if (blank) continue;
+    const btn = el('button', { className: 'gly-btn', title: 'code « ' + String.fromCharCode(c) + ' » (0x' + c.toString(16) + ')' });
+    btn.append(glyphCanvas(c));
+    btn.onclick = () => insertGlyph(String.fromCharCode(c));
+    host.append(btn);
+  }
+}
+
+function insertGlyph(ch) {
+  const inp = lastInput;
+  if (!inp) { setStatus('place le curseur dans un champ texte', 'err'); return; }
+  const s = inp.selectionStart ?? inp.value.length, e = inp.selectionEnd ?? s;
+  inp.value = inp.value.slice(0, s) + ch + inp.value.slice(e);
+  inp.dispatchEvent(new Event('input'));
+  inp.focus(); inp.setSelectionRange(s + ch.length, s + ch.length);
 }
 
 let previewTimer = null;
@@ -490,5 +531,10 @@ $('btn-save-profile').onclick = saveProfile;
 $('profile-select').onchange = () => loadProfile($('profile-select').value);
 $('btn-add-page').onclick = () => addPage();
 for (const t of document.querySelectorAll('.tab')) t.onclick = () => showTab(t.dataset.tab);
+// mémorise le dernier champ texte focalisé (pour l'insertion de glyphes).
+$('page-form').addEventListener('focusin', (e) => {
+  if (e.target.tagName === 'INPUT' && e.target.type === 'text') lastInput = e.target;
+});
 showTab('nav');
+renderPalette();
 loadSites(); // charge le 1er site, qui charge ses propres profils

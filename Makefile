@@ -1,6 +1,6 @@
 # BBS Oric — tâches de build, test et déploiement.
 
-.PHONY: help build test vet run studio deploy deploy-build client
+.PHONY: help build test vet run studio genfont deploy deploy-build client
 
 help: ## Affiche cette aide
 	@echo "BBS Oric — cibles disponibles :"
@@ -27,6 +27,9 @@ run: build ## Lance le serveur en local
 
 studio: ## Lance le studio forge (éditeur web local)
 	go run ./studio/cmd/forge -addr 127.0.0.1:8080
+
+genfont: ## Régénère la police BBS Oric (studio + client) depuis tools/genfont
+	go run ./tools/genfont
 
 client: ## Construit la .tap du terminal Oric
 	./client/build.sh

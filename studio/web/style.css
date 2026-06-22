@@ -83,6 +83,12 @@ button.del { padding: 4px 8px; color: var(--warn); }
 .style-ctl .tog { display: inline-flex; align-items: center; gap: 2px; min-width: auto; margin: 0; color: #9aa; }
 
 hr.sep { border: none; border-top: 1px solid var(--line); margin: 18px 0 12px; }
+.palette-box { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 10px; }
+.palette { display: flex; flex-wrap: wrap; gap: 4px; }
+.gly-btn { padding: 3px; line-height: 0; background: #1b1d22; }
+.gly-btn:hover { border-color: var(--accent); }
+.gly { width: 18px; height: 24px; image-rendering: pixelated; display: block; }
+
 .deploy { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
 .deploy-bar { display: flex; gap: 8px; align-items: center; }
 button.warn { background: #5a2; border-color: #5a2; color: #021; font-weight: 600; }

@@ -42,7 +42,13 @@ Une page a un **titre** et, **optionnellement**, du **texte** (`lines`) et/ou de
 - `ink` : couleur du texte — `black red green yellow blue magenta cyan white` (défaut blanc).
 - `paper` : couleur de **fond** (mêmes noms ; défaut noir).
 - `blink` : **clignotement** · `doubleHeight` : **double hauteur** ·
-  `altCharset` : **charset alternatif (semi-graphiques)** · `inverse` : **vidéo inverse**.
+  `altCharset` : **police BBS** (filets/cadres, blocs, trames, symboles — charset
+  alternatif Oric redéfini, cf. `tools/genfont`) · `inverse` : **vidéo inverse**.
+
+> Avec `altCharset`, les caractères ne sont plus l'ASCII standard mais la **police BBS**
+> (ex. `a`/`b`/`c`/`d` = coins, `-`/`|` = filets, `0` = bloc plein, `5`/`6`/`7` = trames).
+> Le studio fournit une **palette** (onglet Édition) pour insérer ces glyphes ; l'aperçu et
+> le terminal Oric utilisent la même police.
 
 **Multicolore sur une ligne** — découper en `segments`, chacun avec son propre style :
 ```json

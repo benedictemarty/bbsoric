@@ -6,6 +6,19 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Police « BBS Oric » — charset alternatif redéfini, art BBS)
+- L'Oric n'ayant pas de glyphes orientés BBS (contrairement à PETSCII/ATASCII), on
+  **redéfinit son charset alternatif** : nouvelle **police BBS 6×8** (filets/cadres simples
+  et doubles, blocs ▌▐▀▄█, trames ░▒▓, symboles ►◄▲▼★•✓…), 35 glyphes.
+- `tools/genfont` : générateur (glyphes décrits en ASCII-art, **source unique**) produisant
+  `studio/web/altcharset.js` (simulateur) et `client/altcharset.s` (données pour `$B800`).
+  Cible `make genfont`.
+- Studio : le simulateur ULA rend les cellules `altCharset` avec la police BBS (les filets se
+  raccordent), et une **palette** (onglet Édition) insère les glyphes dans le champ courant.
+- Accès via `altCharset: true` (ligne ou segment). Rendu validé (cadre `┌───┐`).
+- Reste : chargement de la police dans `$B800` par le terminal Oric (`term.s`) pour le rendu
+  sur Oric réel.
+
 ### Ajouté (Studio — aperçu fidèle « simulateur ULA » + rendu partagé)
 - **`internal/render`** : paquet **partagé** produisant le flux OASCII d'un écran de page
   (`Screen`) — **source unique** réutilisée par le serveur (`server/internal/bbs`) et le
