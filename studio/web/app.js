@@ -38,6 +38,7 @@ async function loadSite(name) {
   siteName = name;
   current = site.start && site.pages[site.start] ? site.start : Object.keys(site.pages)[0] || null;
   renderPageList(); renderForm(); refreshPreview();
+  loadProfiles();                 // profils propres à CE site
   setStatus('chargé : ' + name, 'ok');
 }
 
@@ -210,18 +211,20 @@ async function save() {
   if (r.ok) setStatus('enregistré ✓ ' + siteName, 'ok'); else setStatus('échec : ' + r.error, 'err');
 }
 
-// --- déploiement par profils ---
+// --- déploiement par profils (propres au site courant) ---
 async function loadProfiles() {
-  const names = await fetch('/api/profiles').then(r => r.json()).catch(() => []);
   const sel = $('profile-select'); sel.innerHTML = '';
+  if (!siteName) return;
+  const names = await fetch('/api/profiles?site=' + encodeURIComponent(siteName)).then(r => r.json()).catch(() => []);
   for (const n of names) sel.append(el('option', { value: n, textContent: n }));
 }
 
 async function deploy(dryRun) {
   const profile = $('profile-select').value;
-  if (!profile) { $('deploy-log').textContent = 'aucun profil (voir deploy/profiles/*.conf.example)'; return; }
-  if (!dryRun && !confirm('Déployer (écraser) le contenu sur le profil « ' + profile + ' » ?')) return;
-  const url = '/api/deploy?profile=' + encodeURIComponent(profile) + '&dryRun=' + (dryRun ? 'true' : 'false');
+  if (!siteName) { $('deploy-log').textContent = 'aucun site chargé'; return; }
+  if (!profile) { $('deploy-log').textContent = 'aucun profil pour ce site (voir deploy/profiles/' + siteName.replace(/\.json$/, '') + '/*.conf.example)'; return; }
+  if (!dryRun && !confirm('Déployer (écraser) « ' + siteName + ' » sur le profil « ' + profile + ' » ?')) return;
+  const url = '/api/deploy?site=' + encodeURIComponent(siteName) + '&profile=' + encodeURIComponent(profile) + '&dryRun=' + (dryRun ? 'true' : 'false');
   const r = await fetch(url, { method: 'POST', body: JSON.stringify(site) }).then(r => r.json());
   $('deploy-log').textContent = (r.log || []).join('\n');
   setStatus(dryRun ? 'simulation effectuée' : (r.ok ? 'déployé ✓ ' + profile : 'échec déploiement'), r.ok ? 'ok' : 'err');
@@ -234,5 +237,4 @@ $('btn-save').onclick = save;
 $('btn-dryrun').onclick = () => deploy(true);
 $('btn-deploy').onclick = () => deploy(false);
 for (const b of document.querySelectorAll('.add-row button')) b.onclick = () => addPage(b.dataset.type);
-loadSites();
-loadProfiles();
+loadSites(); // charge le 1er site, qui charge ses propres profils

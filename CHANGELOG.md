@@ -6,6 +6,15 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Modifié (Studio Forge — profils PAR SITE + enregistrement indenté)
+- Les profils de déploiement sont désormais **propres à chaque site** :
+  `deploy/profiles/<site>/<env>.conf` (chaque site a son trio `dev`/`int`/`prod`), au lieu
+  d'un jeu global. API : `GET /api/profiles?site=`, `POST /api/deploy?site=&profile=&dryRun=`.
+  Exemples déplacés sous `deploy/profiles/site/` ; `.gitignore` couvre `deploy/profiles/**/*.conf`.
+- L'enregistrement **ré-indente** le JSON (`json.Indent`, 2 espaces) : fichiers lisibles,
+  diffs git stables, toutes les clés préservées (y compris `_comment`).
+- Tests : `LoadSiteProfiles` (par site, répertoire absent toléré, refus de traversée), `SiteKey`.
+
 ### Ajouté (Studio Forge — incrément 2 : profils & déploiement dev/int/prod)
 - **ADR-0003** (`docs/adr/0003-studio-forge.md`) : studio web Go, `internal/` partagé,
   déploiement par profils, studio = source de vérité (écrase + sauvegarde).

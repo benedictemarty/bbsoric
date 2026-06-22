@@ -74,6 +74,29 @@ func LoadProfiles(dir string) (map[string]*Profile, error) {
 	return profs, nil
 }
 
+// SiteKey dérive la clé de profil d'un nom de fichier site (base sans .json) :
+// "site.json" -> "site". Les profils d'un site vivent dans <baseDir>/<clé>/.
+func SiteKey(siteFile string) string {
+	return strings.TrimSuffix(filepath.Base(siteFile), ".json")
+}
+
+// LoadSiteProfiles charge les profils PROPRES À UN SITE :
+// <baseDir>/<clé>/<env>.conf (ou .example). Chaque site a son trio dev/int/prod.
+// Map vide si le répertoire du site n'existe pas encore.
+func LoadSiteProfiles(baseDir, siteFile string) (map[string]*Profile, error) {
+	if siteFile == "" || strings.ContainsAny(siteFile, `/\`) || strings.Contains(siteFile, "..") {
+		return nil, fmt.Errorf("site invalide : %q", siteFile)
+	}
+	profs, err := LoadProfiles(filepath.Join(baseDir, SiteKey(siteFile)))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return map[string]*Profile{}, nil
+		}
+		return nil, err
+	}
+	return profs, nil
+}
+
 // parseProfile lit un format KEY=VALUE simple (commentaires '#', valeurs sans
 // guillemets requis).
 func parseProfile(name string, data []byte) *Profile {

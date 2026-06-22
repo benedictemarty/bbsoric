@@ -27,7 +27,7 @@ client/term.tap
 
 # Config de déploiement réelle (infra prod) — utiliser les *.conf.example
 deploy/deploy.conf
-deploy/profiles/*.conf
+deploy/profiles/**/*.conf
 
 # Binaires
 bbsd

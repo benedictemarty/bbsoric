@@ -1,0 +1,76 @@
+{
+  "_comment": "Flux de pages du BBS Oric. Modifiable a chaud. type=menu (entries), page (lines) ou applet (applet+next). Cibles speciales: __quit__, __back__, __home__. Applets: login, register, guest. Couleurs ink: black red green yellow blue magenta cyan white.",
+  "start": "accueil",
+  "pages": {
+    "accueil": {
+      "title": "BIENVENUE",
+      "type": "menu",
+      "entries": [
+        { "key": "1", "label": "Se connecter", "target": "login" },
+        { "key": "2", "label": "Creer un compte", "target": "register" },
+        { "key": "3", "label": "Entrer en invite", "target": "guest" },
+        { "key": "Q", "label": "Quitter", "target": "__quit__" }
+      ]
+    },
+    "login": { "type": "applet", "applet": "login", "next": "main" },
+    "register": { "type": "applet", "applet": "register", "next": "main" },
+    "guest": { "type": "applet", "applet": "guest", "next": "main" },
+    "main": {
+      "title": "MENU PRINCIPAL",
+      "type": "menu",
+      "entries": [
+        { "key": "1", "label": "Informations systeme", "target": "info" },
+        { "key": "2", "label": "A propos du BBS", "target": "about" },
+        { "key": "3", "label": "Livre d'or", "target": "guestbook" },
+        { "key": "4", "label": "Services", "target": "services" },
+        { "key": "Q", "label": "Quitter", "target": "__quit__" }
+      ]
+    },
+    "info": {
+      "title": "INFORMATIONS SYSTEME",
+      "type": "page",
+      "lines": [
+        { "text": " Serveur  - BBS Oric (Go)" },
+        { "text": " Ecran    - TEXT 40x28, OASCII" },
+        { "text": " Acces    - telnet 6502 / TLS 6992" },
+        { "text": " Contenu  - JSON modifiable a chaud", "ink": "cyan" }
+      ]
+    },
+    "about": {
+      "title": "A PROPOS",
+      "type": "page",
+      "lines": [
+        { "text": " BBS pour ordinateurs Oric, dans" },
+        { "text": " l'esprit des serveurs retro type" },
+        { "text": " PETSCII BBS / ATASCII." },
+        { "text": "" },
+        { "text": " L'enchainement des pages est", "ink": "cyan" },
+        { "text": " pilote par ce fichier JSON.", "ink": "cyan" }
+      ]
+    },
+    "guestbook": {
+      "title": "LIVRE D'OR",
+      "type": "page",
+      "lines": [
+        { "text": " (bientot disponible)", "ink": "magenta" },
+        { "text": " La messagerie arrive au Sprint 3." }
+      ]
+    },
+    "services": {
+      "title": "SERVICES",
+      "type": "menu",
+      "entries": [
+        { "key": "1", "label": "Meteo (a venir)", "target": "soon" },
+        { "key": "2", "label": "Actualites (a venir)", "target": "soon" },
+        { "key": "R", "label": "Retour", "target": "__back__" }
+      ]
+    },
+    "soon": {
+      "title": "BIENTOT",
+      "type": "page",
+      "lines": [
+        { "text": " Ce service arrive prochainement.", "ink": "yellow" }
+      ]
+    }
+  }
+}

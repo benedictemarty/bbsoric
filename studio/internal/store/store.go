@@ -4,6 +4,8 @@
 package store
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -74,6 +76,15 @@ func (s *Store) Save(name string, data []byte) error {
 	if _, err := content.Parse(data); err != nil {
 		return fmt.Errorf("contenu invalide : %w", err)
 	}
+	// Ré-indente pour un fichier lisible et des diffs git stables (préserve
+	// toutes les clés, y compris _comment).
+	var pretty bytes.Buffer
+	if err := json.Indent(&pretty, data, "", "  "); err != nil {
+		return fmt.Errorf("formatage : %w", err)
+	}
+	pretty.WriteByte('\n')
+	data = pretty.Bytes()
+
 	tmp, err := os.CreateTemp(s.dir, ".site-*.json.tmp")
 	if err != nil {
 		return err

@@ -27,12 +27,14 @@ uniquement (non exposé, pas d'authentification).
 
 ## Déploiement par profils (dev / int / prod)
 
-Les profils sont dans `deploy/profiles/<nom>.conf` (format `KEY=VALUE`). Un `.conf.example`
-sert de **défaut** ; copier en `.conf` pour l'infra réelle (le `.conf` est gitignoré et
-**prime** sur l'exemple) :
+Les profils sont **propres à chaque site** : `deploy/profiles/<site>/<env>.conf` où `<site>`
+est le nom du fichier sans `.json`. Chaque site a son trio `dev` / `int` / `prod`.
+Format `KEY=VALUE`. Un `.conf.example` sert de **défaut** ; copier en `.conf` pour l'infra
+réelle (le `.conf` est gitignoré et **prime** sur l'exemple) :
 
 ```bash
-cp deploy/profiles/prod.conf.example deploy/profiles/prod.conf   # puis renseigner
+# profils du site « site.json »
+cp deploy/profiles/site/prod.conf.example deploy/profiles/site/prod.conf   # puis renseigner
 ```
 
 Le studio (source de vérité) **valide → sauvegarde (horodatée) → écrase → reload**. Le
@@ -41,7 +43,7 @@ confirmation. `dev` = **local** (copie de fichier, le bbsd recharge à chaud) ; 
 = **ssh/scp**. Champs : `LOCAL HOST USER PORT CONTENT_PATH SERVICE RELOAD`
 (`RELOAD` = `none|reload|restart`).
 
-API : `GET /api/profiles`, `POST /api/deploy?profile=&dryRun=`.
+API : `GET /api/profiles?site=`, `POST /api/deploy?site=&profile=&dryRun=`.
 
 ## Architecture
 

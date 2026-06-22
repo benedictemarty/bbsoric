@@ -31,6 +31,40 @@ func TestLoadProfilesExampleAndOverride(t *testing.T) {
 	}
 }
 
+func TestLoadSiteProfiles(t *testing.T) {
+	base := t.TempDir()
+	// profils du site "site" (site.json)
+	siteDir := filepath.Join(base, "site")
+	os.MkdirAll(siteDir, 0o755)
+	os.WriteFile(filepath.Join(siteDir, "dev.conf.example"), []byte("LOCAL=1\nCONTENT_PATH=content/site.json\n"), 0o644)
+	os.WriteFile(filepath.Join(siteDir, "prod.conf.example"), []byte("HOST=h\nUSER=root\nCONTENT_PATH=/etc/bbsoric/site.json\n"), 0o644)
+
+	profs, err := LoadSiteProfiles(base, "site.json")
+	if err != nil {
+		t.Fatalf("LoadSiteProfiles: %v", err)
+	}
+	if got := Names(profs); len(got) != 2 || got[0] != "dev" || got[1] != "prod" {
+		t.Fatalf("Names = %v, attendu [dev prod]", got)
+	}
+	// un site sans répertoire de profils -> map vide (pas d'erreur)
+	empty, err := LoadSiteProfiles(base, "autre.json")
+	if err != nil || len(empty) != 0 {
+		t.Fatalf("site sans profils : %v / %d", err, len(empty))
+	}
+	// nom de site invalide -> erreur
+	if _, err := LoadSiteProfiles(base, "../evil.json"); err == nil {
+		t.Errorf("un site avec traversée doit être refusé")
+	}
+}
+
+func TestSiteKey(t *testing.T) {
+	for in, want := range map[string]string{"site.json": "site", "bbs2.json": "bbs2", "x": "x"} {
+		if got := SiteKey(in); got != want {
+			t.Errorf("SiteKey(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
 func TestDeployLocalBackupAndOverwrite(t *testing.T) {
 	dir := t.TempDir()
 	target := filepath.Join(dir, "site.json")

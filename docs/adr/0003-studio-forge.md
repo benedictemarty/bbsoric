@@ -34,11 +34,16 @@ Le contenu du BBS (`content/site.json` : pages `menu`/`page`/`applet`, porte d'a
    (`<cible>.bak.<horodatage>`). **Dry-run** par défaut dans l'UI ; **confirmation** avant
    un déploiement réel.
 
-4. **Profils** dans `deploy/profiles/<nom>.conf` (format `KEY=VALUE`). Un `<nom>.conf.example`
-   sert de **défaut** ; le `<nom>.conf` réel (gitignoré) **prime**. `dev` = **local** (copie
-   de fichier, le bbsd recharge à chaud) ; `int`/`prod` = **ssh/scp** (réutilise le mécanisme
-   de `deploy/vps-deploy.sh`, sans dépendance). Champs : `LOCAL HOST USER PORT CONTENT_PATH
+4. **Profils PAR SITE** : chaque site a son trio `dev`/`int`/`prod` dans
+   `deploy/profiles/<site>/<env>.conf` (où `<site>` = nom du fichier sans `.json`, ex.
+   `deploy/profiles/site/dev.conf`). Format `KEY=VALUE`. Un `<env>.conf.example` sert de
+   **défaut** ; le `<env>.conf` réel (gitignoré) **prime**. `dev` = **local** (copie de
+   fichier, le bbsd recharge à chaud) ; `int`/`prod` = **ssh/scp** (réutilise le mécanisme de
+   `deploy/vps-deploy.sh`, sans dépendance). Champs : `LOCAL HOST USER PORT CONTENT_PATH
    SERVICE RELOAD` (`RELOAD` = `none|reload|restart`).
+
+5. **Enregistrement indenté** : le studio ré-indente le JSON à l'écriture (`json.Indent`,
+   2 espaces) — fichiers lisibles, diffs git stables, toutes les clés préservées (`_comment`).
 
 ## Conséquences
 
