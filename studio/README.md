@@ -23,6 +23,25 @@ uniquement (non exposé, pas d'authentification).
   `page` (lignes texte + encre), `applet` (nom d'applet + page `next` + intro).
 - Aperçu couleur 40 colonnes fidèle au rendu serveur.
 - **Valider** (refuse un JSON incohérent) et **Enregistrer** (écriture atomique).
+- **Déployer** vers un environnement via un **profil** (Simuler / Déployer).
+
+## Déploiement par profils (dev / int / prod)
+
+Les profils sont dans `deploy/profiles/<nom>.conf` (format `KEY=VALUE`). Un `.conf.example`
+sert de **défaut** ; copier en `.conf` pour l'infra réelle (le `.conf` est gitignoré et
+**prime** sur l'exemple) :
+
+```bash
+cp deploy/profiles/prod.conf.example deploy/profiles/prod.conf   # puis renseigner
+```
+
+Le studio (source de vérité) **valide → sauvegarde (horodatée) → écrase → reload**. Le
+bouton **Simuler** (dry-run) montre les actions sans rien exécuter ; **Déployer** demande
+confirmation. `dev` = **local** (copie de fichier, le bbsd recharge à chaud) ; `int`/`prod`
+= **ssh/scp**. Champs : `LOCAL HOST USER PORT CONTENT_PATH SERVICE RELOAD`
+(`RELOAD` = `none|reload|restart`).
+
+API : `GET /api/profiles`, `POST /api/deploy?profile=&dryRun=`.
 
 ## Architecture
 

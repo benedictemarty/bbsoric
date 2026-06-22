@@ -6,6 +6,20 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Studio Forge — incrément 2 : profils & déploiement dev/int/prod)
+- **ADR-0003** (`docs/adr/0003-studio-forge.md`) : studio web Go, `internal/` partagé,
+  déploiement par profils, studio = source de vérité (écrase + sauvegarde).
+- `studio/internal/deploy` : profils `KEY=VALUE` (`deploy/profiles/<nom>.conf`, l'`.example`
+  sert de défaut, le `.conf` réel gitignoré prime). Déploiement : **valide → sauvegarde
+  horodatée → écrase → reload** ; **dry-run** (journal des actions). `dev` = local (copie,
+  hot-reload) ; `int`/`prod` = ssh/scp (sans dépendance).
+- `studio/cmd/forge` : API `GET /api/profiles`, `POST /api/deploy?profile=&dryRun=`.
+- UI : sélecteur de profil, boutons **Simuler** / **Déployer** (confirmation), journal.
+- `deploy/profiles/{dev,int,prod}.conf.example` ; `.gitignore` couvre les `.conf` réels.
+- Tests : parsing/priorité des profils, déploiement local (backup+écrasement), refus d'un
+  contenu invalide, dry-run sans effet. **Validé end-to-end** : forge → deploy `dev` →
+  bbsd recharge à chaud (vérifié via `nc`).
+
 ### Ajouté (Studio Forge — incrément 1 : éditeur web + aperçu OASCII)
 - Nouveau sous-projet **`studio/`** : app web **Go** locale (stdlib, assets embarqués) pour
   éditer le(s) `site*.json` (pages `menu`/`page`/`applet`, porte d'auth).

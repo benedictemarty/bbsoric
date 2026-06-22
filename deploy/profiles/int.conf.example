@@ -1,0 +1,8 @@
+# Profil INTÉGRATION — serveur distant (SSH). Copier en int.conf et renseigner.
+# int.conf est gitignoré (ne JAMAIS versionner l'infra réelle).
+HOST=10.0.0.2
+USER=root
+PORT=22
+CONTENT_PATH=/etc/bbsoric/site.json
+SERVICE=bbsoric
+RELOAD=none

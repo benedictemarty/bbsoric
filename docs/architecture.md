@@ -126,6 +126,8 @@ Les ADR sont versionnés dans `docs/adr/`.
   spéciale → composant), persistance hachée PBKDF2 stdlib. (`docs/adr/0001-login-composant-page.md`)
 - **ADR-0002** — Modèle de saisie : terminal Oric en mode caractère, `ReadKey` (menus) +
   `ReadLine` (champs texte). (`docs/adr/0002-modele-de-saisie.md`)
+- **ADR-0003** — Studio « forge » : app web Go, `internal/` partagé, déploiement par profils
+  (dev/int/prod), studio = source de vérité. (`docs/adr/0003-studio-forge.md`)
 
 Décisions encore ouvertes : voir `ROADMAP.md` §« Décisions ouvertes » (adressage ACIA,
 négociation telnet, table OASCII).

@@ -1,0 +1,85 @@
+package deploy
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+const validSite = `{"start":"main","pages":{"main":{"title":"M","type":"menu","entries":[{"key":"Q","label":"Quitter","target":"__quit__"}]}}}`
+
+func TestLoadProfilesExampleAndOverride(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "dev.conf.example"), []byte("LOCAL=1\nCONTENT_PATH=content/site.json\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "prod.conf.example"), []byte("HOST=ex\nUSER=root\nCONTENT_PATH=/etc/x\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "prod.conf"), []byte("HOST=reel\nUSER=root\nPORT=2222\nCONTENT_PATH=/etc/bbsoric/site.json\nSERVICE=bbsoric\nRELOAD=restart\n"), 0o644)
+
+	profs, err := LoadProfiles(dir)
+	if err != nil {
+		t.Fatalf("LoadProfiles: %v", err)
+	}
+	if got := Names(profs); len(got) != 2 || got[0] != "dev" || got[1] != "prod" {
+		t.Fatalf("Names = %v, attendu [dev prod]", got)
+	}
+	if !profs["dev"].Local || profs["dev"].ContentPath != "content/site.json" {
+		t.Errorf("profil dev mal lu : %+v", profs["dev"])
+	}
+	// le .conf réel doit l'emporter sur le .example
+	if profs["prod"].Host != "reel" || profs["prod"].Port != "2222" || profs["prod"].Reload != "restart" {
+		t.Errorf("prod.conf doit primer sur l'exemple : %+v", profs["prod"])
+	}
+}
+
+func TestDeployLocalBackupAndOverwrite(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "site.json")
+	os.WriteFile(target, []byte(`{"old":true}`), 0o644)
+	p := &Profile{Name: "dev", Local: true, ContentPath: target, Reload: "none"}
+
+	res, err := Deploy(p, []byte(validSite), false, "STAMP")
+	if err != nil {
+		t.Fatalf("Deploy: %v", err)
+	}
+	if !res.OK && len(res.Log) == 0 {
+		t.Errorf("log attendu")
+	}
+	// la cible doit contenir le nouveau contenu
+	got, _ := os.ReadFile(target)
+	if !strings.Contains(string(got), `"start":"main"`) {
+		t.Errorf("la cible n'a pas été écrasée : %s", got)
+	}
+	// une sauvegarde horodatée doit exister avec l'ancien contenu
+	bak, err := os.ReadFile(target + ".bak.STAMP")
+	if err != nil {
+		t.Fatalf("sauvegarde absente : %v", err)
+	}
+	if !strings.Contains(string(bak), "old") {
+		t.Errorf("la sauvegarde doit contenir l'ancien contenu : %s", bak)
+	}
+}
+
+func TestDeployRefusesInvalidSite(t *testing.T) {
+	p := &Profile{Name: "dev", Local: true, ContentPath: filepath.Join(t.TempDir(), "s.json")}
+	if _, err := Deploy(p, []byte(`{"pages":{}}`), false, "S"); err == nil {
+		t.Errorf("un contenu invalide doit être refusé")
+	}
+}
+
+func TestDeployDryRunDoesNothing(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "site.json")
+	p := &Profile{Name: "prod", Host: "h", User: "root", Port: "22", ContentPath: target, Service: "bbsoric", Reload: "restart"}
+
+	res, err := Deploy(p, []byte(validSite), true, "S")
+	if err != nil {
+		t.Fatalf("Deploy dry-run: %v", err)
+	}
+	if _, err := os.Stat(target); !os.IsNotExist(err) {
+		t.Errorf("le dry-run ne doit rien écrire")
+	}
+	joined := strings.Join(res.Log, "\n")
+	if !strings.Contains(joined, "dry-run") || !strings.Contains(joined, "scp") {
+		t.Errorf("le journal dry-run doit décrire les actions : %s", joined)
+	}
+}

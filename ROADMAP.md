@@ -68,6 +68,18 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 - [ ] Conteneurisation (Docker) — optionnel (systemd suffit pour l'instant)
 - [ ] Documentation utilisateur (se connecter depuis un Oric réel : `ATD pavi.3617.fr:6502`)
 
+## Studio « Forge » — outillage de contenu ⏳ (en cours)
+Sous-projet `studio/` : app web Go locale pour éditer le(s) `site.json` et déployer par
+profils. Voir `docs/adr/0003-studio-forge.md`.
+- [x] **Restructuration** du dépôt en 3 sous-projets `server/` `client/` `studio/`
+  (`internal/{content,oascii}` partagés à la racine).
+- [x] **Forge** : éditeur web (pages menu/page/applet), aperçu OASCII couleur, validation
+  par `internal/content`, enregistrement atomique.
+- [x] **Déploiement par profils** (dev/int/prod) : valide → sauvegarde → écrase → reload,
+  dry-run ; `dev` local (hot-reload), `int`/`prod` ssh/scp. Validé end-to-end.
+- [ ] Multi-sites avancé (création de nouveaux fichiers depuis l'UI), gestion des sauvegardes.
+- [ ] Authentification si le studio devait être exposé (aujourd'hui local-only).
+
 ---
 
 ## Décisions actées

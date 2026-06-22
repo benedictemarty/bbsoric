@@ -1,0 +1,5 @@
+# Profil DEV — déploiement LOCAL (le bbsd local recharge à chaud).
+# Copier en dev.conf pour personnaliser (dev.conf est gitignoré).
+LOCAL=1
+CONTENT_PATH=content/site.json
+RELOAD=none

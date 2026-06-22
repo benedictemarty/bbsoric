@@ -210,9 +210,29 @@ async function save() {
   if (r.ok) setStatus('enregistré ✓ ' + siteName, 'ok'); else setStatus('échec : ' + r.error, 'err');
 }
 
+// --- déploiement par profils ---
+async function loadProfiles() {
+  const names = await fetch('/api/profiles').then(r => r.json()).catch(() => []);
+  const sel = $('profile-select'); sel.innerHTML = '';
+  for (const n of names) sel.append(el('option', { value: n, textContent: n }));
+}
+
+async function deploy(dryRun) {
+  const profile = $('profile-select').value;
+  if (!profile) { $('deploy-log').textContent = 'aucun profil (voir deploy/profiles/*.conf.example)'; return; }
+  if (!dryRun && !confirm('Déployer (écraser) le contenu sur le profil « ' + profile + ' » ?')) return;
+  const url = '/api/deploy?profile=' + encodeURIComponent(profile) + '&dryRun=' + (dryRun ? 'true' : 'false');
+  const r = await fetch(url, { method: 'POST', body: JSON.stringify(site) }).then(r => r.json());
+  $('deploy-log').textContent = (r.log || []).join('\n');
+  setStatus(dryRun ? 'simulation effectuée' : (r.ok ? 'déployé ✓ ' + profile : 'échec déploiement'), r.ok ? 'ok' : 'err');
+}
+
 // --- init ---
 $('btn-load').onclick = () => loadSite($('site-select').value);
 $('btn-validate').onclick = validate;
 $('btn-save').onclick = save;
+$('btn-dryrun').onclick = () => deploy(true);
+$('btn-deploy').onclick = () => deploy(false);
 for (const b of document.querySelectorAll('.add-row button')) b.onclick = () => addPage(b.dataset.type);
 loadSites();
+loadProfiles();

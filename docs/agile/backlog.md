@@ -48,6 +48,17 @@
 - [ ] **E2** (5) En tant qu'utilisateur, je veux me connecter depuis un **Oric réel**.
 - [ ] **E3** (3) En tant qu'admin, je veux **déployer** le serveur (Docker) et le **superviser**.
 
+## Épopée F — Studio « Forge » (outillage de contenu)
+
+- [x] **F0** (3) En tant qu'équipe, je veux un dépôt en **3 sous-projets** (server/client/studio)
+  avec les paquets partagés réutilisables. *(restructuration, ADR-0003)*
+- [x] **F1** (5) En tant qu'éditeur, je veux **composer le site.json** (menu/page/applet) avec
+  **aperçu couleur** et validation. *(forge web Go, internal/content réutilisé)*
+- [x] **F2** (5) En tant qu'admin, je veux **déployer le contenu** sur **dev/int/prod** via des
+  **profils** (valide→sauvegarde→écrase→reload, dry-run). *(validé end-to-end)*
+- [ ] **F3** (3) En tant qu'éditeur, je veux **créer/gérer plusieurs sites** et leurs sauvegardes
+  depuis l'UI.
+
 ## Definition of Done (DoD)
 - Code versionné, `CHANGELOG.md` et `ROADMAP.md` mis à jour.
 - Tests passants pour la fonctionnalité livrée.
