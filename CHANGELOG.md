@@ -16,6 +16,9 @@ versionnage [SemVer](https://semver.org/lang/fr/).
   `guest` directement sur le menu `accueil`) ; pages applet séparées supprimées.
 - Studio : l'éditeur d'entrées propose le type **→ page** ou **▶ applet** (nom + `next`) ;
   le graphe de navigation relie les entrées-applet à leur `next` et affiche `▶applet`.
+  Le studio ne crée plus de *page* de type applet (bouton « + applet » et option de type
+  retirés) — les applets se lancent via une entrée de menu. Le moteur garde la compat des
+  pages applet écrites à la main.
 - Tests : entrée-applet (lancement + navigation `next`), validation. Validé via `nc`.
 
 ### Modifié (Studio Forge — profils PAR SITE + enregistrement indenté)

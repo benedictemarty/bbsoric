@@ -179,9 +179,10 @@ function renderForm() {
   titleIn.oninput = () => { p.title = titleIn.value; refreshPreview(); };
   host.append(field('Titre', titleIn));
 
-  // type
+  // type (les applets se lancent via une entrée de menu, pas une page dédiée)
   const typeSel = el('select');
-  for (const t of ['menu', 'page', 'applet']) typeSel.append(el('option', { value: t, textContent: t, selected: p.type === t }));
+  const types = (p.type === 'applet') ? ['menu', 'page', 'applet'] : ['menu', 'page'];
+  for (const t of types) typeSel.append(el('option', { value: t, textContent: t, selected: p.type === t }));
   typeSel.onchange = () => { p.type = typeSel.value; normalizePage(p); renderForm(); renderPageList(); refreshPreview(); };
   host.append(field('Type', typeSel));
 
