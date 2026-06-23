@@ -29,6 +29,11 @@ func formApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome 
 		return Outcome{}
 	}
 
+	if f.Action != content.FormLogin && f.Action != content.FormRegister {
+		writeErr(s, "Action inconnue : "+f.Action)
+		return Outcome{}
+	}
+
 	// Décor : une page « écran brut » fournit le fond composé case par case,
 	// affiché plein écran depuis le coin (0,0) — les champs se positionnent
 	// ensuite par leurs coordonnées (At). Sinon, un bandeau de titre, puis les
@@ -41,48 +46,77 @@ func formApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome 
 		header(s, ac.Page.Title)
 	}
 
-	// Saisie des champs dans l'ordre déclaré. Premier champ vide = annulation.
-	vals := make(map[string]string, len(f.Fields))
+	retries := f.Retries
+	if retries <= 0 {
+		retries = maxLoginAttempts // défaut
+	}
+
+	// Réessai sur place : on redemande les champs jusqu'au succès ou épuisement
+	// des tentatives. Échec définitif → Outcome.Failed (le moteur route vers Fail).
+	for attempt := 0; attempt < retries; attempt++ {
+		vals, canceled, err := readFields(s, f)
+		if err != nil {
+			return Outcome{Quit: true}
+		}
+		if canceled {
+			return Outcome{} // annulation volontaire (1er champ vide) → retour
+		}
+		if applyFormAction(s, f.Action, vals, ac) {
+			return Outcome{Done: true}
+		}
+		// échec : message déjà affiché ; on reboucle s'il reste des tentatives.
+	}
+	return Outcome{Failed: true}
+}
+
+// readFields saisit les champs du formulaire dans l'ordre. canceled vaut true si
+// le premier champ est laissé vide (annulation). err signale une coupure d'E/S.
+func readFields(s *server.Session, f *content.Form) (vals map[string]string, canceled bool, err error) {
+	vals = make(map[string]string, len(f.Fields))
 	for i, fld := range f.Fields {
 		if fld.Secret {
 			warnCleartext(s)
 		}
-		// Positionnement absolu optionnel de l'invite (plot X,Y).
-		if len(fld.At) == 2 {
-			if s.Write(oascii.Plot(fld.At[0], fld.At[1])) != nil {
-				return Outcome{Quit: true}
+		if len(fld.At) == 2 { // positionnement absolu optionnel (plot X,Y)
+			if err = s.Write(oascii.Plot(fld.At[0], fld.At[1])); err != nil {
+				return nil, false, err
 			}
 		}
-		v, err := prompt(s, fld.Label)
-		if err != nil {
-			return Outcome{Quit: true}
+		v, e := prompt(s, fld.Label)
+		if e != nil {
+			return nil, false, e
 		}
 		if i == 0 && strings.TrimSpace(v) == "" {
-			return Outcome{} // annulation → retour au menu appelant
+			return nil, true, nil
 		}
 		vals[fld.Key] = v
 	}
+	return vals, false, nil
+}
 
-	switch f.Action {
+// applyFormAction exécute l'action et renvoie true en cas de succès. En cas
+// d'échec, affiche le message d'erreur et renvoie false (à reboucler).
+func applyFormAction(s *server.Session, action string, vals map[string]string, ac *AppContext) bool {
+	switch action {
 	case content.FormLogin:
 		u, err := ac.Users.Authenticate(vals["login"], vals["password"])
 		if err != nil {
 			writeErr(s, "Echec : "+err.Error())
-			return Outcome{}
+			return false
 		}
 		ac.State.User = &u
 		greet(s, u)
-		return Outcome{Done: true}
+		return true
 
 	case content.FormRegister:
 		if vals["password"] != vals["confirm"] {
 			writeErr(s, "Les mots de passe different.")
-			return Outcome{}
+			return false
 		}
 		u, err := ac.Users.Register(vals["login"], vals["password"])
 		if err != nil {
 			writeErr(s, "Echec : "+err.Error())
-			return Outcome{}
+			return false
 		}
 		ac.State.User = &u
 		b := oascii.New()
@@ -91,10 +125,7 @@ func formApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome 
 		b.Newline().Ink(oascii.Green).Text("Appuyez sur une touche...").Newline()
 		_ = s.Write(b.String())
 		_, _ = s.ReadKey()
-		return Outcome{Done: true}
-
-	default:
-		writeErr(s, "Action inconnue : "+f.Action)
-		return Outcome{}
+		return true
 	}
+	return false
 }

@@ -119,6 +119,9 @@ func routeMenuChoice(ctx context.Context, s *server.Session, page *content.Page,
 		if out.Done && e.Next != "" {
 			*stack = append(*stack, e.Next)
 		}
+		if out.Failed && e.Fail != "" {
+			*stack = append(*stack, e.Fail)
+		}
 		return true
 	}
 
@@ -162,12 +165,17 @@ func runFormPage(ctx context.Context, s *server.Session, page *content.Page, sta
 		return false
 	}
 	*stack = (*stack)[:len(*stack)-1]
-	next := page.Form.Next
-	if next == "" {
-		next = page.Next
-	}
-	if out.Done && next != "" {
-		*stack = append(*stack, next)
+	switch {
+	case out.Done:
+		next := page.Form.Next
+		if next == "" {
+			next = page.Next
+		}
+		if next != "" {
+			*stack = append(*stack, next)
+		}
+	case out.Failed && page.Form.Fail != "":
+		*stack = append(*stack, page.Form.Fail)
 	}
 	return len(*stack) > 0
 }

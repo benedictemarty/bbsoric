@@ -6,6 +6,19 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Applets — réessai + page d'échec)
+- **Réessai sur place** : l'applet `form` redemande les champs en cas d'échec
+  jusqu'au succès ou épuisement des tentatives (`Form.Retries`, défaut 3).
+  L'annulation (1er champ vide) reste un retour volontaire, pas un échec.
+- **Page d'échec configurable** : nouveau `Outcome.Failed` ; en échec définitif,
+  le moteur route vers **`Form.Fail`** (page form) ou **`Entry.Fail`** (entrée
+  ▶ applet) si défini, sinon retour arrière / maintien au menu. Les applets
+  `login`/`register` signalent aussi `Failed` après « Trop de tentatives ».
+- **Validation** : `Form.Fail` / `Entry.Fail` doivent désigner une page existante.
+- **Studio** : `formEditor` expose « En cas d'échec » (page) + « Tentatives » ;
+  l'entrée ▶ applet a un sélecteur « page si échec » (à côté de succès).
+- Tests `TestFormFailToPage`, `TestFormRetryThenSuccess`.
+
 ### Modifié (Studio — formulaire éditable depuis l'onglet Écran)
 - **Onglet « Écran »** : le bloc sous la grille gère maintenant aussi le
   **formulaire de saisie** (applet `form`), pas seulement les entrées de menu.

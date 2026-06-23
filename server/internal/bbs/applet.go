@@ -20,8 +20,9 @@ func (st *SessionState) LoggedIn() bool { return st != nil && (st.User != nil ||
 
 // Outcome indique au moteur quoi faire après l'exécution d'un applet.
 type Outcome struct {
-	Done bool // succès → naviguer vers la page Next de la page applet
-	Quit bool // terminer la session
+	Done   bool // succès → naviguer vers la page Next
+	Quit   bool // terminer la session
+	Failed bool // échec définitif → naviguer vers la page Fail si définie
 }
 
 // AppContext injecte les dépendances accessibles à un applet.

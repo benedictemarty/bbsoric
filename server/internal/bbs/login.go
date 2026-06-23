@@ -52,7 +52,7 @@ func loginApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome
 		return Outcome{Done: true}
 	}
 	writeErr(s, "Trop de tentatives.")
-	return Outcome{}
+	return Outcome{Failed: true}
 }
 
 // registerApplet crée un nouveau compte (pseudo + mot de passe + confirmation).
@@ -98,7 +98,7 @@ func registerApplet(ctx context.Context, s *server.Session, ac *AppContext) Outc
 		return Outcome{Done: true}
 	}
 	writeErr(s, "Creation abandonnee.")
-	return Outcome{}
+	return Outcome{Failed: true}
 }
 
 // guestApplet accorde un accès invité (lecture seule), sans compte.

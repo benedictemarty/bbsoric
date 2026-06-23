@@ -59,9 +59,11 @@ type Page struct {
 // (les invites de saisie s'affichent ensuite, séquentiellement) ; sinon un
 // bandeau de titre est affiché.
 type Form struct {
-	Action string  `json:"action"`           // "login" | "register"
-	Fields []Field `json:"fields,omitempty"` // champs saisis dans l'ordre
-	Next   string  `json:"next,omitempty"`   // page après succès (sinon Page.Next)
+	Action  string  `json:"action"`            // "login" | "register"
+	Fields  []Field `json:"fields,omitempty"`  // champs saisis dans l'ordre
+	Next    string  `json:"next,omitempty"`    // page après succès (sinon Page.Next)
+	Fail    string  `json:"fail,omitempty"`    // page après échec définitif (sinon retour arrière)
+	Retries int     `json:"retries,omitempty"` // tentatives avant échec (0 = défaut)
 }
 
 // Field est un champ de saisie d'un Form. Key identifie la valeur pour l'action
@@ -117,6 +119,7 @@ type Entry struct {
 	Target string `json:"target,omitempty"` // identifiant de page ou cible spéciale
 	Applet string `json:"applet,omitempty"` // applet à lancer (au lieu de naviguer)
 	Next   string `json:"next,omitempty"`   // page après succès de l'applet
+	Fail   string `json:"fail,omitempty"`   // page après échec de l'applet (sinon reste au menu)
 }
 
 // Parse décode et valide un Site depuis du JSON.
@@ -151,10 +154,15 @@ func (s *Site) Validate() error {
 		}
 		for _, e := range p.Entries {
 			if e.Applet != "" {
-				// Entrée-applet : Next (si présent) doit désigner une page.
+				// Entrée-applet : Next/Fail (si présents) doivent désigner une page.
 				if e.Next != "" {
 					if _, ok := s.Pages[e.Next]; !ok {
 						return fmt.Errorf("page %q : 'next' %q introuvable", id, e.Next)
+					}
+				}
+				if e.Fail != "" {
+					if _, ok := s.Pages[e.Fail]; !ok {
+						return fmt.Errorf("page %q : 'fail' %q introuvable", id, e.Fail)
 					}
 				}
 				continue
@@ -214,6 +222,11 @@ func (f *Form) validate(pageID string, s *Site) error {
 	if f.Next != "" {
 		if _, ok := s.Pages[f.Next]; !ok {
 			return fmt.Errorf("page %q : form 'next' %q introuvable", pageID, f.Next)
+		}
+	}
+	if f.Fail != "" {
+		if _, ok := s.Pages[f.Fail]; !ok {
+			return fmt.Errorf("page %q : form 'fail' %q introuvable", pageID, f.Fail)
 		}
 	}
 	return nil

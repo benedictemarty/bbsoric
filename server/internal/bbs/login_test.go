@@ -168,6 +168,79 @@ func TestFormFieldPlot(t *testing.T) {
 	}
 }
 
+// TestFormFailToPage : un form en échec définitif (retries:1) route vers sa
+// page « fail ».
+func TestFormFailToPage(t *testing.T) {
+	users, _ := user.Open("")
+	users.Register("Bob", "pw1234")
+	const json = `{
+      "start": "login",
+      "pages": {
+        "login": { "title": "CONNEXION",
+          "form": { "action": "login", "next": "main", "fail": "refus", "retries": 1, "fields": [
+            { "key": "login", "label": "Pseudo" },
+            { "key": "password", "label": "Mot de passe", "secret": true }
+          ] } },
+        "refus": { "title": "ACCES REFUSE",
+          "lines": [ { "text": "Identifiants invalides." } ],
+          "entries": [ { "key": "Q", "label": "Quitter", "target": "__quit__" } ] },
+        "main": { "title": "MENU PRINCIPAL", "entries": [
+          { "key": "Q", "label": "Quitter", "target": "__quit__" } ] }
+      }
+    }`
+	addr, stop := startServerFull(t, storeFromJSON(t, json), users)
+	defer stop()
+
+	r, conn := dialAuth(t, addr)
+	defer conn.Close()
+	readUntil(t, r, conn, "Pseudo")
+	conn.Write([]byte("bob\r"))
+	readUntil(t, r, conn, "Mot de passe")
+	conn.Write([]byte("mauvais\r"))
+	out := readUntil(t, r, conn, "ACCES REFUSE")
+	if !strings.Contains(out, "ACCES REFUSE") {
+		t.Errorf("échec définitif doit router vers la page 'fail':\n%s", out)
+	}
+}
+
+// TestFormRetryThenSuccess : un mauvais mot de passe redemande les champs sur
+// place (retries), et un second essai correct réussit.
+func TestFormRetryThenSuccess(t *testing.T) {
+	users, _ := user.Open("")
+	users.Register("Bob", "pw1234")
+	const json = `{
+      "start": "login",
+      "pages": {
+        "login": { "title": "CONNEXION",
+          "form": { "action": "login", "next": "main", "retries": 3, "fields": [
+            { "key": "login", "label": "Pseudo" },
+            { "key": "password", "label": "Mot de passe", "secret": true }
+          ] } },
+        "main": { "title": "MENU PRINCIPAL", "entries": [
+          { "key": "Q", "label": "Quitter", "target": "__quit__" } ] }
+      }
+    }`
+	addr, stop := startServerFull(t, storeFromJSON(t, json), users)
+	defer stop()
+
+	r, conn := dialAuth(t, addr)
+	defer conn.Close()
+	readUntil(t, r, conn, "Pseudo")
+	conn.Write([]byte("bob\r"))
+	readUntil(t, r, conn, "Mot de passe")
+	conn.Write([]byte("mauvais\r")) // 1er essai : échec
+	if out := readUntil(t, r, conn, "Echec"); !strings.Contains(out, "Echec") {
+		t.Fatalf("message d'échec attendu:\n%s", out)
+	}
+	readUntil(t, r, conn, "Pseudo") // 2e essai : on redemande les champs
+	conn.Write([]byte("bob\r"))
+	readUntil(t, r, conn, "Mot de passe")
+	conn.Write([]byte("pw1234\r"))
+	if out := readUntil(t, r, conn, "Bonjour"); !strings.Contains(out, "Bonjour Bob") {
+		t.Errorf("2e essai correct doit réussir:\n%s", out)
+	}
+}
+
 func TestLoginAppletSuccess(t *testing.T) {
 	users, _ := user.Open("")
 	if _, err := users.Register("Bob", "pw1234"); err != nil {

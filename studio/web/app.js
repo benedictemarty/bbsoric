@@ -242,6 +242,10 @@ function formEditor(p, rebuild) {
   };
   wrap.append(field('Action', act));
   wrap.append(field('Après succès (next)', pageSelect(f.next, v => { f.next = v; }, true)));
+  wrap.append(field('En cas d\'échec', pageSelect(f.fail, v => { f.fail = v; }, true)));
+  const ret = el('input', { type: 'number', value: f.retries || '' }); ret.min = 1; ret.style.width = '60px'; ret.placeholder = '3';
+  ret.oninput = () => { const n = parseInt(ret.value, 10); if (n > 0) f.retries = n; else delete f.retries; };
+  wrap.append(field('Tentatives', ret));
 
   const tbl = el('table', { className: 'rows' });
   tbl.append(el('tr', {}, ['Clé', 'Libellé', 'Secret', 'X', 'Y', ''].map(t => el('th', { textContent: t }))));
@@ -320,9 +324,10 @@ function entriesEditor(p, rebuild, opts) {
 
     let dest;
     if (entryIsApplet(e)) {
-      const ap = appletSelect(e.applet, v => { e.applet = v; });
-      const nx = pageSelect(e.next, v => { e.next = v; }, true); // page après succès
-      dest = el('div', { className: 'dest-applet' }, [ap, nx]);
+      const ap = appletSelect(e.applet, v => { e.applet = v; }); ap.title = 'applet';
+      const nx = pageSelect(e.next, v => { e.next = v; }, true); nx.title = 'page si succès (next)';
+      const fl = pageSelect(e.fail, v => { e.fail = v; }, true); fl.title = 'page si échec (fail)';
+      dest = el('div', { className: 'dest-applet' }, [ap, nx, fl]);
     } else {
       dest = targetSelect(e.target, v => { e.target = v; });
     }
