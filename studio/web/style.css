@@ -95,6 +95,10 @@ hr.sep { border: none; border-top: 1px solid var(--line); margin: 18px 0 12px; }
 .comp-row { display: flex; gap: 6px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
 .comp-row > input { flex: 1; min-width: 120px; }
 .palette { display: flex; flex-wrap: wrap; gap: 4px; }
+/* Éditeur d'écran : canvas à gauche, palette de glyphes à droite. */
+.screen-edit { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.screen-edit-main { flex: 0 1 560px; min-width: 280px; }
+.palette-side { flex: 0 0 auto; width: 176px; align-content: flex-start; }
 .gly-btn { padding: 3px; line-height: 0; background: #1b1d22; }
 .gly-btn:hover { border-color: var(--accent); }
 .gly { width: 18px; height: 24px; image-rendering: pixelated; display: block; }

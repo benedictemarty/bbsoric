@@ -6,6 +6,12 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Modifié (Studio — palette de glyphes à droite de l'écran)
+- **Onglet « Écran »** : la palette de glyphes BBS passe **sous** le canvas à
+  **droite** de celui-ci (conteneur flex `.screen-edit` : canvas + `.palette-side`).
+  Plus de scroll vertical pour atteindre les glyphes ; layout responsive (la
+  palette repasse dessous sur écran étroit).
+
 ### Ajouté (Menu sur fond d'écran — raw + entries combinés)
 - **Moteur** (`server/internal/bbs/engine.go`) : une page « écran brut » (`raw`)
   se **combine** désormais avec des `entries`. Le buffer 40×28 sert de **fond
