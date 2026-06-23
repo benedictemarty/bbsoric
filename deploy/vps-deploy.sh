@@ -77,6 +77,14 @@ echo "--- Unité systemd $SERVICE.service ---"
 $SCP "$SCRIPT_DIR/bbsoric.service" "$VPS_USER@$VPS_HOST:/etc/systemd/system/$SERVICE.service"
 $SSH "systemctl daemon-reload && systemctl enable $SERVICE >/dev/null 2>&1 || true"
 
+# 4b. Supervision : script de sonde + timer systemd (healthz/TCP + alerte)
+echo "--- Supervision ($SERVICE-monitor.timer) ---"
+$SCP "$ROOT/scripts/monitor.sh" "$VPS_USER@$VPS_HOST:/usr/local/bin/bbsoric-monitor.sh"
+$SSH "chmod 755 /usr/local/bin/bbsoric-monitor.sh"
+$SCP "$SCRIPT_DIR/bbsoric-monitor.service" "$VPS_USER@$VPS_HOST:/etc/systemd/system/$SERVICE-monitor.service"
+$SCP "$SCRIPT_DIR/bbsoric-monitor.timer" "$VPS_USER@$VPS_HOST:/etc/systemd/system/$SERVICE-monitor.timer"
+$SSH "systemctl daemon-reload && systemctl enable --now $SERVICE-monitor.timer >/dev/null 2>&1 || true"
+
 # 5. Redémarrage + vérification
 if $DO_RESTART; then
     echo "--- Restart de $SERVICE ---"

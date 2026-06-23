@@ -13,6 +13,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -39,6 +40,7 @@ func main() {
 	idle := flag.Duration("idle", 5*time.Minute, "délai d'inactivité avant déconnexion (0 = aucun)")
 	contentPath := flag.String("content", "", "fichier JSON du flux de pages (vide = contenu par défaut ; rechargé à chaud)")
 	usersPath := flag.String("users", "", "fichier JSON des comptes (vide = comptes en mémoire, non persistés)")
+	metricsAddr := flag.String("metrics-addr", "", "adresse HTTP de supervision (/healthz, /metrics) ; vide = désactivé ; à garder LOCAL (ex. 127.0.0.1:6510)")
 	flag.Parse()
 
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
@@ -65,6 +67,28 @@ func main() {
 	// Arrêt propre sur SIGINT/SIGTERM.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	// Endpoint de supervision optionnel (/healthz, /metrics) sur une adresse
+	// locale dédiée. Coupé à l'annulation du contexte (arrêt propre).
+	if *metricsAddr != "" {
+		hs := &http.Server{
+			Addr:              *metricsAddr,
+			Handler:           srv.MetricsHandler(),
+			ReadHeaderTimeout: 5 * time.Second,
+		}
+		go func() {
+			<-ctx.Done()
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			_ = hs.Shutdown(shutdownCtx)
+		}()
+		go func() {
+			log.Info("supervision HTTP en écoute", "addr", *metricsAddr)
+			if err := hs.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Error("supervision HTTP arrêtée", "err", err)
+			}
+		}()
+	}
 
 	// Écoute TLS optionnelle (même BBS, mêmes garde-fous), pour les modems WiFi
 	// qui terminent le TLS (Pico W : ATDT#hôte:port).

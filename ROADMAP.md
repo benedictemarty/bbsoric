@@ -71,9 +71,13 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
   via `make deploy` (mécanisme repris de telenet). Binaire Go statique linux/amd64, `DynamicUser`.
 - [x] **Exposition publique validée** : `pavi.3617.fr:6502` (telnet) — bannière + navigation OK
   depuis l'Internet public.
-- [ ] Monitoring / alerting dédié (au-delà de journald + `Restart=on-failure`)
+- [x] **Monitoring / alerting dédié** : endpoint HTTP local `/healthz` + `/metrics`
+  (format Prometheus, drapeau `-metrics-addr`), sonde `scripts/monitor.sh`
+  (healthz/TCP + alerte mail) déclenchée par `bbsoric-monitor.timer` (5 min).
+  Déploiement intégré à `vps-deploy.sh`. Doc : `docs/monitoring.md`.
 - [ ] Conteneurisation (Docker) — optionnel (systemd suffit pour l'instant)
-- [ ] Documentation utilisateur (se connecter depuis un Oric réel : `ATD pavi.3617.fr:6502`)
+- [x] **Documentation utilisateur** : `docs/guide-utilisateur.md` (connexion depuis
+  un Oric réel et depuis un PC pour tester, navigation, comptes, dépannage).
 
 ## Studio « Forge » — outillage de contenu ⏳ (en cours)
 Sous-projet `studio/` : app web Go locale pour éditer le(s) `site.json` et déployer par

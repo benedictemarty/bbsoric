@@ -1,0 +1,13 @@
+[Unit]
+Description=BBS Oric — déclenche la sonde de disponibilité toutes les 5 minutes
+
+[Timer]
+# Première sonde 2 min après le boot, puis toutes les 5 min.
+OnBootSec=2min
+OnUnitActiveSec=5min
+# Rattrape une exécution manquée (machine éteinte/suspendue).
+Persistent=true
+Unit=bbsoric-monitor.service
+
+[Install]
+WantedBy=timers.target

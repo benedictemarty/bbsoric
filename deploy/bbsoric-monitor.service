@@ -1,0 +1,20 @@
+[Unit]
+Description=BBS Oric — sonde de disponibilité (healthz/TCP + alerte)
+After=network.target bbsoric.service
+
+[Service]
+Type=oneshot
+# Sonde le BBS et alerte en cas d'indisponibilité. Déclenché par le .timer.
+# Adapter le chemin du script et l'adresse d'alerte au déploiement.
+Environment=BBS_HEALTH_URL=http://127.0.0.1:6510/healthz
+Environment=BBS_HOST=127.0.0.1
+Environment=BBS_PORT=6502
+# Renseigner pour recevoir les alertes par courriel (nécessite `mail` configuré) :
+# Environment=BBS_ALERT_EMAIL=admin@example.org
+ExecStart=/usr/local/bin/bbsoric-monitor.sh
+
+# Durcissement minimal (sonde réseau locale uniquement).
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

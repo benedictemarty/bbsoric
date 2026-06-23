@@ -6,6 +6,25 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Sprint 5 — Monitoring/alerting + doc utilisateur)
+- **Endpoint de supervision HTTP** (`server/internal/server/metrics.go`) :
+  `GET /healthz` (sonde de vivacité « ok ») et `GET /metrics` (format texte
+  Prometheus). Activé par le drapeau **`-metrics-addr`** (vide = désactivé ;
+  **local-only** en prod, ex. `127.0.0.1:6510` — jamais exposé sur Internet).
+  Arrêt propre sur SIGINT/SIGTERM.
+- **Métriques** (`server/internal/server/server.go`) : compteurs atomiques et
+  `Server.Stats()` — `bbsoric_uptime_seconds`, `bbsoric_connections_total`,
+  `bbsoric_connections_active`, `bbsoric_connections_rejected_total`. Tests
+  `TestHealthz` / `TestMetricsReflectsCounters`.
+- **Sonde + alerting** : `scripts/monitor.sh` (teste `/healthz` puis le port
+  telnet via `/dev/tcp`, alerte par courriel si down) déclenchée par
+  `deploy/bbsoric-monitor.timer` → `deploy/bbsoric-monitor.service` (oneshot,
+  toutes les 5 min). `bbsoric.service` ajoute `-metrics-addr 127.0.0.1:6510` ;
+  `vps-deploy.sh` installe et active la supervision automatiquement.
+- **Docs** : `docs/monitoring.md` (couches de supervision, endpoint, sonde,
+  pistes watchdog/Prometheus) et `docs/guide-utilisateur.md` (connexion grand
+  public depuis un Oric réel et depuis un PC, navigation, comptes, dépannage).
+
 ### Ajouté (Sprint 4 — Connexion matérielle réelle)
 - **`docs/connexion-materielle.md`** : guide complet pour joindre le BBS depuis un
   **Oric réel**. Chaîne matérielle Oric→ACIA→modem WiFi→TCP ; adressage **ACIA
