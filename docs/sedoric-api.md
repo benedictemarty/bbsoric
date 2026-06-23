@@ -80,6 +80,31 @@ XWDESC écrit les descripteurs ; `$FF88` XLIBSE secteur libre ; etc.)
   préalable n'est requise au-delà du boot Sedoric.
 - **Gestion d'erreur** : `XSAVEB`/`XLOADA` peuvent lever DISK_FULL, etc.
 
+## ⚠️ Découvertes émulateur (mapping mémoire) — à intégrer
+
+Tests dans `oric1-emu` (ROM `microdis.rom` + `sedoric3.dsk`, sorti vers BASIC) :
+
+- **Les vecteurs page `$FF` sont MASQUÉS** par la **ROM Microdisc** (overlay
+  `$E000-$FFFF`) : `$FF7C` lit `20 F5 F9` (ROM microdis), pas `4C 9C DE`. On ne
+  peut donc **pas** appeler `XSAVEB` via `$FF7C` sans gérer le mapping (ROMDIS,
+  registre `$0314`).
+- **`$C000-$DFFF` est de la RAM Sedoric** (accessible) ; les routines en `$C0xx`/
+  `$DExx` y sont, mais celles en `$E0xx` (ex `XLOADA $E0E5`) sont masquées.
+- **Les adresses du PDF ne collent pas à cette image** : `$DE9C` contient
+  `D0 84 DF 60…` (pas le début attendu de XSAVEB). Le désassemblage « à nu »
+  correspond à une **version/un mapping différents** — les adresses doivent être
+  **recalées sur la version Sedoric cible**.
+
+**Conséquence** : l'appel API n'est pas un simple `JSR $FF7C`. Il faut (1) recaler
+les adresses sur l'image Sedoric utilisée, et (2) gérer le bascule ROMDIS pour
+exposer la RAM Sedoric à l'appel. C'est un travail de reverse spécifique à la
+version, mieux mené avec l'image cible (et idéalement validé sur matériel réel).
+
+> **Statut du code** : `client/sedoric.s` (`sed_save`) est assemblé et **protégé
+> par une détection** (`$FF7C == 4C…`) : si le mapping ne l'expose pas, il **ne
+> fait rien** (le fichier reste en RAM `$4000`, pas de plantage). Il n'est donc
+> **pas encore opérationnel** sur la config Microdisc émulée — voir ci-dessus.
+
 ## Le mur du déploiement
 
 Le terminal `client/term.s` est aujourd'hui une **cassette autorun** (`$1000`) sur

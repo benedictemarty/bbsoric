@@ -6,6 +6,19 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### En cours (Stockage Microdisc/Sedoric — voie B, exploration)
+- **`docs/sedoric-api.md`** : API Sedoric extraite du désassemblage (vecteurs
+  `$FF73`/`$FF76`/`$FF79`/`$FF7C`, variables `BUFNOM`/`DESALO`/`FISALO`) + séquences
+  SAVE/LOAD.
+- **`client/sedoric.s`** : `sed_save` (sauve `$4000` en fichier via l'API),
+  **détection sécurisée** (ne plante pas sans Sedoric) ; `handle_rx` appelle
+  `sed_save` après un download. Assemblé.
+- **Découverte (tests émulateur)** : le **mapping ROM Microdisc** masque les
+  vecteurs page `$FF`, et les adresses du PDF ne correspondent pas à `sedoric3.dsk`
+  → l'appel n'est pas opérationnel tel quel. Recalage des adresses sur la version
+  cible + gestion ROMDIS nécessaires (sous-projet de reverse, validation matériel
+  réel recommandée). Sedoric boote bien dans l'émulateur. Backlog **G1**.
+
 ### Ajouté (Terminal Oric — envoi de fichier XMODEM, upload)
 - **`client/xmodem.s`** : émetteur **XMODEM 6502** en **CRC-16** (`xmodem_send` +
   `crc_update`) — envoie `XSIZE` octets depuis le buffer RAM (`$4000`), ré-émission

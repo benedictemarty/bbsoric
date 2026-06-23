@@ -314,7 +314,8 @@ hr_coord:
 hr_recv:
         lda #0
         sta PLOTST
-        jmp xmodem_recv          ; recoit en RAM (xmodem_recv fait rts)
+        jsr xmodem_recv          ; recoit en RAM ($4000)
+        jmp sed_save             ; sauve sur disquette si Sedoric resident (sinon rien)
 hr_send:
         lda #0
         sta PLOTST

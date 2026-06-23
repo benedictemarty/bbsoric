@@ -11,6 +11,6 @@ LOAD=0x1000   # adresse de chargement / exécution
 # term.s + récepteur XMODEM + police BBS (altcharset.s) concaténés.
 SRC="$(mktemp --suffix=.s)"
 trap 'rm -f "$SRC"' EXIT
-cat "$HERE/term.s" "$HERE/xmodem.s" "$HERE/altcharset.s" > "$SRC"
+cat "$HERE/term.s" "$HERE/xmodem.s" "$HERE/sedoric.s" "$HERE/altcharset.s" > "$SRC"
 xa "$SRC" -o "$HERE/term.bin"
 python3 "$HERE/bin2tap.py" "$HERE/term.bin" "$LOAD" TERM "$HERE/term.tap"
