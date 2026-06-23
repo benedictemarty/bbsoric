@@ -18,6 +18,8 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 - **Studio** : `formEditor` expose « En cas d'échec » (page) + « Tentatives » ;
   l'entrée ▶ applet a un sélecteur « page si échec » (à côté de succès).
 - Tests `TestFormFailToPage`, `TestFormRetryThenSuccess`.
+- **Contenu** (`content/site.json`) : les pages `login`/`register` routent vers une
+  page **`echec`** dédiée (`fail: echec`) après épuisement des tentatives.
 
 ### Modifié (Studio — formulaire éditable depuis l'onglet Écran)
 - **Onglet « Écran »** : le bloc sous la grille gère maintenant aussi le

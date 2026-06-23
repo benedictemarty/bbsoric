@@ -1,5 +1,5 @@
 {
-  "_comment": "Flux de pages du BBS Oric. Modifiable a chaud. Une page a un titre, du texte (lines) et/ou des choix (entries). Avec entries = ecran interactif, sinon ecran de contenu. Une entree navigue (target: page ou __quit__/__back__/__home__) OU lance un applet (applet + next). Une page peut aussi porter un form (action login/register, fields key/label/secret, next) = ecran de saisie declaratif. Applets: login, register, guest. Couleurs ink: black red green yellow blue magenta cyan white.",
+  "_comment": "Flux de pages du BBS Oric. Modifiable a chaud. Une page a un titre, du texte (lines) et/ou des choix (entries). Avec entries = ecran interactif, sinon ecran de contenu. Une entree navigue (target: page ou __quit__/__back__/__home__) OU lance un applet (applet + next). Une page peut aussi porter un form (action login/register, fields key/label/secret, next, fail, retries) = ecran de saisie declaratif. Applets: login, register, guest. Couleurs ink: black red green yellow blue magenta cyan white.",
   "start": "accueil",
   "pages": {
     "accueil": {
@@ -33,6 +33,7 @@
       "form": {
         "action": "login",
         "next": "main",
+        "fail": "echec",
         "fields": [
           {
             "key": "login",
@@ -51,6 +52,7 @@
       "form": {
         "action": "register",
         "next": "main",
+        "fail": "echec",
         "fields": [
           {
             "key": "login",
@@ -68,6 +70,22 @@
           }
         ]
       }
+    },
+    "echec": {
+      "title": "ECHEC",
+      "lines": [
+        {
+          "text": "Operation impossible apres plusieurs essais.",
+          "ink": "red"
+        },
+        {
+          "text": ""
+        },
+        {
+          "text": "Reessayez depuis l'accueil.",
+          "ink": "yellow"
+        }
+      ]
     },
     "main": {
       "title": "MENU PRINCIPAL",
