@@ -424,52 +424,6 @@ function layoutScreen(bytes) {
 // drawScreen : aperçu d'une page (buffer 40×28) — réutilise le rendu ULA partagé.
 function drawScreen(buf) { renderScreenBuf($('oric-screen'), buf, null); }
 
-// --- compositeur de ligne (texte normal + glyphes BBS) ---
-let comp = []; // suite d'items { ch, alt }
-
-function compGlyphRow(it, r) {
-  if (it.alt && window.ORIC_ALTCHARSET) return window.ORIC_ALTCHARSET[it.ch.charCodeAt(0) * 8 + r];
-  const c = it.ch.charCodeAt(0);
-  return (c >= 0x20 && c <= 0x7F && window.ORIC_CHARSET) ? window.ORIC_CHARSET[(c - 0x20) * 8 + r] : 0;
-}
-
-function drawComp() {
-  const cv = $('comp-canvas'); if (!cv) return;
-  const ctx = cv.getContext('2d');
-  const img = ctx.createImageData(COLS * CW, CH);
-  for (let col = 0; col < COLS; col++) {
-    const it = comp[col];
-    for (let r = 0; r < CH; r++) {
-      const g = it ? compGlyphRow(it, r) : 0;
-      for (let x = 0; x < CW; x++) {
-        const on = (g >> (5 - x)) & 1, o = (r * COLS * CW + col * CW + x) * 4;
-        img.data[o] = img.data[o + 1] = img.data[o + 2] = on ? 238 : 0; img.data[o + 3] = 255;
-      }
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-}
-
-function compAdd(ch, alt) { if (comp.length < COLS) comp.push({ ch, alt }); drawComp(); }
-
-function compInsert() {
-  if (!current || !site.pages[current]) { setStatus('sélectionne une page', 'err'); return; }
-  if (!comp.length) return;
-  // regroupe en segments par mode (alt vs normal)
-  const segs = [];
-  for (const it of comp) {
-    const last = segs[segs.length - 1];
-    if (last && last.alt === it.alt) last.text += it.ch;
-    else segs.push({ text: it.ch, alt: it.alt });
-  }
-  const line = { segments: segs.map(s => s.alt ? { text: s.text, altCharset: true } : { text: s.text }) };
-  const p = site.pages[current];
-  p.lines = p.lines || [];
-  p.lines.push(line);
-  comp = []; drawComp(); renderForm(); refreshPreview();
-  setStatus('ligne insérée ✓', 'ok');
-}
-
 // --- palette de glyphes BBS (alimente le compositeur) ---
 function glyphCanvas(code) {
   const cv = document.createElement('canvas'); cv.width = CW; cv.height = CH; cv.className = 'gly';
@@ -498,9 +452,6 @@ function renderPaletteInto(hostId, onPick) {
   }
 }
 
-function renderPalette() {
-  renderPaletteInto('glyph-palette', (c) => compAdd(String.fromCharCode(c), true));
-}
 
 // --- éditeur d'écran plein (40×28, page « écran brut ») ---
 // Modèle OCTETS, fidèle à l'ULA : la grille est le buffer écran 40×28 ; les
@@ -613,7 +564,10 @@ function dropGlyph(c) {
 function renderScreenNav() {
   const host = $('screen-nav'); if (!host) return;
   host.innerHTML = '';
-  if (!screenName || !site.pages[screenName]) return;
+  if (!screenName || !site.pages[screenName]) {
+    host.append(el('p', { className: 'hint', textContent: 'Navigation du menu : charge ou crée une page écran ci-dessus pour câbler ses touches (→ page ou ▶ applet).' }));
+    return;
+  }
   const p = site.pages[screenName];
   host.append(el('p', { className: 'hint', textContent: 'Navigation (menu sur fond d\'écran) : ces touches routent par-dessus le décor. Les libellés sont dessinés dans l\'écran ci-dessus (pas de colonne « libellé » ici), aucune invite n\'est ajoutée.' }));
   host.append(entriesEditor(p, renderScreenNav, { hideLabel: true }));
@@ -771,11 +725,6 @@ $('btn-save-profile').onclick = saveProfile;
 $('profile-select').onchange = () => loadProfile($('profile-select').value);
 $('btn-add-page').onclick = () => addPage();
 // compositeur de ligne
-$('comp-add-text').onclick = () => { const v = $('comp-text').value; for (const ch of v) compAdd(ch, false); $('comp-text').value = ''; };
-$('comp-text').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('comp-add-text').click(); });
-$('comp-bs').onclick = () => { comp.pop(); drawComp(); };
-$('comp-clear').onclick = () => { comp = []; drawComp(); };
-$('comp-insert').onclick = compInsert;
 
 // --- éditeur d'écran (modèle octets) ---
 function colorSwatches(hostId, mk) {
@@ -824,7 +773,6 @@ $('screen-new').onclick = screenNew;
 $('screen-save').onclick = screenSave;
 $('screen-clear').onclick = () => { initGrid(); drawGrid(); };
 
-for (const t of document.querySelectorAll('.tab')) t.onclick = () => { showTab(t.dataset.tab); if (t.dataset.tab === 'screen') drawGrid(); };
+for (const t of document.querySelectorAll('.tab')) t.onclick = () => { showTab(t.dataset.tab); if (t.dataset.tab === 'screen') { drawGrid(); renderScreenNav(); } };
 showTab('nav');
-renderPalette();
 loadSites(); // charge le 1er site, qui charge ses propres profils

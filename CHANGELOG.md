@@ -6,6 +6,16 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Modifié (Studio — retrait du compositeur, navigation Écran plus visible)
+- **Onglet « Édition »** : suppression du **compositeur de ligne** (canvas + palette
+  `glyph-palette` + boutons `comp-*`), redondant avec l'éditeur d'écran case par
+  case. Code/HTML/CSS associés retirés (`comp`, `drawComp`, `compAdd`,
+  `compInsert`, `renderPalette`).
+- **Onglet « Écran »** : l'éditeur de **navigation du menu** est désormais
+  **découvrable** — affiché dès l'ouverture de l'onglet (avec un message d'invite
+  quand aucune page n'est chargée), au lieu d'apparaître seulement après le
+  chargement d'une page.
+
 ### Ajouté (Buffer écran « intelligent » — rendu différentiel)
 - **`internal/oascii.Screen`** : buffer 40×28 qui maintient l'état composé ET
   l'état affiché par le terminal. `Render()` n'émet QUE les cellules modifiées,
