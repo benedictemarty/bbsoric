@@ -6,6 +6,14 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Corrigé (Studio — éditeur d'écran : sélecteur de page vide)
+- **Onglet « Écran »** : le sélecteur de page restait **vide** quand le site ne
+  contenait aucune page « écran brut » (`raw`), alors que `screenLoad` sait déjà
+  charger **n'importe quelle** page (rendu serveur → buffer éditable).
+  `refreshScreenPages` liste désormais **toutes** les pages (suffixe « (écran) »
+  pour celles déjà en mode raw). Charger une page normale puis l'enregistrer la
+  convertit en écran brut.
+
 ### Corrigé (Studio — éditeur d'écran : pose des attributs couleur)
 - **Onglet « Écran »** : cliquer une pastille **encre/fond** (ou un bouton
   d'attribut texte alt/cli/norm) ne faisait que changer le pinceau **sans rien

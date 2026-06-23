@@ -516,7 +516,12 @@ function pickAttr(b) {
 
 function refreshScreenPages() {
   const sel = $('screen-page'); sel.innerHTML = '';
-  for (const id of Object.keys(site.pages || {})) if (site.pages[id].raw) sel.append(el('option', { value: id, textContent: id }));
+  // Toutes les pages sont chargeables dans l'éditeur d'écran : une page « écran
+  // brut » (raw) reprend son buffer, une page normale est rendue par le serveur
+  // puis convertie en buffer éditable (l'enregistrement la passe en raw).
+  for (const id of Object.keys(site.pages || {})) {
+    sel.append(el('option', { value: id, textContent: id + (site.pages[id].raw ? ' (écran)' : '') }));
+  }
 }
 
 const bufToB64 = (buf) => { let s = ''; for (const b of buf) s += String.fromCharCode(b); return btoa(s); };
