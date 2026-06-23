@@ -45,6 +45,19 @@ const (
 	Rows = 28
 )
 
+// PlotByte est l'octet de commande de positionnement du curseur (« plot X,Y »).
+// Il est suivi de DEUX octets : la colonne (0..Cols-1) puis la ligne
+// (0..Rows-1). Le terminal Oric repositionne alors son curseur d'écriture VRAM ;
+// ce n'est PAS un attribut (valeur 0x1F hors des plages encre/fond/texte
+// réellement émises). Les terminaux génériques (telnet/PC) l'ignorent/affichent
+// comme un caractère de contrôle — le positionnement est une fonction Oric.
+const PlotByte = 0x1F
+
+// Plot renvoie la séquence de positionnement du curseur à (col, row).
+func Plot(col, row int) string {
+	return string([]byte{PlotByte, byte(col), byte(row)})
+}
+
 // Octets d'attribut sériel. Chacun occupe une case écran.
 
 // InkAttr renvoie l'octet d'attribut qui fixe la couleur d'encre.
@@ -91,6 +104,15 @@ func New() *Builder {
 // début de ligne (utile pour conserver une couleur sur plusieurs lignes,
 // l'ULA les réinitialisant à chaque ligne). Renvoie b pour chaînage.
 func (b *Builder) Sticky(on bool) *Builder { b.sticky = on; return b }
+
+// At positionne le curseur d'écriture à (col, row) (cf. PlotByte). N'occupe pas
+// de case écran : c'est une commande, non un attribut.
+func (b *Builder) At(col, row int) *Builder {
+	b.buf.WriteByte(PlotByte)
+	b.buf.WriteByte(byte(col))
+	b.buf.WriteByte(byte(row))
+	return b
+}
 
 // Ink fixe la couleur d'encre (émet l'octet d'attribut correspondant).
 func (b *Builder) Ink(c Color) *Builder {

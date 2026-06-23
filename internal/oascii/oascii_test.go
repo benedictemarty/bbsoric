@@ -103,3 +103,14 @@ func TestInverseText(t *testing.T) {
 		t.Errorf("InverseText: got %v, want %v", got, want)
 	}
 }
+
+func TestPlot(t *testing.T) {
+	if got := []byte(Plot(5, 3)); !bytes.Equal(got, []byte{0x1F, 5, 3}) {
+		t.Errorf("Plot(5,3) = % x, want 1f 05 03", got)
+	}
+	b := New()
+	b.At(10, 2).Text("X")
+	if got := b.Bytes(); !bytes.Equal(got, []byte{0x1F, 10, 2, 'X'}) {
+		t.Errorf("At/Text = % x, want 1f 0a 02 58", got)
+	}
+}

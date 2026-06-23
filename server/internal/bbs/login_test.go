@@ -139,6 +139,35 @@ func TestFormPageRegister(t *testing.T) {
 	}
 }
 
+// TestFormFieldPlot : un champ avec coordonnées 'at' émet la séquence de
+// positionnement (plot X,Y = 0x1F col row) avant son invite.
+func TestFormFieldPlot(t *testing.T) {
+	users, _ := user.Open("")
+	users.Register("Bob", "pw1234")
+	const json = `{
+      "start": "login",
+      "pages": {
+        "login": { "title": "CONNEXION",
+          "form": { "action": "login", "next": "main", "fields": [
+            { "key": "login", "label": "Pseudo", "at": [5, 3] },
+            { "key": "password", "label": "Mot de passe", "secret": true, "at": [5, 5] }
+          ] } },
+        "main": { "title": "MENU PRINCIPAL", "entries": [
+          { "key": "Q", "label": "Quitter", "target": "__quit__" }
+        ] }
+      }
+    }`
+	addr, stop := startServerFull(t, storeFromJSON(t, json), users)
+	defer stop()
+
+	r, conn := dialAuth(t, addr)
+	defer conn.Close()
+	out := readUntil(t, r, conn, "Pseudo")
+	if !strings.Contains(out, "\x1f\x05\x03") {
+		t.Errorf("séquence de positionnement (1f 05 03) attendue avant l'invite:\n%q", out)
+	}
+}
+
 func TestLoginAppletSuccess(t *testing.T) {
 	users, _ := user.Open("")
 	if _, err := users.Register("Bob", "pw1234"); err != nil {

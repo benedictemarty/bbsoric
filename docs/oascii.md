@@ -32,6 +32,22 @@ si ses bits 6 et 5 sont nuls (valeur 0–31) ; effet selon `val & 0x18` :
 > L'ULA **réinitialise** les attributs au début de **chaque ligne** : encre = blanc (7),
 > fond = noir (0). Une couleur ne « déborde » donc pas sur la ligne suivante.
 
+## Positionnement du curseur (« plot X,Y »)
+
+Au-delà du flux séquentiel, une **extension propre au terminal Oric** permet de
+positionner le curseur d'écriture à des coordonnées absolues :
+
+| Séquence | Effet |
+|----------|-------|
+| `1F` `col` `row` | place le curseur en (`col` 0–39, `row` 0–27) ; les octets suivants s'écrivent à partir de là |
+
+L'octet `0x1F` (hors des plages d'attributs réellement émises) est suivi de
+**deux octets bruts** (colonne puis ligne). Le terminal (`client/term.s`,
+`handle_rx`/`set_cursor_xy`) intercepte la séquence et repositionne son pointeur
+VRAM. API Go : `oascii.Plot(col, row)` ou `Builder.At(col, row)`. Les terminaux
+génériques (telnet/PC) ne comprennent pas cette commande — c'est une fonction Oric
+(utilisée p. ex. pour positionner les champs d'un formulaire dans un décor).
+
 ## Palette (8 couleurs, bits R/G/B)
 
 Depuis `palette[8][3]` de `video.c` :

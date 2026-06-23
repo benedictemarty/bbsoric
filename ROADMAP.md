@@ -97,6 +97,9 @@ profils. Voir `docs/adr/0003-studio-forge.md`.
 - [x] **Pages de saisie déclaratives** (`content.Form`) : applet générique `form`
   (login/inscription) piloté par des champs déclarés (clé/libellé/secret) + action ;
   éditeur de formulaire dans le studio. La logique sensible (hachage) reste serveur.
+- [x] **Positionnement curseur (plot X,Y)** : séquence terminal `1F col row`
+  (`oascii.Plot`/`Builder.At`), champs de formulaire positionnables (`Field.At`),
+  colonnes X/Y dans le studio. Décor + invites placées à coordonnées absolues.
 - [ ] Multi-sites avancé (création de nouveaux fichiers depuis l'UI), gestion des sauvegardes.
 - [ ] Authentification si le studio devait être exposé (aujourd'hui local-only).
 

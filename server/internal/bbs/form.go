@@ -46,6 +46,12 @@ func formApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome 
 		if fld.Secret {
 			warnCleartext(s)
 		}
+		// Positionnement absolu optionnel de l'invite (plot X,Y).
+		if len(fld.At) == 2 {
+			if s.Write(oascii.Plot(fld.At[0], fld.At[1])) != nil {
+				return Outcome{Quit: true}
+			}
+		}
 		v, err := prompt(s, fld.Label)
 		if err != nil {
 			return Outcome{Quit: true}

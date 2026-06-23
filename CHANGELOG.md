@@ -6,6 +6,18 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Positionnement curseur — plot X,Y)
+- **Terminal Oric** (`client/term.s`) : machine à états sur le flux RX — la
+  séquence **`1F col row`** repositionne le curseur d'écriture VRAM
+  (`handle_rx`/`set_cursor_xy`, `SCRPTR = $BB80 + row*40 + col`). Assemblé (xa).
+- **`internal/oascii`** : constante `PlotByte` (0x1F), `Plot(col, row)` et
+  `Builder.At(col, row)` ; test `TestPlot`.
+- **Champs positionnés** : `content.Field.At [col,row]` (validé : longueur 2 et
+  dans l'écran 40×28). L'applet `form` émet la séquence de positionnement avant
+  l'invite du champ ; sinon affichage séquentiel. Test `TestFormFieldPlot`.
+- **Studio** : colonnes **X / Y** par champ dans l'éditeur de formulaire (vides =
+  invite séquentielle). Doc : `docs/oascii.md` (section positionnement).
+
 ### Modifié (Contenu — login ET inscription par défaut en pages « form »)
 - `content/site.json` : l'accueil ne lance plus les applets `login`/`register`
   directement ; les entrées 1 et 2 ciblent des **pages dédiées de type `form`** —

@@ -17,6 +17,9 @@
 RDRF      = $08          ; Receiver Data Register Full
 TDRE      = $10          ; Transmit Data Register Empty
 
+; --- Commande de positionnement curseur (plot X,Y) - 1F col row ---
+PLOTCMD   = $1F
+
 ; --- VIA 6522 (acces PSG clavier) ---
 VIA_ORB   = $0300
 VIA_ORA   = $0301
@@ -47,6 +50,8 @@ BUFPTR    = $E8          ; cible de saisie (2 octets)
 INLEN     = $E7
 INMAX     = $E6
 PROTO     = $E5          ; 0 = telnet/raw, 1 = TLS
+PLOTST    = $E3          ; etat reception plot (0=normal 1=attend col 2=attend row)
+PLOTX     = $E4          ; colonne memorisee pendant la reception du plot
 
 NUM_ENTRIES = 5
 
@@ -67,6 +72,7 @@ start:
         jsr psg_write
         lda #0
         sta LASTKEY
+        sta PLOTST
         ; charge la police BBS dans le charset alternatif ($B800)
         jsr load_altcharset
 
@@ -262,7 +268,7 @@ main:
         jsr ser_rx_ready
         beq do_keyscan
         jsr ser_rx
-        jsr putbyte
+        jsr handle_rx
         jmp main
 do_keyscan:
         jsr key_scan
@@ -279,6 +285,66 @@ ks_release:
         sta LASTKEY
 ks_ret:
         jmp main
+
+; ---------------------------------------------------------------------------
+;  handle_rx - traite un octet recu - commande plot (1F col row) ou affichage.
+;  A = octet recu.
+; ---------------------------------------------------------------------------
+handle_rx:
+        ldx PLOTST
+        bne hr_coord
+        cmp #PLOTCMD
+        beq hr_begin
+        jmp putbyte              ; octet normal -> affichage (putbyte fait rts)
+hr_begin:
+        lda #1
+        sta PLOTST
+        rts
+hr_coord:
+        cpx #1
+        bne hr_row
+        sta PLOTX                ; 1er octet = colonne
+        lda #2
+        sta PLOTST
+        rts
+hr_row:
+        jsr set_cursor_xy        ; A = ligne, PLOTX = colonne
+        lda #0
+        sta PLOTST
+        rts
+
+; ---------------------------------------------------------------------------
+;  set_cursor_xy - SCRPTR = SCREEN + row*40 + col ; COL = col.  A = row (0-27).
+; ---------------------------------------------------------------------------
+set_cursor_xy:
+        tax                      ; X = row (compteur)
+        lda #<SCREEN
+        sta SCRPTR
+        lda #>SCREEN
+        sta SCRPTR+1
+scxy_row:
+        cpx #0
+        beq scxy_col
+        clc
+        lda SCRPTR
+        adc #40
+        sta SCRPTR
+        lda SCRPTR+1
+        adc #0
+        sta SCRPTR+1
+        dex
+        jmp scxy_row
+scxy_col:
+        clc
+        lda SCRPTR
+        adc PLOTX
+        sta SCRPTR
+        lda SCRPTR+1
+        adc #0
+        sta SCRPTR+1
+        lda PLOTX
+        sta COL
+        rts
 
 ; ---------------------------------------------------------------------------
 ;  Primitives serie (via ACIAPTR  - offset 0=data 1=status 2=cmd 3=ctrl)

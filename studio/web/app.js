@@ -227,14 +227,24 @@ function formEditor(p) {
   wrap.append(field('Après succès (next)', pageSelect(f.next, v => { f.next = v; }, true)));
 
   const tbl = el('table', { className: 'rows' });
-  tbl.append(el('tr', {}, ['Clé', 'Libellé', 'Secret', ''].map(t => el('th', { textContent: t }))));
+  tbl.append(el('tr', {}, ['Clé', 'Libellé', 'Secret', 'X', 'Y', ''].map(t => el('th', { textContent: t }))));
   (f.fields || []).forEach((fld, i) => {
     const k = el('input', { type: 'text', value: fld.key || '' }); k.oninput = () => { fld.key = k.value; };
     const l = el('input', { type: 'text', value: fld.label || '' }); l.oninput = () => { fld.label = l.value; };
     const sec = el('input', { type: 'checkbox', checked: !!fld.secret }); sec.onchange = () => { fld.secret = sec.checked; };
+    // Position absolue optionnelle (plot X,Y) ; X et Y vides = invite séquentielle.
+    const xIn = el('input', { type: 'number', value: fld.at ? fld.at[0] : '' }); xIn.min = 0; xIn.max = 39; xIn.style.width = '52px';
+    const yIn = el('input', { type: 'number', value: fld.at ? fld.at[1] : '' }); yIn.min = 0; yIn.max = 27; yIn.style.width = '52px';
+    const updAt = () => {
+      const xv = String(xIn.value).trim(), yv = String(yIn.value).trim();
+      if (xv === '' && yv === '') delete fld.at;
+      else fld.at = [parseInt(xv || '0', 10) || 0, parseInt(yv || '0', 10) || 0];
+      refreshPreview();
+    };
+    xIn.oninput = updAt; yIn.oninput = updAt;
     const del = el('button', { className: 'del', textContent: '✕' });
     del.onclick = () => { f.fields.splice(i, 1); renderForm(); };
-    tbl.append(el('tr', {}, [td(k), td(l), td(el('label', { className: 'tog' }, [sec])), td(del)]));
+    tbl.append(el('tr', {}, [td(k), td(l), td(el('label', { className: 'tog' }, [sec])), td(xIn), td(yIn), td(del)]));
   });
   wrap.append(tbl);
   const addF = el('button', { textContent: '+ champ' });

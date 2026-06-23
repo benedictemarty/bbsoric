@@ -66,11 +66,14 @@ type Form struct {
 
 // Field est un champ de saisie d'un Form. Key identifie la valeur pour l'action
 // (clés attendues : "login", "password", "confirm") ; Secret avertit que la
-// saisie est visible à l'écran (l'Oric ne masque pas la frappe).
+// saisie est visible à l'écran (l'Oric ne masque pas la frappe). At, s'il est
+// présent, positionne l'invite à des coordonnées absolues [col, row] (plot X,Y) ;
+// sinon les invites s'affichent séquentiellement.
 type Field struct {
 	Key    string `json:"key"`
 	Label  string `json:"label"`
 	Secret bool   `json:"secret,omitempty"`
+	At     []int  `json:"at,omitempty"` // [col, row] optionnel (positionnement)
 }
 
 // Actions de formulaire reconnues (logique exécutée en Go).
@@ -197,6 +200,16 @@ func (f *Form) validate(pageID string, s *Site) error {
 		return fmt.Errorf("page %q : form sans 'action'", pageID)
 	default:
 		return fmt.Errorf("page %q : action de form inconnue %q", pageID, f.Action)
+	}
+	for _, fld := range f.Fields {
+		if len(fld.At) != 0 {
+			if len(fld.At) != 2 {
+				return fmt.Errorf("page %q : champ %q : 'at' doit être [col, row]", pageID, fld.Key)
+			}
+			if fld.At[0] < 0 || fld.At[0] >= oascii.Cols || fld.At[1] < 0 || fld.At[1] >= oascii.Rows {
+				return fmt.Errorf("page %q : champ %q : 'at' hors écran (%d×%d)", pageID, fld.Key, oascii.Cols, oascii.Rows)
+			}
+		}
 	}
 	if f.Next != "" {
 		if _, ok := s.Pages[f.Next]; !ok {
