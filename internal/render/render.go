@@ -77,9 +77,14 @@ func writeLine(b *oascii.Builder, ln content.Line) {
 	b.Newline()
 }
 
-// RawScreen rend une page « écran brut » : les lignes telles quelles, sans barre
-// de titre ni invite. Pas de saut de ligne après la dernière (évite le scroll).
+// RawScreen rend une page « écran brut » sans barre de titre ni invite. Si la
+// page porte un buffer Screen (40×28 octets posés par l'éditeur, attributs
+// inclus comme cases), il est envoyé tel quel (ligne par ligne). Sinon, repli
+// sur les Lines. Pas de saut de ligne après la dernière ligne (évite le scroll).
 func RawScreen(p *content.Page) []byte {
+	if len(p.Screen) > 0 {
+		return screenRows(p.Screen)
+	}
 	b := oascii.New()
 	for i, ln := range p.Lines {
 		emitLineSpans(b, ln)
@@ -88,6 +93,41 @@ func RawScreen(p *content.Page) []byte {
 		}
 	}
 	return b.Bytes()
+}
+
+// screenRows découpe un buffer écran (cases) en lignes de 40 et les émet,
+// séparées par CR LF, en élaguant les lignes entièrement vides du bas.
+func screenRows(buf []byte) []byte {
+	const cols, rows = oascii.Cols, oascii.Rows
+	last := -1
+	get := func(r int) []byte {
+		start := r * cols
+		if start >= len(buf) {
+			return nil
+		}
+		end := start + cols
+		if end > len(buf) {
+			end = len(buf)
+		}
+		return buf[start:end]
+	}
+	for r := 0; r < rows; r++ {
+		row := get(r)
+		for _, c := range row {
+			if c != 0x20 {
+				last = r
+				break
+			}
+		}
+	}
+	var out []byte
+	for r := 0; r <= last; r++ {
+		out = append(out, get(r)...)
+		if r < last {
+			out = append(out, '\r', '\n')
+		}
+	}
+	return out
 }
 
 // Screen renvoie le flux OASCII de l'écran complet d'une page : barre de titre,

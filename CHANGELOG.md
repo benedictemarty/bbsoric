@@ -7,15 +7,20 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 ## [Non publié]
 
 ### Ajouté (Éditeur d'écran plein 40×28 + page « écran brut »)
-- **Page « écran brut »** : nouveau champ `raw` (`internal/content`) — la page rend ses
-  `lines` **telles quelles**, sans barre de titre ni invite (`internal/render.RawScreen`,
-  pas de saut de ligne final pour éviter le scroll). Moteur : une touche pour sortir.
-- **Studio, onglet « Écran »** : éditeur **caractère par caractère** sur une grille 40×28
-  avec **aperçu ULA** en direct. Pinceau (glyphe std/BBS + encre/fond + clignotement/inverse),
-  **clic** pour peindre, **clavier** pour écrire (flèches/curseur, ⌫/Suppr), palette BBS pour
-  charger le pinceau. Créer / Charger / Enregistrer une page écran ; conversion grille ↔
-  lignes (segments groupés par style). `/api/screen` rend les pages `raw` via `RawScreen`.
-- Tests `render` (RawScreen sans chrome) ; validé serveur (`nc`) et studio.
+- **Page « écran brut »** : champ `raw` + buffer **`screen`** (40×28 octets, base64) dans
+  `internal/content` — rendu **tel quel** sans barre de titre ni invite
+  (`internal/render.RawScreen`/`screenRows`, pas de saut de ligne final). Repli sur `lines`
+  si pas de buffer. Moteur : une touche pour sortir.
+- **Studio, onglet « Écran »** : éditeur **caractère par caractère** sur la grille 40×28,
+  **fidèle à l'ULA** — il travaille sur le **buffer écran d'octets** où les **attributs sont
+  des cases** qu'on pose explicitement (encre/fond/texte), exactement comme l'Oric (un
+  changement d'encre occupe une case et s'applique jusqu'au prochain attribut). Plus de
+  coloration « par cellule » incohérente avec la sérialisation ; l'inverse reste par
+  caractère (bit 7). Pinceau = octet à poser (caractère + inverse, ou attribut via pastilles
+  encre/fond + boutons alt/cli/norm) ; clic = peindre, clavier = écrire (flèches/curseur,
+  ⌫/Suppr) ; palette BBS pour le caractère. Créer/Charger/Enregistrer (buffer ↔ base64).
+- `/api/screen` rend les pages `raw` via `RawScreen` ; rendu d'aperçu ULA partagé
+  (`renderScreenBuf`, réutilisé par l'aperçu de page). Tests `render` ; validé serveur + studio.
 - Onglet Édition : un **compositeur** assemble une ligne caractère par caractère en mêlant
   **texte normal** (champ « + texte ») et **glyphes BBS** (clic dans la palette), avec
   **aperçu ULA en direct**. « Insérer comme ligne » ajoute la ligne à la page courante,

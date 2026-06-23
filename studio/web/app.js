@@ -350,43 +350,8 @@ function layoutScreen(bytes) {
 }
 
 // drawScreen : rend le buffer 40×28 sur le canvas selon l'ULA (cf. video.c).
-function drawScreen(buf) {
-  const cv = $('oric-screen'); if (!cv || !window.ORIC_CHARSET) return;
-  const ctx = cv.getContext('2d');
-  const img = ctx.createImageData(COLS * CW, ROWS * CH);
-  const put = (x, y, rgb) => { const o = (y * COLS * CW + x) * 4; img.data[o] = rgb[0]; img.data[o + 1] = rgb[1]; img.data[o + 2] = rgb[2]; img.data[o + 3] = 255; };
-
-  for (let row = 0; row < ROWS; row++) {
-    let ink = 7, paper = 0, attr = 0; // reset début de ligne (ULA)
-    for (let col = 0; col < COLS; col++) {
-      const b = buf[row * COLS + col];
-      if ((b & 0x60) === 0) {                 // attribut
-        const v = b & 0x1F;
-        if ((v & 0x18) === 0x00) ink = v & 7;
-        else if ((v & 0x18) === 0x08) attr = v & 7;
-        else if ((v & 0x18) === 0x10) paper = v & 7;
-        for (let cy = 0; cy < CH; cy++) for (let bx = 0; bx < CW; bx++) put(col * CW + bx, row * CH + cy, PAL[paper]);
-      } else {                                 // caractère
-        const idx = b & 0x7F;
-        let inv = (b & 0x80) !== 0;
-        if ((attr & 4) && blinkOn) inv = !inv;
-        const fg = PAL[ink], bg = PAL[paper];
-        const altFont = (attr & 1) && window.ORIC_ALTCHARSET; // charset alternatif (police BBS)
-        for (let cy = 0; cy < CH; cy++) {
-          const erow = (attr & 2) ? ((cy >> 1) + (row & 1 ? 4 : 0)) : cy;
-          const glyph = altFont ? window.ORIC_ALTCHARSET[idx * 8 + erow]
-            : ((idx >= 0x20 && idx <= 0x7F) ? window.ORIC_CHARSET[(idx - 0x20) * 8 + erow] : 0);
-          for (let bx = 0; bx < CW; bx++) {
-            let on = (glyph >> (5 - bx)) & 1;
-            if (inv) on = on ? 0 : 1;
-            put(col * CW + bx, row * CH + cy, on ? fg : bg);
-          }
-        }
-      }
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-}
+// drawScreen : aperçu d'une page (buffer 40×28) — réutilise le rendu ULA partagé.
+function drawScreen(buf) { renderScreenBuf($('oric-screen'), buf, null); }
 
 // --- compositeur de ligne (texte normal + glyphes BBS) ---
 let comp = []; // suite d'items { ch, alt }
@@ -467,133 +432,105 @@ function renderPalette() {
 }
 
 // --- éditeur d'écran plein (40×28, page « écran brut ») ---
+// Modèle OCTETS, fidèle à l'ULA : la grille est le buffer écran 40×28 ; les
+// attributs (encre/fond/texte) sont des CASES qu'on pose explicitement et qui
+// s'appliquent jusqu'au prochain attribut (comme sur Oric). Aucune coloration
+// « par cellule » incohérente avec la sérialisation.
 const COLOR_NAMES = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'];
-const colNum = (name, def) => { const i = COLOR_NAMES.indexOf(name); return i < 0 ? def : i; };
-let gridCells = null;          // Array(40*28) de cellules
-let brush = { c: 0x20, alt: false, ink: 7, paper: 0, blink: false, inv: false };
+let gridBuf = null;        // Uint8Array(40*28) : octets écran (chars + attributs)
+let brushByte = 0x20;      // octet posé par le pinceau
 let cur = { col: 0, row: 0 };
 let screenName = null;
 
-const blankCell = () => ({ c: 0x20, alt: false, ink: 7, paper: 0, blink: false, inv: false });
-function initGrid() { gridCells = Array.from({ length: COLS * ROWS }, blankCell); cur = { col: 0, row: 0 }; }
-const cellBlank = (x) => x.c === 0x20 && x.ink === 7 && x.paper === 0 && !x.alt && !x.blink && !x.inv;
-const sameStyle = (a, b) => a.ink === b.ink && a.paper === b.paper && a.alt === b.alt && a.blink === b.blink && a.inv === b.inv;
+function initGrid() { gridBuf = new Uint8Array(COLS * ROWS).fill(0x20); cur = { col: 0, row: 0 }; }
 
-function glyphRowFor(cell, r) {
-  if (cell.alt && window.ORIC_ALTCHARSET) return window.ORIC_ALTCHARSET[cell.c * 8 + r];
-  return (cell.c >= 0x20 && cell.c <= 0x7F && window.ORIC_CHARSET) ? window.ORIC_CHARSET[(cell.c - 0x20) * 8 + r] : 0;
-}
-
-function drawGrid() {
-  const cvEl = $('screen-canvas'); if (!cvEl || !gridCells || !window.ORIC_CHARSET) return;
-  const ctx = cvEl.getContext('2d'); const img = ctx.createImageData(COLS * CW, ROWS * CH);
-  for (let row = 0; row < ROWS; row++) for (let col = 0; col < COLS; col++) {
-    const cell = gridCells[row * COLS + col];
-    let fg = PAL[cell.ink], bg = PAL[cell.paper];
-    if (cell.inv) { const t = fg; fg = bg; bg = t; }
-    for (let cy = 0; cy < CH; cy++) {
-      const g = glyphRowFor(cell, cy);
-      const flip = cell.blink && blinkOn;
-      for (let x = 0; x < CW; x++) {
-        let on = (g >> (5 - x)) & 1; if (flip) on = on ? 0 : 1;
-        const o = ((row * CH + cy) * COLS * CW + col * CW + x) * 4, c = on ? fg : bg;
-        img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255;
+// renderScreenBuf : rend un buffer 40×28 d'octets selon l'ULA (attributs = cases,
+// état encre/fond/texte réinitialisé à chaque début de ligne).
+function renderScreenBuf(cvEl, buf, cursor) {
+  if (!cvEl || !window.ORIC_CHARSET) return;
+  const ctx = cvEl.getContext('2d');
+  const img = ctx.createImageData(COLS * CW, ROWS * CH);
+  const setpx = (col, row, cy, x, c) => { const o = ((row * CH + cy) * COLS * CW + col * CW + x) * 4; img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255; };
+  for (let row = 0; row < ROWS; row++) {
+    let ink = 7, paper = 0, attr = 0;
+    for (let col = 0; col < COLS; col++) {
+      const b = buf[row * COLS + col] ?? 0x20;
+      if ((b & 0x60) === 0) {                 // attribut -> change l'état ; case = bloc fond
+        const v = b & 0x1F;
+        if ((v & 0x18) === 0x00) ink = v & 7;
+        else if ((v & 0x18) === 0x08) attr = v & 7;
+        else if ((v & 0x18) === 0x10) paper = v & 7;
+        for (let cy = 0; cy < CH; cy++) for (let x = 0; x < CW; x++) setpx(col, row, cy, x, PAL[paper]);
+      } else {                                 // caractère
+        const idx = b & 0x7F; let inv = (b & 0x80) !== 0; if ((attr & 4) && blinkOn) inv = !inv;
+        const altFont = (attr & 1) && window.ORIC_ALTCHARSET;
+        for (let cy = 0; cy < CH; cy++) {
+          const erow = (attr & 2) ? ((cy >> 1) + (row & 1 ? 4 : 0)) : cy;
+          const g = altFont ? window.ORIC_ALTCHARSET[idx * 8 + erow] : ((idx >= 0x20 && idx <= 0x7F) ? window.ORIC_CHARSET[(idx - 0x20) * 8 + erow] : 0);
+          for (let x = 0; x < CW; x++) { let on = (g >> (5 - x)) & 1; if (inv) on = on ? 0 : 1; setpx(col, row, cy, x, on ? PAL[ink] : PAL[paper]); }
+        }
       }
     }
   }
   ctx.putImageData(img, 0, 0);
-  ctx.strokeStyle = '#22dddd'; ctx.lineWidth = 1;
-  ctx.strokeRect(cur.col * CW + 0.5, cur.row * CH + 0.5, CW - 1, CH - 1);
+  if (cursor) { ctx.strokeStyle = '#22dddd'; ctx.lineWidth = 1; ctx.strokeRect(cursor.col * CW + 0.5, cursor.row * CH + 0.5, CW - 1, CH - 1); }
 }
 
-function drawBrushPrev() {
-  const cv = $('brush-prev'); const ctx = cv.getContext('2d'); const img = ctx.createImageData(CW, CH);
-  let fg = PAL[brush.ink], bg = PAL[brush.paper]; if (brush.inv) { const t = fg; fg = bg; bg = t; }
-  for (let r = 0; r < CH; r++) { const g = glyphRowFor(brush, r); for (let x = 0; x < CW; x++) { const on = (g >> (5 - x)) & 1, o = (r * CW + x) * 4, c = on ? fg : bg; img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255; } }
-  ctx.putImageData(img, 0, 0);
-}
+function drawGrid() { renderScreenBuf($('screen-canvas'), gridBuf, cur); }
 
-function paintCell(col, row) {
-  if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return;
-  gridCells[row * COLS + col] = { c: brush.c, alt: brush.alt, ink: brush.ink, paper: brush.paper, blink: brush.blink, inv: brush.inv };
+function brushDesc(b) {
+  if ((b & 0x60) === 0) {
+    const v = b & 0x1F;
+    if ((v & 0x18) === 0x00) return 'encre ' + COLOR_NAMES[v & 7];
+    if ((v & 0x18) === 0x08) { const a = []; if (v & 1) a.push('alt'); if (v & 2) a.push('2×h'); if (v & 4) a.push('cli'); return 'texte ' + (a.join('+') || 'normal'); }
+    if ((v & 0x18) === 0x10) return 'fond ' + COLOR_NAMES[v & 7];
+    return 'vidéo';
+  }
+  return "car '" + String.fromCharCode(b & 0x7F) + "'" + ((b & 0x80) ? ' inv' : '');
 }
+function setBrush(b) { brushByte = b & 0xFF; const d = $('brush-desc'); if (d) d.textContent = brushDesc(brushByte); }
 
-function typeChar(ch) { // texte normal au curseur, avec couleurs du pinceau
-  gridCells[cur.row * COLS + cur.col] = { c: ch.charCodeAt(0), alt: false, ink: brush.ink, paper: brush.paper, blink: brush.blink, inv: brush.inv };
+function paintAt(col, row) { if (col >= 0 && col < COLS && row >= 0 && row < ROWS) gridBuf[row * COLS + col] = brushByte; }
+function typeAt(ch) {
+  const inv = $('brush-inv').checked ? 0x80 : 0;
+  gridBuf[cur.row * COLS + cur.col] = (ch.charCodeAt(0) & 0x7F) | inv;
   cur.col++; if (cur.col >= COLS) { cur.col = 0; if (cur.row < ROWS - 1) cur.row++; }
-}
-
-// grille -> lignes (segments groupés par style, blancs de fin élagués)
-function gridToLines() {
-  const lines = []; let last = -1; const ends = [];
-  for (let r = 0; r < ROWS; r++) { let e = COLS; while (e > 0 && cellBlank(gridCells[r * COLS + e - 1])) e--; ends.push(e); if (e > 0) last = r; }
-  for (let r = 0; r <= last; r++) {
-    const e = ends[r];
-    if (e === 0) { lines.push({ text: '' }); continue; }
-    const segs = [];
-    for (let col = 0; col < e; col++) {
-      const cell = gridCells[r * COLS + col], prev = segs[segs.length - 1];
-      if (prev && sameStyle(prev.s, cell)) prev.t += String.fromCharCode(cell.c);
-      else segs.push({ t: String.fromCharCode(cell.c), s: cell });
-    }
-    lines.push(segs.length === 1 ? lineObj(segs[0].t, segs[0].s) : { segments: segs.map(x => lineObj(x.t, x.s)) });
-  }
-  return lines;
-}
-function lineObj(text, s) {
-  const o = { text };
-  if (s.ink !== 7) o.ink = COLOR_NAMES[s.ink];
-  if (s.paper !== 0) o.paper = COLOR_NAMES[s.paper];
-  if (s.blink) o.blink = true;
-  if (s.alt) o.altCharset = true;
-  if (s.inv) o.inverse = true;
-  return o;
-}
-
-// lignes -> grille
-function linesToGrid(lines) {
-  initGrid();
-  (lines || []).forEach((ln, r) => {
-    if (r >= ROWS) return;
-    const spans = ln.segments || [Object.assign({ text: ln.text || '' }, ln)];
-    let col = 0;
-    for (const sp of spans) {
-      const ink = sp.ink ? colNum(sp.ink, 7) : 7, paper = sp.paper ? colNum(sp.paper, 0) : 0;
-      for (const ch of (sp.text || '')) {
-        if (col >= COLS) break;
-        gridCells[r * COLS + col] = { c: ch.charCodeAt(0), alt: !!sp.altCharset, ink, paper, blink: !!sp.blink, inv: !!sp.inverse };
-        col++;
-      }
-    }
-  });
 }
 
 function refreshScreenPages() {
   const sel = $('screen-page'); sel.innerHTML = '';
-  for (const id of Object.keys(site.pages || {})) {
-    if (site.pages[id].raw) sel.append(el('option', { value: id, textContent: id }));
-  }
+  for (const id of Object.keys(site.pages || {})) if (site.pages[id].raw) sel.append(el('option', { value: id, textContent: id }));
 }
 
-function screenLoad(id) {
+const bufToB64 = (buf) => { let s = ''; for (const b of buf) s += String.fromCharCode(b); return btoa(s); };
+function b64ToBuf(b64) { const s = atob(b64), u = new Uint8Array(COLS * ROWS).fill(0x20); for (let i = 0; i < s.length && i < u.length; i++) u[i] = s.charCodeAt(i); return u; }
+
+async function screenLoad(id) {
   if (!id || !site.pages[id]) return;
-  screenName = id; linesToGrid(site.pages[id].lines); drawGrid();
+  screenName = id; const p = site.pages[id];
+  if (p.screen) gridBuf = b64ToBuf(p.screen);
+  else { // page raw décrite par des lignes : on récupère le rendu serveur
+    const r = await fetch('/api/screen?page=' + encodeURIComponent(id), { method: 'POST', body: JSON.stringify(site) });
+    gridBuf = r.ok ? layoutScreen(new Uint8Array(await r.arrayBuffer())) : new Uint8Array(COLS * ROWS).fill(0x20);
+  }
+  cur = { col: 0, row: 0 }; drawGrid();
   setStatus('écran chargé : ' + id, 'ok');
 }
 function screenNew() {
   const id = ($('screen-newid').value || '').trim();
   if (!id) { setStatus('donne un identifiant', 'err'); return; }
   if (site.pages[id]) { setStatus('cet identifiant existe déjà', 'err'); return; }
-  site.pages[id] = { title: id.toUpperCase(), raw: true, lines: [] };
+  initGrid();
+  site.pages[id] = { title: id.toUpperCase(), raw: true, screen: bufToB64(gridBuf) };
   if (!site.start) site.start = id;
   screenName = id; $('screen-newid').value = '';
-  initGrid(); refreshScreenPages(); $('screen-page').value = id; drawGrid(); renderPageList();
+  refreshScreenPages(); $('screen-page').value = id; drawGrid(); renderPageList();
   setStatus('page écran créée : ' + id, 'ok');
 }
 function screenSave() {
   if (!screenName || !site.pages[screenName]) { setStatus('crée/charge une page écran', 'err'); return; }
-  site.pages[screenName].raw = true;
-  site.pages[screenName].lines = gridToLines();
+  const p = site.pages[screenName];
+  p.raw = true; delete p.lines; p.screen = bufToB64(gridBuf);
   renderPageList();
   setStatus('écran enregistré dans « ' + screenName + ' »', 'ok');
 }
@@ -614,7 +551,7 @@ async function doPreview() {
 setInterval(() => {
   blinkOn = !blinkOn;
   if (lastScreen) drawScreen(lastScreen);
-  if (gridCells && document.getElementById('tab-screen').classList.contains('active')) drawGrid();
+  if (gridBuf && document.getElementById('tab-screen').classList.contains('active')) drawGrid();
 }, 320);
 
 async function validate() {
@@ -713,37 +650,46 @@ $('comp-bs').onclick = () => { comp.pop(); drawComp(); };
 $('comp-clear').onclick = () => { comp = []; drawComp(); };
 $('comp-insert').onclick = compInsert;
 
-// --- éditeur d'écran ---
-function fillColorSelect(sel, val) { sel.innerHTML = ''; COLOR_NAMES.forEach((n, i) => sel.append(el('option', { value: i, textContent: n, selected: i === val }))); }
-fillColorSelect($('brush-ink'), 7);
-fillColorSelect($('brush-paper'), 0);
+// --- éditeur d'écran (modèle octets) ---
+function colorSwatches(hostId, mk) {
+  const host = $(hostId); host.innerHTML = '';
+  COLOR_NAMES.forEach((n, i) => {
+    const c = PAL[i];
+    const b = el('button', { className: 'swatch', title: mk.label + ' ' + n });
+    b.style.background = 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
+    b.onclick = () => setBrush(mk.attr(i));
+    host.append(b);
+  });
+}
 initGrid();
-renderPaletteInto('screen-palette', (c) => { brush.c = c; brush.alt = true; $('brush-char').value = ''; drawBrushPrev(); });
-$('brush-char').oninput = () => { const v = $('brush-char').value; brush.c = v ? v.charCodeAt(0) : 0x20; brush.alt = false; drawBrushPrev(); };
-$('brush-ink').onchange = () => { brush.ink = +$('brush-ink').value; drawBrushPrev(); };
-$('brush-paper').onchange = () => { brush.paper = +$('brush-paper').value; drawBrushPrev(); };
-$('brush-blink').onchange = () => { brush.blink = $('brush-blink').checked; drawBrushPrev(); };
-$('brush-inv').onchange = () => { brush.inv = $('brush-inv').checked; drawBrushPrev(); };
-drawBrushPrev();
+colorSwatches('ink-swatches', { label: 'encre', attr: (i) => i });          // encre = 0..7
+colorSwatches('paper-swatches', { label: 'fond', attr: (i) => 0x10 | i });  // fond = 16..23
+$('attr-alt').onclick = () => setBrush(0x09);   // texte: charset alternatif
+$('attr-blink').onclick = () => setBrush(0x0C); // texte: clignotement
+$('attr-norm').onclick = () => setBrush(0x08);  // texte: normal
+$('brush-char').oninput = () => { const v = $('brush-char').value; setBrush(((v ? v.charCodeAt(0) : 0x20) & 0x7F) | ($('brush-inv').checked ? 0x80 : 0)); };
+$('brush-inv').onchange = () => { if ((brushByte & 0x60) !== 0) setBrush((brushByte & 0x7F) | ($('brush-inv').checked ? 0x80 : 0)); };
+renderPaletteInto('screen-palette', (c) => { $('brush-char').value = String.fromCharCode(c); setBrush(c & 0x7F); });
+setBrush(0x20);
 
 const scv = $('screen-canvas');
 scv.addEventListener('click', (e) => {
   const r = scv.getBoundingClientRect();
   cur.col = Math.min(COLS - 1, Math.max(0, Math.floor((e.clientX - r.left) / (r.width / COLS))));
   cur.row = Math.min(ROWS - 1, Math.max(0, Math.floor((e.clientY - r.top) / (r.height / ROWS))));
-  paintCell(cur.col, cur.row); drawGrid(); scv.focus();
+  paintAt(cur.col, cur.row); drawGrid(); scv.focus();
 });
 scv.addEventListener('keydown', (e) => {
   const k = e.key;
-  if (k === 'ArrowLeft') { cur.col = Math.max(0, cur.col - 1); }
-  else if (k === 'ArrowRight') { cur.col = Math.min(COLS - 1, cur.col + 1); }
-  else if (k === 'ArrowUp') { cur.row = Math.max(0, cur.row - 1); }
-  else if (k === 'ArrowDown') { cur.row = Math.min(ROWS - 1, cur.row + 1); }
+  if (k === 'ArrowLeft') cur.col = Math.max(0, cur.col - 1);
+  else if (k === 'ArrowRight') cur.col = Math.min(COLS - 1, cur.col + 1);
+  else if (k === 'ArrowUp') cur.row = Math.max(0, cur.row - 1);
+  else if (k === 'ArrowDown') cur.row = Math.min(ROWS - 1, cur.row + 1);
   else if (k === 'Enter') { cur.col = 0; cur.row = Math.min(ROWS - 1, cur.row + 1); }
-  else if (k === 'Backspace') { cur.col = Math.max(0, cur.col - 1); gridCells[cur.row * COLS + cur.col] = blankCell(); }
-  else if (k === 'Delete') { gridCells[cur.row * COLS + cur.col] = blankCell(); }
-  else if (k.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) { typeChar(k); }
-  else { return; }
+  else if (k === 'Backspace') { cur.col = Math.max(0, cur.col - 1); gridBuf[cur.row * COLS + cur.col] = 0x20; }
+  else if (k === 'Delete') { gridBuf[cur.row * COLS + cur.col] = 0x20; }
+  else if (k.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) { typeAt(k); }
+  else return;
   e.preventDefault(); drawGrid();
 });
 $('screen-load').onclick = () => screenLoad($('screen-page').value);

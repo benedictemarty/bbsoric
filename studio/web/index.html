@@ -81,13 +81,16 @@
           <button id="screen-clear">Vider</button>
         </div>
         <div class="brush-bar">
-          <span class="lbl">Pinceau</span>
-          <canvas id="brush-prev" class="brush-prev" width="6" height="8"></canvas>
+          <span class="lbl">Pinceau :</span> <span id="brush-desc" class="brush-desc">car ' '</span>
           <input id="brush-char" type="text" maxlength="1" placeholder="car" size="1">
-          <select id="brush-ink"></select>
-          <select id="brush-paper"></select>
-          <label class="tog" title="Clignotement"><input type="checkbox" id="brush-blink">C</label>
-          <label class="tog" title="Inverse"><input type="checkbox" id="brush-inv">I</label>
+          <label class="tog" title="Inverse (bit 7, par caractère)"><input type="checkbox" id="brush-inv">inv</label>
+        </div>
+        <div class="brush-bar">
+          <span class="lbl">Encre</span><span id="ink-swatches" class="swatches"></span>
+          <span class="lbl">Fond</span><span id="paper-swatches" class="swatches"></span>
+          <button id="attr-alt" title="Attribut: charset alternatif (police BBS)">alt</button>
+          <button id="attr-blink" title="Attribut: clignotement">cli</button>
+          <button id="attr-norm" title="Attribut texte normal">norm</button>
         </div>
         <canvas id="screen-canvas" class="screen-canvas" width="240" height="224" tabindex="0"></canvas>
         <p class="hint">Clic = peindre la cellule (pinceau) · tape pour écrire du texte · flèches = déplacer · ⌫/Suppr = effacer · clique un glyphe ↓ pour charger le pinceau.</p>

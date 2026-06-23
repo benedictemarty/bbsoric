@@ -55,6 +55,24 @@ func TestRawScreen(t *testing.T) {
 	}
 }
 
+func TestRawScreenBuffer(t *testing.T) {
+	// buffer 40×28 : "Hi" en haut-gauche, le reste vide -> 1 ligne "Hi", élaguée.
+	buf := make([]byte, 40*28)
+	for i := range buf {
+		buf[i] = 0x20
+	}
+	buf[0] = 'H'
+	buf[1] = 'i'
+	out := string(RawScreen(&content.Page{Raw: true, Screen: buf}))
+	// la 1re ligne complète (40 cases) puis rien (lignes vides élaguées).
+	if len(out) != 40 || out[0] != 'H' || out[1] != 'i' {
+		t.Errorf("RawScreen(buffer) = %q (len %d)", out, len(out))
+	}
+	if strings.Contains(out, "\r\n") {
+		t.Errorf("une seule ligne non vide : pas de CRLF attendu")
+	}
+}
+
 func TestScreenInverseIsBit7(t *testing.T) {
 	// inverse = bit 7 sur le caractère, PAS un attribut sériel.
 	p := &content.Page{Title: "T", Lines: []content.Line{
