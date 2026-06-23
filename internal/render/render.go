@@ -33,28 +33,62 @@ func defaultStyleState() styleState { return styleState{ink: oascii.White, paper
 // emitStyle émet les attributs nécessaires pour passer de cur au style st
 // (valeurs non renseignées = défaut) puis met cur à jour. L'inverse n'est PAS
 // un attribut ici : il s'applique par caractère (bit 7) au moment d'écrire.
-func emitStyle(b *oascii.Builder, cur *styleState, st content.Style) {
+// Renvoie le nombre d'octets d'attribut émis (chacun occupe une case écran).
+func emitStyle(b *oascii.Builder, cur *styleState, st content.Style) int {
 	ink := content.Ink(st.Ink) // blanc si vide
 	paper := oascii.Black
 	if st.Paper != "" {
 		paper = content.Ink(st.Paper)
 	}
+	n := 0
 	if paper != cur.paper {
 		b.Paper(paper)
 		cur.paper = paper
+		n++
 	}
 	if st.Blink != cur.blink || st.DoubleHeight != cur.dbl || st.AltCharset != cur.alt {
 		b.Attrs(st.Blink, st.DoubleHeight, st.AltCharset)
 		cur.blink, cur.dbl, cur.alt = st.Blink, st.DoubleHeight, st.AltCharset
+		n++
 	}
 	if ink != cur.ink {
 		b.Ink(ink)
 		cur.ink = ink
+		n++
+	}
+	return n
+}
+
+// reemitState ré-émet les attributs non-défaut de st (l'ULA réinitialise au début
+// de chaque ligne). Renvoie le nombre de cases consommées. Sert au repli (wrap).
+func reemitState(b *oascii.Builder, st styleState) int {
+	n := 0
+	if st.paper != oascii.Black {
+		b.Paper(st.paper)
+		n++
+	}
+	if st.blink || st.dbl || st.alt {
+		b.Attrs(st.blink, st.dbl, st.alt)
+		n++
+	}
+	if st.ink != oascii.White {
+		b.Ink(st.ink)
+		n++
+	}
+	return n
+}
+
+// emitChars écrit du texte (inverse = bit 7 par caractère).
+func emitChars(b *oascii.Builder, s string, inv bool) {
+	if inv {
+		b.InverseText(s)
+	} else {
+		b.Text(s)
 	}
 }
 
-// emitLineSpans écrit les fragments stylés d'une ligne (sans saut de ligne).
-// L'inverse pose le bit 7 par caractère.
+// emitLineSpans écrit les fragments stylés d'une ligne (sans saut de ligne ni
+// repli — utilisé tel quel pour l'« écran brut »).
 func emitLineSpans(b *oascii.Builder, ln content.Line) {
 	spans := ln.Segments
 	if len(spans) == 0 {
@@ -63,17 +97,59 @@ func emitLineSpans(b *oascii.Builder, ln content.Line) {
 	cur := defaultStyleState()
 	for _, sp := range spans {
 		emitStyle(b, &cur, sp.Style)
-		if sp.Inverse {
-			b.InverseText(sp.Text)
-		} else {
-			b.Text(sp.Text)
+		emitChars(b, sp.Text, sp.Inverse)
+	}
+}
+
+// emitLineWrapped écrit les fragments d'une ligne en repliant à la largeur écran
+// (40 colonnes), aux espaces (césure dure pour un mot trop long). Au passage à
+// la ligne, les attributs courants (encre/fond/…) sont RÉ-ÉMIS pour conserver le
+// même rendu sur la ligne n+1 (l'ULA réinitialise sinon).
+func emitLineWrapped(b *oascii.Builder, ln content.Line) {
+	spans := ln.Segments
+	if len(spans) == 0 {
+		spans = []content.Span{{Text: ln.Text, Style: ln.Style}}
+	}
+	cur := defaultStyleState()
+	col := 0       // cases utilisées sur la ligne physique courante
+	lineStart := 0 // cases occupées par les attributs ré-émis en début de ligne
+	wrap := func() {
+		b.Newline()
+		col = reemitState(b, cur)
+		lineStart = col
+	}
+	for _, sp := range spans {
+		col += emitStyle(b, &cur, sp.Style)
+		words := strings.Split(sp.Text, " ")
+		for wi, w := range words {
+			if wi > 0 { // séparateur espace entre mots
+				if col >= oascii.Cols {
+					wrap()
+				} else {
+					emitChars(b, " ", sp.Inverse)
+					col++
+				}
+			}
+			// le mot entier ne tient pas sur la fin de ligne → replier d'abord
+			if col > lineStart && col+len(w) > oascii.Cols {
+				wrap()
+			}
+			// mot plus long qu'une ligne entière → césure dure
+			for col+len(w) > oascii.Cols && oascii.Cols-col > 0 {
+				take := oascii.Cols - col
+				emitChars(b, w[:take], sp.Inverse)
+				w = w[take:]
+				wrap()
+			}
+			emitChars(b, w, sp.Inverse)
+			col += len(w)
 		}
 	}
 }
 
-// writeLine rend une ligne complète (fragments + saut de ligne).
+// writeLine rend une ligne complète (fragments repliés + saut de ligne).
 func writeLine(b *oascii.Builder, ln content.Line) {
-	emitLineSpans(b, ln)
+	emitLineWrapped(b, ln)
 	b.Newline()
 }
 

@@ -86,3 +86,36 @@ func TestScreenInverseIsBit7(t *testing.T) {
 		t.Errorf("aucun attribut inverse (octet 29) ne doit être émis")
 	}
 }
+
+// TestWrapWidthAndColor : une ligne dépassant 40 colonnes est repliée (chaque
+// ligne physique ≤ 40 cases) et la couleur/fond est ré-émise sur la ligne n+1.
+func TestWrapWidthAndColor(t *testing.T) {
+	ln := content.Line{
+		Text:  strings.Repeat("mot ", 15), // 60 caractères
+		Style: content.Style{Ink: "red", Paper: "blue"},
+	}
+	b := oascii.New()
+	emitLineWrapped(b, ln)
+	out := b.String()
+
+	rows := strings.Split(out, "\r\n")
+	if len(rows) < 2 {
+		t.Fatalf("la ligne longue doit être repliée (>1 ligne physique):\n%q", out)
+	}
+	for i, r := range rows {
+		if len(r) > oascii.Cols {
+			t.Errorf("ligne physique %d > 40 cases (%d):\n%q", i, len(r), r)
+		}
+	}
+	// paper bleu = 0x14, ink rouge = 0x01 : chaque ligne non vide doit commencer
+	// par le fond ré-émis (puis l'encre).
+	paper := byte(0x10 | int(oascii.Blue)) // 0x14
+	for i, r := range rows {
+		if r == "" {
+			continue
+		}
+		if r[0] != paper {
+			t.Errorf("ligne %d ne ré-émet pas le fond (0x%02x) : %q", i, paper, r)
+		}
+	}
+}

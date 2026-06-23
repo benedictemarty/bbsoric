@@ -6,6 +6,15 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Rendu — repli automatique des lignes > 40 colonnes)
+- **`internal/render`** : une ligne de texte qui dépasse **40 colonnes** est
+  désormais **repliée** sur la ligne suivante (coupure aux espaces ; césure dure
+  pour un mot plus long qu'une ligne) au lieu d'être tronquée par le terminal.
+  Au passage à la ligne, les **attributs courants (encre/fond/…) sont ré-émis**
+  pour conserver le même rendu (l'ULA les réinitialise à chaque début de ligne).
+  Ne concerne que les pages « logiques » (`writeLine`/`Screen`) ; l'« écran brut »
+  (`RawScreen`) reste émis tel quel. Test `TestWrapWidthAndColor`.
+
 ### Ajouté (Applets — réessai + page d'échec)
 - **Réessai sur place** : l'applet `form` redemande les champs en cas d'échec
   jusqu'au succès ou épuisement des tentatives (`Form.Retries`, défaut 3).
