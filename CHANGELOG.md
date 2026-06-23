@@ -6,11 +6,13 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
-### Modifié (Contenu — page de login par défaut en page « form »)
-- `content/site.json` : l'accueil ne lance plus l'applet `login` directement ;
-  l'entrée 1 cible une **page `login` dédiée de type `form`** (action `login`,
-  champs pseudo/mot de passe, `next: main`). Démontre le modèle déclaratif sur le
-  contenu de production. Routage validé end-to-end (accueil → CONNEXION → saisie).
+### Modifié (Contenu — login ET inscription par défaut en pages « form »)
+- `content/site.json` : l'accueil ne lance plus les applets `login`/`register`
+  directement ; les entrées 1 et 2 ciblent des **pages dédiées de type `form`** —
+  `login` (action `login`, pseudo/mot de passe) et `register` (action `register`,
+  pseudo/mot de passe/confirmer), `next: main`. Démontre le modèle déclaratif sur
+  le contenu de production. Validé end-to-end (création de compte → compte persisté
+  avec hash PBKDF2 ; connexion → accueil personnalisé).
 
 ### Ajouté (Pages de saisie déclaratives — applet « form »)
 - **Modèle** (`internal/content`) : type **`Form`** (`action`, `fields`, `next`) +

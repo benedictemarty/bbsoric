@@ -13,8 +13,7 @@
         {
           "key": "2",
           "label": "Creer un compte",
-          "applet": "register",
-          "next": "main"
+          "target": "register"
         },
         {
           "key": "3",
@@ -42,6 +41,29 @@
           {
             "key": "password",
             "label": "Mot de passe",
+            "secret": true
+          }
+        ]
+      }
+    },
+    "register": {
+      "title": "CREATION DE COMPTE",
+      "form": {
+        "action": "register",
+        "next": "main",
+        "fields": [
+          {
+            "key": "login",
+            "label": "Pseudo desire"
+          },
+          {
+            "key": "password",
+            "label": "Mot de passe",
+            "secret": true
+          },
+          {
+            "key": "confirm",
+            "label": "Confirmer",
             "secret": true
           }
         ]
