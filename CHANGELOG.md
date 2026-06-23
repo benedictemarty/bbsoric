@@ -6,6 +6,15 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Exemple — page de login plein écran + capture émulateur)
+- **`content/example-login.json`** : page de connexion **plein écran** combinant un
+  **décor `raw`** 40×28 (cadre, titres colorés, libellés « Pseudo »/« Mot de passe »)
+  et un **`form`** dont les champs sont **positionnés** (`at:[20,11]`, `[20,14]`) par
+  plot X,Y. L'applet `form` affiche un décor raw plein écran depuis (0,0)
+  (`server/internal/bbs/form.go`).
+- **Capture émulateur** `docs/img/example-login-plein-ecran.png` : rendu réel sur
+  oric1-emu (ULA) — décor + invite du champ login placée à ses coordonnées.
+
 ### Ajouté (Positionnement curseur — plot X,Y)
 - **Terminal Oric** (`client/term.s`) : machine à états sur le flux RX — la
   séquence **`1F col row`** repositionne le curseur d'écriture VRAM

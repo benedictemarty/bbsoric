@@ -1,0 +1,49 @@
+{
+  "_comment": "Exemple : page de connexion plein ecran (decor raw + champs positionnes par plot X,Y).",
+  "start": "login",
+  "pages": {
+    "login": {
+      "title": "CONNEXION",
+      "raw": true,
+      "screen": "PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PSAgICAgICAgICAgA0IgQiBTICAgTyBSIEkgQyAgICAgICAgICAgICAgICAgICAgICAgICAGQWNjZXMgYWJvbm5lcyAgICAgICAgICAgICAgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICADLSBDT05ORVhJT04gLSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBQc2V1ZG8gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBNb3QgZGUgcGFzc2UgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAGKHBzZXVkbyB2aWRlID0gcmV0b3VyKSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQ==",
+      "form": {
+        "action": "login",
+        "next": "main",
+        "fields": [
+          {
+            "key": "login",
+            "label": "",
+            "at": [
+              20,
+              11
+            ]
+          },
+          {
+            "key": "password",
+            "label": "",
+            "secret": true,
+            "at": [
+              20,
+              14
+            ]
+          }
+        ]
+      }
+    },
+    "main": {
+      "title": "MENU PRINCIPAL",
+      "entries": [
+        {
+          "key": "1",
+          "label": "Informations",
+          "target": "main"
+        },
+        {
+          "key": "Q",
+          "label": "Quitter",
+          "target": "__quit__"
+        }
+      ]
+    }
+  }
+}

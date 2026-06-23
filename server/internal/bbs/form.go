@@ -29,13 +29,14 @@ func formApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome 
 		return Outcome{}
 	}
 
-	// Décor : une page « écran brut » fournit le fond composé case par case ;
-	// sinon on affiche un bandeau de titre. Les invites suivent, séquentielles.
+	// Décor : une page « écran brut » fournit le fond composé case par case,
+	// affiché plein écran depuis le coin (0,0) — les champs se positionnent
+	// ensuite par leurs coordonnées (At). Sinon, un bandeau de titre, puis les
+	// invites séquentielles.
 	if ac.Page.Raw {
-		if s.Write(string(render.RawScreen(ac.Page))) != nil {
+		if s.Write(oascii.Plot(0, 0)+string(render.RawScreen(ac.Page))) != nil {
 			return Outcome{Quit: true}
 		}
-		_ = s.Write("\r\n")
 	} else {
 		header(s, ac.Page.Title)
 	}
