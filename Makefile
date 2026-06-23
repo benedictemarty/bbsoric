@@ -1,6 +1,6 @@
 # BBS Oric — tâches de build, test et déploiement.
 
-.PHONY: help build test vet run studio genfont deploy deploy-build client
+.PHONY: help build test vet run studio genfont deploy deploy-build client docker-build docker-up docker-down
 
 help: ## Affiche cette aide
 	@echo "BBS Oric — cibles disponibles :"
@@ -10,6 +10,9 @@ help: ## Affiche cette aide
 	@echo "  make run           Lance le serveur en local (0.0.0.0:6502)"
 	@echo "  make studio        Lance le studio forge (web, 127.0.0.1:8080)"
 	@echo "  make client        Construit la .tap du terminal Oric"
+	@echo "  make docker-build  Construit l'image Docker bbsoric:latest"
+	@echo "  make docker-up     Démarre le BBS via docker compose (port 6502)"
+	@echo "  make docker-down   Arrête le conteneur docker compose"
 	@echo "  make deploy        Déploie sur le serveur de prod (VPN mustang requis)"
 	@echo "  make deploy-build  Compile le binaire de prod sans déployer"
 
@@ -33,6 +36,15 @@ genfont: ## Régénère la police BBS Oric (studio + client) depuis tools/genfon
 
 client: ## Construit la .tap du terminal Oric
 	./client/build.sh
+
+docker-build: ## Construit l'image Docker
+	docker build -t bbsoric:latest .
+
+docker-up: ## Démarre le BBS via docker compose
+	docker compose up -d --build
+
+docker-down: ## Arrête le conteneur docker compose
+	docker compose down
 
 deploy: ## Déploie le BBS Oric sur le serveur de production
 	@./deploy/vps-deploy.sh

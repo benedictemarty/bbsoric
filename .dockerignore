@@ -1,0 +1,17 @@
+# Contexte de build minimal : on ne garde que les sources Go nécessaires.
+.git
+.gitignore
+*.md
+docs/
+deploy/
+scripts/
+studio/web/
+# Artefacts client Oric (inutiles au build serveur)
+client/*.tap
+client/*.bin
+# Binaire compilé en local
+bbsd
+# Sauvegardes/contenus annexes
+content/*.bak*
+*.ppm
+*.png

@@ -66,7 +66,7 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 - [ ] **Test sur Oric réel** — *en attente de matériel*. Protocole de recette
   matérielle (T1–T9) prêt : `docs/connexion-materielle.md` §7.
 
-## Sprint 5 — Déploiement — ⏳ en cours (EN PRODUCTION ✅)
+## Sprint 5 — Déploiement — ✅ terminé (EN PRODUCTION ✅)
 - [x] **Déployé en production** sur le LXC pavi3617 (service systemd `bbsoric`, `enabled`+`active`)
   via `make deploy` (mécanisme repris de telenet). Binaire Go statique linux/amd64, `DynamicUser`.
 - [x] **Exposition publique validée** : `pavi.3617.fr:6502` (telnet) — bannière + navigation OK
@@ -75,7 +75,10 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
   (format Prometheus, drapeau `-metrics-addr`), sonde `scripts/monitor.sh`
   (healthz/TCP + alerte mail) déclenchée par `bbsoric-monitor.timer` (5 min).
   Déploiement intégré à `vps-deploy.sh`. Doc : `docs/monitoring.md`.
-- [ ] Conteneurisation (Docker) — optionnel (systemd suffit pour l'instant)
+- [x] **Conteneurisation (Docker)** : `Dockerfile` multi-stage (binaire statique →
+  image alpine ~18 Mo, non-root, healthcheck `/healthz`), `docker-compose.yml`
+  (volume comptes, restart), cibles `make docker-build/up/down`. Build et exécution
+  validés (BBS sur 6502, healthcheck `ok`). Doc : `docs/docker.md`. (prod = systemd)
 - [x] **Documentation utilisateur** : `docs/guide-utilisateur.md` (connexion depuis
   un Oric réel et depuis un PC pour tester, navigation, comptes, dépannage).
 

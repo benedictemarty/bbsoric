@@ -1,0 +1,20 @@
+# BBS Oric — orchestration locale du serveur conteneurisé.
+#   docker compose up -d        # build + démarrage en arrière-plan
+#   docker compose logs -f      # journaux
+#   docker compose down         # arrêt
+services:
+  bbsoric:
+    build: .
+    image: bbsoric:latest
+    container_name: bbsoric
+    restart: unless-stopped
+    ports:
+      - "6502:6502"        # telnet (public)
+      # - "6992:6992"      # TLS (décommenter et ajouter -tls-addr à la commande)
+    volumes:
+      - bbsoric-state:/var/lib/bbsoric            # comptes utilisateurs (persistant)
+      # Contenu éditable depuis l'hôte (optionnel, sinon contenu par défaut de l'image) :
+      # - ./content/site.json:/etc/bbsoric/site.json:ro
+
+volumes:
+  bbsoric-state:

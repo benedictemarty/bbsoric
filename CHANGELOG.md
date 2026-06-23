@@ -6,6 +6,19 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Sprint 5 — Conteneurisation Docker)
+- **`Dockerfile`** multi-stage : build `golang:1.26-alpine` (binaire statique
+  `CGO_ENABLED=0`, `-trimpath -ldflags='-s -w'`) → runtime `alpine:3.20`
+  **non-root** (uid 10001), `site.json` par défaut intégré. Image **~18 Mo**,
+  **`HEALTHCHECK`** sur `/healthz`. Aucune dépendance externe (stdlib only).
+- **`docker-compose.yml`** : service `bbsoric` (port 6502, `restart:
+  unless-stopped`, volume `bbsoric-state` pour les comptes, montage `site.json`
+  optionnel). **`.dockerignore`** (contexte de build minimal).
+- **Makefile** : cibles `docker-build`, `docker-up`, `docker-down`.
+- **Doc** : `docs/docker.md` (image, démarrage, config, TLS, sécurité).
+- Validé : `docker build` OK, conteneur démarré, BBS répond sur 6502 (bannière
+  ASCII-art), healthcheck `ok`. Sprint 5 **terminé** (prod reste sur systemd).
+
 ### Ajouté (Sprint 5 — Monitoring/alerting + doc utilisateur)
 - **Endpoint de supervision HTTP** (`server/internal/server/metrics.go`) :
   `GET /healthz` (sonde de vivacité « ok ») et `GET /metrics` (format texte
