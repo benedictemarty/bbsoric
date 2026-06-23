@@ -48,7 +48,36 @@ type Page struct {
 	Next    string  `json:"next,omitempty"`    // page après succès de l'applet
 	Raw     bool    `json:"raw,omitempty"`     // écran brut (rendu tel quel)
 	Screen  []byte  `json:"screen,omitempty"`  // écran brut : buffer 40×28 d'octets (base64 JSON)
+	Form    *Form   `json:"form,omitempty"`    // page de saisie déclarative (login/inscription)
 }
+
+// Form décrit un écran de saisie déclaratif, exécuté par l'applet générique
+// « form » : on saisit les Fields dans l'ordre, puis l'Action (logique en Go,
+// jeu fermé) est appliquée. Succès → navigation vers Next (ou Page.Next).
+//
+// La présentation reste séparée : si la page est Raw, son buffer sert de décor
+// (les invites de saisie s'affichent ensuite, séquentiellement) ; sinon un
+// bandeau de titre est affiché.
+type Form struct {
+	Action string  `json:"action"`           // "login" | "register"
+	Fields []Field `json:"fields,omitempty"` // champs saisis dans l'ordre
+	Next   string  `json:"next,omitempty"`   // page après succès (sinon Page.Next)
+}
+
+// Field est un champ de saisie d'un Form. Key identifie la valeur pour l'action
+// (clés attendues : "login", "password", "confirm") ; Secret avertit que la
+// saisie est visible à l'écran (l'Oric ne masque pas la frappe).
+type Field struct {
+	Key    string `json:"key"`
+	Label  string `json:"label"`
+	Secret bool   `json:"secret,omitempty"`
+}
+
+// Actions de formulaire reconnues (logique exécutée en Go).
+const (
+	FormLogin    = "login"
+	FormRegister = "register"
+)
 
 // Style regroupe les attributs sériels Oric (Téletexte). Chacun est optionnel ;
 // non renseigné = valeur par défaut (encre blanche, fond noir, pas d'effet).
@@ -136,6 +165,42 @@ func (s *Site) Validate() error {
 			if _, ok := s.Pages[e.Target]; !ok {
 				return fmt.Errorf("page %q : cible %q introuvable", id, e.Target)
 			}
+		}
+		if p.Form != nil {
+			if err := p.Form.validate(id, s); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// validate vérifie un Form : action connue, champs requis présents, Next existant.
+func (f *Form) validate(pageID string, s *Site) error {
+	hasField := func(key string) bool {
+		for _, fld := range f.Fields {
+			if fld.Key == key {
+				return true
+			}
+		}
+		return false
+	}
+	switch f.Action {
+	case FormLogin, FormRegister:
+		if !hasField("login") || !hasField("password") {
+			return fmt.Errorf("page %q : form %q exige les champs 'login' et 'password'", pageID, f.Action)
+		}
+		if f.Action == FormRegister && !hasField("confirm") {
+			return fmt.Errorf("page %q : form 'register' exige un champ 'confirm'", pageID)
+		}
+	case "":
+		return fmt.Errorf("page %q : form sans 'action'", pageID)
+	default:
+		return fmt.Errorf("page %q : action de form inconnue %q", pageID, f.Action)
+	}
+	if f.Next != "" {
+		if _, ok := s.Pages[f.Next]; !ok {
+			return fmt.Errorf("page %q : form 'next' %q introuvable", pageID, f.Next)
 		}
 	}
 	return nil

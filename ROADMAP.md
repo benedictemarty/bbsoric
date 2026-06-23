@@ -94,6 +94,9 @@ profils. Voir `docs/adr/0003-studio-forge.md`.
 - [x] **Menu sur fond d'écran** : une page `raw` (buffer 40×28 composé) se combine
   avec des `entries` — décor en fond + navigation par touches (page ou applet),
   éditeur de navigation intégré à l'onglet « Écran ».
+- [x] **Pages de saisie déclaratives** (`content.Form`) : applet générique `form`
+  (login/inscription) piloté par des champs déclarés (clé/libellé/secret) + action ;
+  éditeur de formulaire dans le studio. La logique sensible (hachage) reste serveur.
 - [ ] Multi-sites avancé (création de nouveaux fichiers depuis l'UI), gestion des sauvegardes.
 - [ ] Authentification si le studio devait être exposé (aujourd'hui local-only).
 

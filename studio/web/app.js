@@ -189,9 +189,63 @@ function renderForm() {
     return;
   }
 
-  // Page normale : texte (lines) ET/OU choix (entries).
+  // Page normale : texte (lines), choix (entries) OU formulaire de saisie (form).
   host.append(linesEditor(p));
-  host.append(entriesEditor(p));
+  if (!p.form) host.append(entriesEditor(p)); // un form pilote la page (pas de menu simultané)
+  host.append(formEditor(p));
+}
+
+// formEditor édite une page de saisie déclarative (content.Form) : action
+// (login/inscription), champs et page « next ». La logique reste serveur.
+function formEditor(p) {
+  const wrap = el('div', { className: 'form-editor' });
+  wrap.append(el('span', { className: 'lbl', textContent: 'Formulaire de saisie' }));
+  if (!p.form) {
+    const add = el('button', { textContent: '+ formulaire (login / inscription)' });
+    add.onclick = () => {
+      p.form = { action: 'login', next: '', fields: [
+        { key: 'login', label: 'Pseudo' },
+        { key: 'password', label: 'Mot de passe', secret: true },
+      ] };
+      delete p.entries;
+      renderForm(); refreshPreview();
+    };
+    wrap.append(add);
+    return wrap;
+  }
+  const f = p.form;
+  const act = el('select');
+  ['login', 'register'].forEach(a => act.append(el('option', { value: a, textContent: a, selected: f.action === a })));
+  act.onchange = () => {
+    f.action = act.value;
+    if (f.action === 'register' && !(f.fields || []).some(x => x.key === 'confirm')) {
+      f.fields.push({ key: 'confirm', label: 'Confirmer', secret: true });
+    }
+    renderForm(); refreshPreview();
+  };
+  wrap.append(field('Action', act));
+  wrap.append(field('Après succès (next)', pageSelect(f.next, v => { f.next = v; }, true)));
+
+  const tbl = el('table', { className: 'rows' });
+  tbl.append(el('tr', {}, ['Clé', 'Libellé', 'Secret', ''].map(t => el('th', { textContent: t }))));
+  (f.fields || []).forEach((fld, i) => {
+    const k = el('input', { type: 'text', value: fld.key || '' }); k.oninput = () => { fld.key = k.value; };
+    const l = el('input', { type: 'text', value: fld.label || '' }); l.oninput = () => { fld.label = l.value; };
+    const sec = el('input', { type: 'checkbox', checked: !!fld.secret }); sec.onchange = () => { fld.secret = sec.checked; };
+    const del = el('button', { className: 'del', textContent: '✕' });
+    del.onclick = () => { f.fields.splice(i, 1); renderForm(); };
+    tbl.append(el('tr', {}, [td(k), td(l), td(el('label', { className: 'tog' }, [sec])), td(del)]));
+  });
+  wrap.append(tbl);
+  const addF = el('button', { textContent: '+ champ' });
+  addF.onclick = () => { f.fields.push({ key: '', label: '' }); renderForm(); };
+  wrap.append(addF);
+
+  const rm = el('button', { className: 'del', textContent: 'supprimer le formulaire' });
+  rm.onclick = () => { delete p.form; renderForm(); refreshPreview(); };
+  wrap.append(rm);
+  wrap.append(el('p', { className: 'hint', textContent: 'Clés attendues : login, password' + (f.action === 'register' ? ', confirm' : '') + '. Le décor (titre ou écran raw) s\'affiche, puis les champs se saisissent.' }));
+  return wrap;
 }
 
 function field(label, control) {

@@ -114,3 +114,6 @@ pre.log {
 
 /* Navigation (entrées) sous l'éditeur d'écran : menu sur fond raw. */
 .screen-nav { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+
+/* Éditeur de formulaire de saisie (page « form »). */
+.form-editor { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }

@@ -62,6 +62,83 @@ func dialAuth(t *testing.T, addr string) (*bufio.Reader, net.Conn) {
 	return bufio.NewReader(conn), conn
 }
 
+// TestFormPageLogin : une page de saisie déclarative (content.Form, action
+// "login") tient lieu d'écran de connexion — sans applet Go dédié.
+func TestFormPageLogin(t *testing.T) {
+	users, _ := user.Open("")
+	if _, err := users.Register("Bob", "pw1234"); err != nil {
+		t.Fatalf("register fixture: %v", err)
+	}
+	const json = `{
+      "start": "login",
+      "pages": {
+        "login": { "title": "CONNEXION",
+          "form": { "action": "login", "next": "main", "fields": [
+            { "key": "login", "label": "Pseudo" },
+            { "key": "password", "label": "Mot de passe", "secret": true }
+          ] } },
+        "main": { "title": "MENU PRINCIPAL", "entries": [
+          { "key": "Q", "label": "Quitter", "target": "__quit__" }
+        ] }
+      }
+    }`
+	addr, stop := startServerFull(t, storeFromJSON(t, json), users)
+	defer stop()
+
+	r, conn := dialAuth(t, addr)
+	defer conn.Close()
+	readUntil(t, r, conn, "Pseudo")
+	conn.Write([]byte("bob\r"))
+	readUntil(t, r, conn, "Mot de passe")
+	conn.Write([]byte("pw1234\r"))
+	out := readUntil(t, r, conn, "Bonjour")
+	if !strings.Contains(out, "Bonjour Bob") {
+		t.Errorf("accueil personnalisé attendu:\n%s", out)
+	}
+	conn.Write([]byte(" ")) // pause -> next
+	main := readUntil(t, r, conn, "MENU PRINCIPAL")
+	if !strings.Contains(main, "MENU PRINCIPAL") {
+		t.Errorf("navigation vers form.next échouée:\n%s", main)
+	}
+}
+
+// TestFormPageRegister : page de saisie déclarative, action "register".
+func TestFormPageRegister(t *testing.T) {
+	users, _ := user.Open("")
+	const json = `{
+      "start": "signup",
+      "pages": {
+        "signup": { "title": "INSCRIPTION",
+          "form": { "action": "register", "next": "main", "fields": [
+            { "key": "login", "label": "Pseudo" },
+            { "key": "password", "label": "Mot de passe", "secret": true },
+            { "key": "confirm", "label": "Confirmer", "secret": true }
+          ] } },
+        "main": { "title": "MENU PRINCIPAL", "entries": [
+          { "key": "Q", "label": "Quitter", "target": "__quit__" }
+        ] }
+      }
+    }`
+	addr, stop := startServerFull(t, storeFromJSON(t, json), users)
+	defer stop()
+
+	r, conn := dialAuth(t, addr)
+	defer conn.Close()
+	readUntil(t, r, conn, "Pseudo")
+	conn.Write([]byte("Alice\r"))
+	readUntil(t, r, conn, "Mot de passe")
+	conn.Write([]byte("secret1\r"))
+	readUntil(t, r, conn, "Confirmer")
+	conn.Write([]byte("secret1\r"))
+	out := readUntil(t, r, conn, "Bienvenue")
+	if !strings.Contains(out, "Compte cree") {
+		t.Errorf("confirmation de création attendue:\n%s", out)
+	}
+	if _, ok := users.Get("alice"); !ok {
+		t.Errorf("le compte Alice doit être persisté")
+	}
+}
+
 func TestLoginAppletSuccess(t *testing.T) {
 	users, _ := user.Open("")
 	if _, err := users.Register("Bob", "pw1234"); err != nil {

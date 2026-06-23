@@ -51,6 +51,10 @@ func runSite(ctx context.Context, s *server.Session, store *content.Store, users
 			if !runAppletPage(ctx, s, page, &stack, users, state) {
 				return
 			}
+		case page.Form != nil: // page de saisie déclarative (login/inscription)
+			if !runFormPage(ctx, s, page, &stack, users, state) {
+				return
+			}
 		case len(page.Entries) > 0: // écran interactif (menu)
 			// Décor : une page « écran brut » sert de fond composé case par case
 			// (titre, libellés et invite sont déjà dessinés dedans) ; une page
@@ -147,6 +151,25 @@ func runApplet(ctx context.Context, s *server.Session, name string, page *conten
 		return Outcome{}
 	}
 	return app(ctx, s, &AppContext{Users: users, State: state, Page: page})
+}
+
+// runFormPage exécute l'applet générique « form » d'une page de saisie et
+// applique son Outcome (succès → Form.Next, sinon Page.Next). Renvoie false si
+// la session doit se terminer.
+func runFormPage(ctx context.Context, s *server.Session, page *content.Page, stack *[]string, users *user.Store, state *SessionState) bool {
+	out := runApplet(ctx, s, "form", page, users, state)
+	if out.Quit {
+		return false
+	}
+	*stack = (*stack)[:len(*stack)-1]
+	next := page.Form.Next
+	if next == "" {
+		next = page.Next
+	}
+	if out.Done && next != "" {
+		*stack = append(*stack, next)
+	}
+	return len(*stack) > 0
 }
 
 // runAppletPage exécute l'applet auto-lancé d'une page applet (compat) et

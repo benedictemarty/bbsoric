@@ -6,6 +6,23 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Pages de saisie déclaratives — applet « form »)
+- **Modèle** (`internal/content`) : type **`Form`** (`action`, `fields`, `next`) +
+  **`Field`** (`key`, `label`, `secret`) sur la page. `Validate` vérifie l'action
+  (`login`/`register`), les champs requis (`login`+`password`, plus `confirm` pour
+  l'inscription) et l'existence de `next`.
+- **Moteur** (`server/internal/bbs`) : applet générique **`form`** (`form.go`) —
+  affiche le décor (buffer raw composé OU bandeau de titre), saisit les champs
+  déclarés, puis exécute l'action côté serveur (authentification / création de
+  compte, hachage PBKDF2 inchangé). `runFormPage` route vers `Form.Next`. Un seul
+  applet déclaratif remplace l'écriture de Go par écran de saisie ; `login`/
+  `register`/`guest` historiques restent (compat). Tests `TestFormPageLogin` /
+  `TestFormPageRegister`.
+- **Studio** : éditeur de **formulaire** dans l'onglet « Édition » (`formEditor`) —
+  action, liste de champs (clé/libellé/secret), `next` ; ajout auto du champ
+  `confirm` en mode inscription. Une page à formulaire n'affiche pas d'éditeur de
+  menu (le form pilote la page).
+
 ### Modifié (Studio — navigation raw : colonne « libellé » masquée)
 - **Onglet « Écran », bloc Navigation** : la colonne **« Libellé »** est retirée.
   Sur un « menu sur fond d'écran » (page raw), le libellé est **dessiné dans le
