@@ -44,9 +44,12 @@
 
 ## Épopée E — Réel & déploiement (Sprint 4–5)
 
-- [ ] **E1** (3) En tant qu'utilisateur, je veux une **doc de connexion** WiFiModem + LOCI.
-- [ ] **E2** (5) En tant qu'utilisateur, je veux me connecter depuis un **Oric réel**.
-- [ ] **E3** (3) En tant qu'admin, je veux **déployer** le serveur (Docker) et le **superviser**.
+- [x] **E1** (3) En tant qu'utilisateur, je veux une **doc de connexion** WiFiModem + LOCI.
+  *(`docs/connexion-materielle.md` : ACIA `$031C`/LOCI `$03A0`, AT, 9600 8N1, recette T1–T9)*
+- [~] **E2** (5) En tant qu'utilisateur, je veux me connecter depuis un **Oric réel**.
+  *(terminal validé dans l'émulateur ; test matériel en attente d'un Oric physique)*
+- [x] **E3** (3) En tant qu'admin, je veux **déployer** le serveur (Docker) et le **superviser**.
+  *(prod systemd + image Docker ~18 Mo + `/healthz`,`/metrics` + sonde/timer)*
 
 ## Épopée F — Studio « Forge » (outillage de contenu)
 
@@ -58,6 +61,16 @@
   **profils** (valide→sauvegarde→écrase→reload, dry-run). *(validé end-to-end)*
 - [ ] **F3** (3) En tant qu'éditeur, je veux **créer/gérer plusieurs sites** et leurs sauvegardes
   depuis l'UI.
+
+## Épopée G — Transfert de fichiers (étude, non planifié)
+
+- [ ] **G1** (8) En tant qu'utilisateur, je veux **télécharger/téléverser** des fichiers via le BBS.
+  *Étude de faisabilité (réalisée) : possible — le canal est un flux d'octets bidirectionnel.
+  4 points durs : (1) **mode transparent** dans `term.s` (ne plus interpréter 0–31 / VRAM) ;
+  (2) **telnet `0xFF`** filtré côté serveur → canal raw nécessaire (surtout upload) ;
+  (3) **stockage Oric** (RAM limitée / cassette / carte SD via LOCI) ; (4) **protocole** →
+  **XMODEM** recommandé. Serveur Go = facile (~200 l) ; terminal 6502 = gros du travail.
+  Alternative légère : `ATGET https://…` du modem (hors flux BBS). Décision : reporté.*
 
 ## Definition of Done (DoD)
 - Code versionné, `CHANGELOG.md` et `ROADMAP.md` mis à jour.
