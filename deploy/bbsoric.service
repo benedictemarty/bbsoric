@@ -13,7 +13,7 @@ DynamicUser=yes
 StateDirectory=bbsoric
 # -metrics-addr : endpoint de supervision (/healthz, /metrics) en écoute LOCALE
 # uniquement (127.0.0.1) — jamais exposé sur Internet. Sondé par bbsoric-monitor.timer.
-ExecStart=/usr/local/bin/bbsoric -addr 0.0.0.0:6502 -content /etc/bbsoric/site.json -users /var/lib/bbsoric/users.json -max-conns 50 -max-conns-per-ip 3 -idle 5m -metrics-addr 127.0.0.1:6510
+ExecStart=/usr/local/bin/bbsoric -addr 0.0.0.0:6502 -content /etc/bbsoric/site.json -users /var/lib/bbsoric/users.json -files /var/lib/bbsoric/files -max-upload 65536 -max-conns 50 -max-conns-per-ip 3 -idle 5m -metrics-addr 127.0.0.1:6510
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal

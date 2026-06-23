@@ -9,6 +9,7 @@ import (
 
 	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/internal/oascii"
+	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
@@ -20,6 +21,7 @@ import (
 type WelcomeHandler struct {
 	Store *content.Store
 	Users *user.Store
+	Files *files.Library // bibliothèque de fichiers (download/upload ; peut être nil)
 }
 
 // largeur utile de l'écran TEXT de l'Oric : 40 colonnes.
@@ -29,7 +31,7 @@ func (h WelcomeHandler) Handle(ctx context.Context, s *server.Session) {
 	if err := h.banner(s); err != nil {
 		return
 	}
-	runSite(ctx, s, h.Store, h.Users, &SessionState{})
+	runSite(ctx, s, h.Store, h.Users, &SessionState{Files: h.Files})
 }
 
 // oricArt est l'ASCII-art « ORIC » (5 lignes), affiché centré dans la bannière.

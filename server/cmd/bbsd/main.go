@@ -21,6 +21,7 @@ import (
 
 	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/server/internal/bbs"
+	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
@@ -40,6 +41,8 @@ func main() {
 	idle := flag.Duration("idle", 5*time.Minute, "délai d'inactivité avant déconnexion (0 = aucun)")
 	contentPath := flag.String("content", "", "fichier JSON du flux de pages (vide = contenu par défaut ; rechargé à chaud)")
 	usersPath := flag.String("users", "", "fichier JSON des comptes (vide = comptes en mémoire, non persistés)")
+	filesDir := flag.String("files", "", "répertoire de la bibliothèque de fichiers (download/upload XMODEM ; vide = désactivé)")
+	maxUpload := flag.Int64("max-upload", 64*1024, "taille max d'un téléversement en octets (0 = illimité)")
 	metricsAddr := flag.String("metrics-addr", "", "adresse HTTP de supervision (/healthz, /metrics) ; vide = désactivé ; à garder LOCAL (ex. 127.0.0.1:6510)")
 	flag.Parse()
 
@@ -62,7 +65,17 @@ func main() {
 		log.Info("comptes chargés", "path", *usersPath, "comptes", users.Count())
 	}
 
-	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users}, log)
+	var lib *files.Library
+	if *filesDir != "" {
+		lib, err = files.Open(*filesDir, *maxUpload)
+		if err != nil {
+			log.Error("bibliothèque de fichiers : ouverture impossible", "dir", *filesDir, "err", err)
+			os.Exit(1)
+		}
+		log.Info("bibliothèque de fichiers", "dir", *filesDir)
+	}
+
+	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users, Files: lib}, log)
 
 	// Arrêt propre sur SIGINT/SIGTERM.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

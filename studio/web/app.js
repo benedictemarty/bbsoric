@@ -58,7 +58,7 @@ const entryIsApplet = (e) => Object.prototype.hasOwnProperty.call(e, 'applet');
 
 // Applets autonomes proposés pour une entrée de menu (enregistrés côté serveur).
 // « form » est volontairement exclu : il se gère via le formulaire d'une page.
-const KNOWN_APPLETS = ['login', 'register', 'guest'];
+const KNOWN_APPLETS = ['login', 'register', 'guest', 'download', 'upload'];
 
 // appletSelect : liste déroulante des applets connus (+ la valeur courante si
 // personnalisée), pour câbler une entrée « ▶ applet » sans faute de frappe.

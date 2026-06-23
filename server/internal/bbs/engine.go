@@ -153,7 +153,7 @@ func runApplet(ctx context.Context, s *server.Session, name string, page *conten
 		_ = s.Write(b.String())
 		return Outcome{}
 	}
-	return app(ctx, s, &AppContext{Users: users, State: state, Page: page})
+	return app(ctx, s, &AppContext{Users: users, Files: state.Files, State: state, Page: page})
 }
 
 // runFormPage exécute l'applet générique « form » d'une page de saisie et

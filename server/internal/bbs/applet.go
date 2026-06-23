@@ -4,15 +4,18 @@ import (
 	"context"
 
 	"github.com/benedictemarty/bbsoric/internal/content"
+	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
 
 // SessionState porte l'état d'une session : utilisateur connecté (nil si pas
-// encore authentifié) et indicateur d'accès invité.
+// encore authentifié), indicateur d'accès invité, et les dépendances injectées
+// au démarrage (bibliothèque de fichiers) accessibles aux applets.
 type SessionState struct {
 	User  *user.User
 	Guest bool
+	Files *files.Library // bibliothèque de fichiers (peut être nil)
 }
 
 // LoggedIn indique si la session est authentifiée ou en accès invité.
@@ -27,9 +30,10 @@ type Outcome struct {
 
 // AppContext injecte les dépendances accessibles à un applet.
 type AppContext struct {
-	Users *user.Store   // magasin de comptes (peut être nil)
-	State *SessionState // état de la session courante
-	Page  *content.Page // page applet courante (titre, intro, Next…)
+	Users *user.Store    // magasin de comptes (peut être nil)
+	Files *files.Library // bibliothèque de fichiers (peut être nil)
+	State *SessionState  // état de la session courante
+	Page  *content.Page  // page applet courante (titre, intro, Next…)
 }
 
 // Applet est une petite unité interactive (login, inscription, jeu…) déclenchée

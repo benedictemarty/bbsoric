@@ -53,6 +53,10 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 - [ ] Messagerie / forum (lecture, post)
 - [ ] Page d'actualités / annonces
 - [ ] Mini-jeu interactif (ex. Puissance 4 / morpion) pour valider l'interactivité
+- [~] **Transfert de fichiers (XMODEM)** : côté **serveur fait** (`internal/xmodem`,
+  bibliothèque `server/internal/files`, applets `download`/`upload`, flags `-files`/
+  `-max-upload`, studio, doc `docs/transfert.md`) ; **reste le terminal Oric**
+  (XMODEM 6502 + stockage SD/disquette/cassette). Voir backlog G1.
 
 ## Sprint 4 — Connexion matérielle réelle — ⏳ en cours
 - [x] **Doc de connexion WiFiModem + LOCI** (`docs/connexion-materielle.md`) : chaîne

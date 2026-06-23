@@ -64,13 +64,12 @@
 
 ## Épopée G — Transfert de fichiers (étude, non planifié)
 
-- [ ] **G1** (8) En tant qu'utilisateur, je veux **télécharger/téléverser** des fichiers via le BBS.
-  *Étude de faisabilité (réalisée) : possible — le canal est un flux d'octets bidirectionnel.
-  4 points durs : (1) **mode transparent** dans `term.s` (ne plus interpréter 0–31 / VRAM) ;
-  (2) **telnet `0xFF`** filtré côté serveur → canal raw nécessaire (surtout upload) ;
-  (3) **stockage Oric** (RAM limitée / cassette / carte SD via LOCI) ; (4) **protocole** →
-  **XMODEM** recommandé. Serveur Go = facile (~200 l) ; terminal 6502 = gros du travail.
-  Alternative légère : `ATGET https://…` du modem (hors flux BBS). Décision : reporté.*
+- [~] **G1** (8) En tant qu'utilisateur, je veux **télécharger/téléverser** des fichiers via le BBS.
+  *Côté **serveur fait** : protocole `internal/xmodem` (checksum+CRC, testé), bibliothèque
+  `server/internal/files`, applets `download`/`upload`, `Session.Raw()`, flags `-files`/
+  `-max-upload`, studio. Doc `docs/transfert.md`. **Reste côté Oric** (`term.s`) : mode
+  transfert (suspendre OASCII), XMODEM 6502, stockage carte SD (LOCI)/Microdisc/cassette ;
+  canal telnet raw pour le binaire. Alternative légère : `ATGET https://…` du modem.*
 
 ## Definition of Done (DoD)
 - Code versionné, `CHANGELOG.md` et `ROADMAP.md` mis à jour.

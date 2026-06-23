@@ -28,6 +28,23 @@ func newSession(conn net.Conn, idleTimeout time.Duration) *Session {
 	}
 }
 
+// RawConn expose la session comme canal d'octets brut pour les transferts
+// binaires (XMODEM) : lecture via le tampon (n'égare pas d'octets déjà bufferisés),
+// écriture et échéance de lecture via la connexion. Court-circuite le filtrage
+// telnet/ligne — à n'utiliser que pendant un transfert de fichier.
+type RawConn struct{ s *Session }
+
+// Raw renvoie un canal brut sur la session (cf. RawConn).
+func (s *Session) Raw() *RawConn { return &RawConn{s} }
+
+func (r *RawConn) Read(p []byte) (int, error)            { return r.s.reader.Read(p) }
+func (r *RawConn) Write(p []byte) (int, error)           { return r.s.conn.Write(p) }
+func (r *RawConn) SetReadDeadline(t time.Time) error     { return r.s.conn.SetReadDeadline(t) }
+
+// ClearDeadline retire toute échéance de lecture (après un transfert, avant de
+// revenir aux I/O normales pilotées par l'idle timeout).
+func (s *Session) ClearDeadline() { _ = s.conn.SetDeadline(time.Time{}) }
+
 // RemoteIP renvoie l'adresse IP du client (sans le port).
 func (s *Session) RemoteIP() string {
 	host, _, err := net.SplitHostPort(s.conn.RemoteAddr().String())

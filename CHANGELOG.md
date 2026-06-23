@@ -6,6 +6,24 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Transfert de fichiers — download/upload XMODEM, côté serveur)
+- **`internal/xmodem`** : protocole XMODEM (blocs 128 o, somme de contrôle **et**
+  CRC-16, ré-émission, élagage du remplissage `SUB`). Tests round-trip (checksum +
+  CRC) via `net.Pipe`.
+- **`server/internal/files`** : bibliothèque de fichiers sur disque (liste,
+  lecture, écriture atomique), noms validés (anti path-traversal), taille max.
+- **`server.Session.Raw()`** : canal d'octets brut pour les transferts binaires
+  (court-circuite le filtrage telnet/ligne) + `ClearDeadline()`.
+- **Applets `download`/`upload`** (`server/internal/bbs/xfer.go`) : download liste
+  la bibliothèque et **envoie** un fichier par XMODEM ; upload **reçoit** et
+  enregistre. Injectés via `AppContext.Files` / `WelcomeHandler.Files`. Tests
+  end-to-end (`TestDownloadApplet`, `TestUploadApplet`).
+- **`bbsd`** : flags `-files <dir>` et `-max-upload <octets>` ; `bbsoric.service`
+  utilise `/var/lib/bbsoric/files`. Studio : `download`/`upload` dans le sélecteur
+  d'applets. Doc : `docs/transfert.md`.
+- *Reste à faire côté Oric* : mode transfert + XMODEM 6502 + stockage SD/disquette
+  dans `client/term.s` (backlog G1).
+
 ### Ajouté (Rendu — repli automatique des lignes > 40 colonnes)
 - **`internal/render`** : une ligne de texte qui dépasse **40 colonnes** est
   désormais **repliée** sur la ligne suivante (coupure aux espaces ; césure dure
