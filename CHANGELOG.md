@@ -6,6 +6,23 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Sprint 4 — Connexion matérielle réelle)
+- **`docs/connexion-materielle.md`** : guide complet pour joindre le BBS depuis un
+  **Oric réel**. Chaîne matérielle Oric→ACIA→modem WiFi→TCP ; adressage **ACIA
+  `$031C`** (standard) et **LOCI `$03A0-$03BF`** avec table des registres 6551 ;
+  modem WiFi (firmware Hayes / picowifi v0.2.0), réglages **9600 8N1** ; commandes
+  AT émises par le client (`ATD`, `ATDT#` TLS, `AT$CA`/`AT$CV1`, `ATGET`) ;
+  procédure pas à pas (`CLOAD"TERM"` → menu → numérotation), tableau de dépannage.
+- **Procédure de recette matérielle** (checklist **T1–T9**, §7 du même doc) :
+  chargement, backend ACIA, répertoire/CONNECT, bannière couleur, navigation
+  clavier, saisie manuelle, TLS, déconnexion, stabilité. *Test physique en attente
+  de matériel* — le pipeline est validé dans l'émulateur.
+- **Écran d'accueil ASCII-art « ORIC »** (`server/internal/bbs/welcome.go`) :
+  bannière enrichie d'un art 5 lignes assemblé par glyphes 5×5 (`buildOricArt`),
+  centré et **conforme OASCII** (largeur ≤ 40 colonnes, 1 octet d'attribut/ligne),
+  couleurs jaune (art) / cyan (sous-titre `B B S   O R I C`). Version applicative
+  passée à « Sprint 4 ». Tests serveur verts.
+
 ### Ajouté (Éditeur d'écran plein 40×28 + page « écran brut »)
 - **Page « écran brut »** : champ `raw` + buffer **`screen`** (40×28 octets, base64) dans
   `internal/content` — rendu **tel quel** sans barre de titre ni invite

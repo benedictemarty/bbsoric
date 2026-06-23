@@ -32,6 +32,30 @@ func (h WelcomeHandler) Handle(ctx context.Context, s *server.Session) {
 	runSite(ctx, s, h.Store, h.Users, &SessionState{})
 }
 
+// oricArt est l'ASCII-art « ORIC » (5 lignes), affiché centré dans la bannière.
+// Construit par glyphes pour garantir une largeur exacte (23 colonnes) qui, une
+// fois centrée et précédée d'un octet d'attribut, tient dans les 40 colonnes.
+var oricArt = buildOricArt()
+
+// buildOricArt assemble les 4 glyphes O R I C (5×5) en 5 lignes de 23 colonnes.
+func buildOricArt() []string {
+	glyphs := [][5]string{
+		{" ### ", "#   #", "#   #", "#   #", " ### "}, // O
+		{"#### ", "#   #", "#### ", "#  # ", "#   #"}, // R
+		{"#####", "  #  ", "  #  ", "  #  ", "#####"}, // I
+		{" ####", "#    ", "#    ", "#    ", " ####"}, // C
+	}
+	rows := make([]string, 5)
+	for r := range rows {
+		parts := make([]string, len(glyphs))
+		for g := range glyphs {
+			parts[g] = glyphs[g][r]
+		}
+		rows[r] = strings.Join(parts, " ")
+	}
+	return rows
+}
+
 // banner construit l'écran d'accueil avec attributs OASCII (couleurs Oric).
 //
 // Note Oric : un octet d'attribut occupe une case écran. Les lignes pleine
@@ -42,8 +66,11 @@ func (h WelcomeHandler) banner(s *server.Session) error {
 	line := strings.Repeat("=", oricCols)
 	b := oascii.New()
 	b.Text(line).Newline() // blanc (défaut ULA)
-	b.Ink(oascii.Yellow).Text(center("B B S   O R I C")).Newline()
-	b.Ink(oascii.Cyan).Text(center("bienvenue !")).Newline()
+	for _, row := range oricArt {
+		b.Ink(oascii.Yellow).Text(center(row)).Newline()
+	}
+	b.Ink(oascii.Cyan).Text(center("B B S   O R I C")).Newline()
+	b.Ink(oascii.White).Text(center("bienvenue !")).Newline()
 	b.Text(line).Newline() // blanc
 	b.Newline()
 	b.Ink(oascii.Green).Text("Serveur en ligne (" + bbsVersion + ").").Newline()

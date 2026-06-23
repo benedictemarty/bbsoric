@@ -54,10 +54,17 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
 - [ ] Page d'actualités / annonces
 - [ ] Mini-jeu interactif (ex. Puissance 4 / morpion) pour valider l'interactivité
 
-## Sprint 4 — Connexion matérielle réelle
-- [ ] Doc de connexion WiFiModem + LOCI (AT, MIA LOCI `$03A0-$03BF` / ACIA `$031C`)
-- [ ] Programme client/terminal Oric minimal (BASIC ou cc65) si nécessaire
-- [ ] Test sur Oric réel ; écran d'accueil ASCII-art Oric
+## Sprint 4 — Connexion matérielle réelle — ⏳ en cours
+- [x] **Doc de connexion WiFiModem + LOCI** (`docs/connexion-materielle.md`) : chaîne
+  Oric→ACIA→modem→TCP, adressage ACIA `$031C` / LOCI `$03A0-$03BF`, registres 6551,
+  commandes AT (`ATD`/`ATDT#`/`AT$CA`/`AT$CV1`), réglages 9600 8N1, dépannage.
+- [x] **Programme client/terminal Oric** (`client/term.s`) — terminal autonome
+  6502 (menu modem, répertoire, saisie manuelle, numérotation Hayes, mode terminal
+  RX/TX), validé end-to-end dans l'émulateur. (réalisé Sprints 1–2)
+- [x] **Écran d'accueil ASCII-art Oric** : bannière serveur enrichie d'un art « ORIC »
+  5 lignes (glyphes 5×5), centré et conforme OASCII (≤ 40 colonnes), couleurs jaune/cyan.
+- [ ] **Test sur Oric réel** — *en attente de matériel*. Protocole de recette
+  matérielle (T1–T9) prêt : `docs/connexion-materielle.md` §7.
 
 ## Sprint 5 — Déploiement — ⏳ en cours (EN PRODUCTION ✅)
 - [x] **Déployé en production** sur le LXC pavi3617 (service systemd `bbsoric`, `enabled`+`active`)

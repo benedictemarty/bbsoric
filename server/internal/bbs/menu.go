@@ -7,7 +7,7 @@ import (
 )
 
 // Version applicative affichée par la bannière (suit le sprint courant).
-const bbsVersion = "Sprint 2"
+const bbsVersion = "Sprint 4"
 
 // firstKey renvoie le premier caractère significatif d'une ligne, en majuscule
 // (0 si la ligne est vide). Sert à router les choix de menu.
