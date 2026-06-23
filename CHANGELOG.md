@@ -6,6 +6,21 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Menu sur fond d'écran — raw + entries combinés)
+- **Moteur** (`server/internal/bbs/engine.go`) : une page « écran brut » (`raw`)
+  se **combine** désormais avec des `entries`. Le buffer 40×28 sert de **fond
+  d'écran** (décor composé case par case, libellés du menu dessinés dedans) et
+  les `entries` assurent la **navigation** (touche → page, ou ▶ applet) — sans
+  invite « Votre choix » ajoutée. Présentation (Screen) et logique (Entries)
+  séparées. Le `switch` traite les entries en priorité, le rendu suit `raw`.
+  Test `TestRawScreenMenu` (fond raw + navigation, sans invite).
+- **Modèle** (`internal/content`) : documentation du mix `Raw`+`Entries` ;
+  `Validate` l'acceptait déjà.
+- **Studio, onglet « Écran »** : éditeur de **navigation** sous la grille
+  (`renderScreenNav` + `#screen-nav`) — on compose le décor au-dessus et on câble
+  les touches juste en dessous. `entriesEditor` rendu réutilisable (callback de
+  rafraîchissement). L'enregistrement préserve les entrées (statut « raw + menu »).
+
 ### Corrigé (Studio — éditeur d'écran : sélecteur de page vide)
 - **Onglet « Écran »** : le sélecteur de page restait **vide** quand le site ne
   contenait aucune page « écran brut » (`raw`), alors que `screenLoad` sait déjà

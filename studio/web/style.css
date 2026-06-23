@@ -107,3 +107,6 @@ pre.log {
   background: #15171b; border: 1px solid var(--line); border-radius: 4px; padding: 8px;
   margin-top: 8px; min-height: 80px; font: 12px/1.35 monospace; white-space: pre-wrap; color: #9c9;
 }
+
+/* Navigation (entrées) sous l'éditeur d'écran : menu sur fond raw. */
+.screen-nav { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }

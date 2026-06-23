@@ -91,6 +91,9 @@ profils. Voir `docs/adr/0003-studio-forge.md`.
   par `internal/content`, enregistrement atomique.
 - [x] **Déploiement par profils** (dev/int/prod) : valide → sauvegarde → écrase → reload,
   dry-run ; `dev` local (hot-reload), `int`/`prod` ssh/scp. Validé end-to-end.
+- [x] **Menu sur fond d'écran** : une page `raw` (buffer 40×28 composé) se combine
+  avec des `entries` — décor en fond + navigation par touches (page ou applet),
+  éditeur de navigation intégré à l'onglet « Écran ».
 - [ ] Multi-sites avancé (création de nouveaux fichiers depuis l'UI), gestion des sauvegardes.
 - [ ] Authentification si le studio devait être exposé (aujourd'hui local-only).
 

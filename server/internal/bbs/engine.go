@@ -51,7 +51,25 @@ func runSite(ctx context.Context, s *server.Session, store *content.Store, users
 			if !runAppletPage(ctx, s, page, &stack, users, state) {
 				return
 			}
-		case page.Raw: // écran brut : lignes telles quelles, une touche pour sortir
+		case len(page.Entries) > 0: // écran interactif (menu)
+			// Décor : une page « écran brut » sert de fond composé case par case
+			// (titre, libellés et invite sont déjà dessinés dedans) ; une page
+			// normale est rendue avec titre + lignes + choix + invite. Dans les
+			// deux cas, la navigation est pilotée par les entries (touche → cible
+			// ou applet).
+			var screen []byte
+			if page.Raw {
+				screen = render.RawScreen(page)
+			} else {
+				screen = render.Screen(page)
+			}
+			if s.Write(string(screen)) != nil {
+				return
+			}
+			if !routeMenuChoice(ctx, s, page, &stack, site, users, state) {
+				return
+			}
+		case page.Raw: // écran brut sans navigation : une touche pour sortir
 			if s.Write(string(render.RawScreen(page))) != nil {
 				return
 			}
@@ -59,13 +77,6 @@ func runSite(ctx context.Context, s *server.Session, store *content.Store, users
 				return
 			}
 			popOrHome(&stack, site)
-		case len(page.Entries) > 0: // écran interactif
-			if s.Write(string(render.Screen(page))) != nil {
-				return
-			}
-			if !routeMenuChoice(ctx, s, page, &stack, site, users, state) {
-				return
-			}
 		default: // écran de contenu : une touche pour revenir
 			if s.Write(string(render.Screen(page))) != nil {
 				return

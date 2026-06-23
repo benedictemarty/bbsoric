@@ -214,7 +214,8 @@ function targetSelect(value, onChange) {
   return sel;
 }
 
-function entriesEditor(p) {
+function entriesEditor(p, rebuild) {
+  rebuild = rebuild || renderForm; // qui re-construit l'éditeur après +/✕/type
   const tbl = el('table', { className: 'rows' });
   tbl.append(el('tr', {}, ['Touche', 'Libellé', 'Type', 'Destination', ''].map(t => el('th', { textContent: t }))));
   (p.entries || []).forEach((e, i) => {
@@ -228,7 +229,7 @@ function entriesEditor(p) {
     kind.onchange = () => {
       if (kind.value === 'applet') { delete e.target; e.applet = e.applet || ''; e.next = e.next || ''; }
       else { delete e.applet; delete e.next; e.target = e.target || Object.keys(site.pages)[0] || '__quit__'; }
-      renderForm(); refreshPreview();
+      rebuild(); refreshPreview();
     };
 
     let dest;
@@ -242,11 +243,11 @@ function entriesEditor(p) {
     }
 
     const del = el('button', { className: 'del', textContent: '✕' });
-    del.onclick = () => { p.entries.splice(i, 1); renderForm(); refreshPreview(); };
+    del.onclick = () => { p.entries.splice(i, 1); rebuild(); refreshPreview(); };
     tbl.append(el('tr', {}, [td(k), td(l), td(kind), td(dest), td(del)]));
   });
   const add = el('button', { textContent: '+ entrée' });
-  add.onclick = () => { p.entries.push({ key: '', label: '', target: Object.keys(site.pages)[0] || '__quit__' }); renderForm(); };
+  add.onclick = () => { p.entries.push({ key: '', label: '', target: Object.keys(site.pages)[0] || '__quit__' }); rebuild(); };
   return el('div', {}, [el('span', { className: 'lbl', textContent: 'Entrées' }), tbl, add]);
 }
 
@@ -514,6 +515,18 @@ function pickAttr(b) {
   const c = $('screen-canvas'); if (c) c.focus();
 }
 
+// renderScreenNav affiche, sous la grille, l'éditeur de navigation de la page
+// d'écran courante : on compose le décor au-dessus (fond raw) et on câble ici les
+// touches (→ page ou ▶ applet). Présentation et logique au même endroit.
+function renderScreenNav() {
+  const host = $('screen-nav'); if (!host) return;
+  host.innerHTML = '';
+  if (!screenName || !site.pages[screenName]) return;
+  const p = site.pages[screenName];
+  host.append(el('p', { className: 'hint', textContent: 'Navigation (menu sur fond d\'écran) : ces touches routent par-dessus le décor. Dessine les libellés dans l\'écran ci-dessus ; aucune invite n\'est ajoutée.' }));
+  host.append(entriesEditor(p, renderScreenNav));
+}
+
 function refreshScreenPages() {
   const sel = $('screen-page'); sel.innerHTML = '';
   // Toutes les pages sont chargeables dans l'éditeur d'écran : une page « écran
@@ -535,7 +548,7 @@ async function screenLoad(id) {
     const r = await fetch('/api/screen?page=' + encodeURIComponent(id), { method: 'POST', body: JSON.stringify(site) });
     gridBuf = r.ok ? layoutScreen(new Uint8Array(await r.arrayBuffer())) : new Uint8Array(COLS * ROWS).fill(0x20);
   }
-  cur = { col: 0, row: 0 }; drawGrid();
+  cur = { col: 0, row: 0 }; drawGrid(); renderScreenNav();
   setStatus('écran chargé : ' + id, 'ok');
 }
 function screenNew() {
@@ -546,15 +559,15 @@ function screenNew() {
   site.pages[id] = { title: id.toUpperCase(), raw: true, screen: bufToB64(gridBuf) };
   if (!site.start) site.start = id;
   screenName = id; $('screen-newid').value = '';
-  refreshScreenPages(); $('screen-page').value = id; drawGrid(); renderPageList();
+  refreshScreenPages(); $('screen-page').value = id; drawGrid(); renderScreenNav(); renderPageList();
   setStatus('page écran créée : ' + id, 'ok');
 }
 function screenSave() {
   if (!screenName || !site.pages[screenName]) { setStatus('crée/charge une page écran', 'err'); return; }
   const p = site.pages[screenName];
   p.raw = true; delete p.lines; p.screen = bufToB64(gridBuf);
-  renderPageList();
-  setStatus('écran enregistré dans « ' + screenName + ' »', 'ok');
+  refreshScreenPages(); $('screen-page').value = screenName; renderPageList();
+  setStatus('écran enregistré dans « ' + screenName + ' » (raw' + (p.entries && p.entries.length ? ' + menu' : '') + ')', 'ok');
 }
 
 let previewTimer = null;

@@ -30,6 +30,13 @@ type Site struct {
 //     de l'entrée (ou lance son applet) ;
 //   - sans Entries  → écran de contenu : une touche revient en arrière.
 //
+// Raw + Screen : « écran brut » rendu tel quel (buffer 40×28 composé case par
+// case dans le studio), sans barre de titre ni invite. Raw se COMBINE avec
+// Entries : le buffer sert alors de FOND d'écran (décor, libellés du menu
+// dessinés dedans) tandis que les Entries assurent la navigation (touche →
+// cible, ou ▶ applet). C'est le « menu sur fond d'écran » : présentation
+// (Screen) et logique (Entries) sont séparées.
+//
 // Applet (optionnel, compat JSON écrit à la main) : à l'arrivée sur la page, on
 // lance l'applet nommé puis on va vers Next. Le studio ne crée plus de telles
 // pages — les applets se lancent via une entrée de menu (Entry.Applet).

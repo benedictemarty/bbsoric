@@ -177,6 +177,53 @@ func TestMenuWithIntroLines(t *testing.T) {
 	}
 }
 
+// TestRawScreenMenu : une page « écran brut » (raw) SE COMBINE avec des entries
+// — le décor sert de fond d'écran et les entries assurent la navigation, sans
+// invite « Votre choix » ajoutée (elle fait partie du décor composé).
+func TestRawScreenMenu(t *testing.T) {
+	const json = `{
+      "start": "deco",
+      "pages": {
+        "deco": { "raw": true, "title": "DECOR",
+          "lines": [ { "text": "FOND RAW MENU" } ],
+          "entries": [
+            { "key": "1", "label": "Aller", "target": "cible" },
+            { "key": "Q", "label": "Quitter", "target": "__quit__" }
+          ] },
+        "cible": { "title": "CIBLE",
+          "lines": [ { "text": "PAGE CIBLE" } ],
+          "entries": [ { "key": "Q", "label": "Quitter", "target": "__quit__" } ] }
+      }
+    }`
+	addr, stop := startServerWithStore(t, storeFromJSON(t, json))
+	defer stop()
+
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+	r := bufio.NewReader(conn)
+
+	// Le décor raw s'affiche tel quel — pas d'invite « Votre choix » ajoutée.
+	out := readUntil(t, r, conn, "FOND RAW MENU")
+	if !strings.Contains(out, "FOND RAW MENU") {
+		t.Fatalf("le fond d'écran raw ne s'affiche pas:\n%s", out)
+	}
+	if strings.Contains(out, "Votre choix") {
+		t.Errorf("une page raw ne doit pas ajouter l'invite « Votre choix »:\n%s", out)
+	}
+
+	// La touche route via les entries (navigation sur fond raw).
+	if _, err := conn.Write([]byte("1")); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	dst := readUntil(t, r, conn, "PAGE CIBLE")
+	if !strings.Contains(dst, "PAGE CIBLE") {
+		t.Errorf("la navigation depuis le menu raw a échoué:\n%s", dst)
+	}
+}
+
 // TestUnknownAppletIsGraceful : un applet non enregistré ne casse pas la session.
 func TestUnknownAppletIsGraceful(t *testing.T) {
 	const json = `{
