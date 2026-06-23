@@ -100,6 +100,9 @@ profils. Voir `docs/adr/0003-studio-forge.md`.
 - [x] **Positionnement curseur (plot X,Y)** : séquence terminal `1F col row`
   (`oascii.Plot`/`Builder.At`), champs de formulaire positionnables (`Field.At`),
   colonnes X/Y dans le studio. Décor + invites placées à coordonnées absolues.
+- [x] **Buffer écran différentiel** (`oascii.Screen`) : rendu « dirty cells » —
+  n'émet que les cellules modifiées (segments + plot X,Y). Base des écrans
+  dynamiques (jeux, animations) sur liaison série lente.
 - [ ] Multi-sites avancé (création de nouveaux fichiers depuis l'UI), gestion des sauvegardes.
 - [ ] Authentification si le studio devait être exposé (aujourd'hui local-only).
 

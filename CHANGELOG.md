@@ -6,6 +6,19 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Buffer écran « intelligent » — rendu différentiel)
+- **`internal/oascii.Screen`** : buffer 40×28 qui maintient l'état composé ET
+  l'état affiché par le terminal. `Render()` n'émet QUE les cellules modifiées,
+  regroupées en segments (positionnés par plot X,Y), sans franchir les fins de
+  ligne. Exact sur Oric (l'écran EST la VRAM : chaque cellule est indépendante,
+  l'ULA recompose la ligne au balayage). Économise la liaison série 9600 bauds
+  pour les écrans dynamiques (jeux, valeurs rafraîchies) — réémettre tout coûte
+  ~1,2 s, un diff de quelques cellules est quasi instantané.
+- API : `NewScreen`, `Put`/`PutText`/`Clear`/`At`/`Buffer`, `Render` (diff +
+  mémorisation), `Reset` (force une réémission complète). Le diff saute même les
+  cellules communes en tête d'un changement (« 000 »→« 042 » n'émet que « 42 »).
+  Tests `TestScreen*`.
+
 ### Ajouté (Exemple — page de login plein écran + capture émulateur)
 - **`docs/examples/example-login.json`** : page de connexion **plein écran** combinant un
   **décor `raw`** 40×28 (cadre, titres colorés, libellés « Pseudo »/« Mot de passe »)
