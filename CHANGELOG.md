@@ -6,6 +6,15 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Modifié (Studio — formulaire éditable depuis l'onglet Écran)
+- **Onglet « Écran »** : le bloc sous la grille gère maintenant aussi le
+  **formulaire de saisie** (applet `form`), pas seulement les entrées de menu.
+  Une page `form` (ex. `login`) chargée dans l'éditeur d'écran affiche son
+  `formEditor` (action, champs, **positions X/Y**, next) ; une page de menu garde
+  son éditeur d'entrées + un bouton « + formulaire ». On peut donc composer un
+  **login plein écran** d'un seul endroit : décor dans la grille + champs
+  positionnés. `formEditor` rendu réutilisable (callback de rafraîchissement).
+
 ### Modifié (Studio — insertion d'applet par liste déroulante)
 - **Éditeur d'entrées** (onglets Édition *et* Écran) : pour une entrée
   « ▶ applet », le nom se choisit désormais dans une **liste déroulante**

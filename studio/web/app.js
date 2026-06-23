@@ -213,7 +213,8 @@ function renderForm() {
 
 // formEditor édite une page de saisie déclarative (content.Form) : action
 // (login/inscription), champs et page « next ». La logique reste serveur.
-function formEditor(p) {
+function formEditor(p, rebuild) {
+  rebuild = rebuild || renderForm; // re-construit l'éditeur après changement
   const wrap = el('div', { className: 'form-editor' });
   wrap.append(el('span', { className: 'lbl', textContent: 'Formulaire de saisie' }));
   if (!p.form) {
@@ -224,7 +225,7 @@ function formEditor(p) {
         { key: 'password', label: 'Mot de passe', secret: true },
       ] };
       delete p.entries;
-      renderForm(); refreshPreview();
+      rebuild(); refreshPreview();
     };
     wrap.append(add);
     return wrap;
@@ -237,7 +238,7 @@ function formEditor(p) {
     if (f.action === 'register' && !(f.fields || []).some(x => x.key === 'confirm')) {
       f.fields.push({ key: 'confirm', label: 'Confirmer', secret: true });
     }
-    renderForm(); refreshPreview();
+    rebuild(); refreshPreview();
   };
   wrap.append(field('Action', act));
   wrap.append(field('Après succès (next)', pageSelect(f.next, v => { f.next = v; }, true)));
@@ -259,16 +260,16 @@ function formEditor(p) {
     };
     xIn.oninput = updAt; yIn.oninput = updAt;
     const del = el('button', { className: 'del', textContent: '✕' });
-    del.onclick = () => { f.fields.splice(i, 1); renderForm(); };
+    del.onclick = () => { f.fields.splice(i, 1); rebuild(); };
     tbl.append(el('tr', {}, [td(k), td(l), td(el('label', { className: 'tog' }, [sec])), td(xIn), td(yIn), td(del)]));
   });
   wrap.append(tbl);
   const addF = el('button', { textContent: '+ champ' });
-  addF.onclick = () => { f.fields.push({ key: '', label: '' }); renderForm(); };
+  addF.onclick = () => { f.fields.push({ key: '', label: '' }); rebuild(); };
   wrap.append(addF);
 
   const rm = el('button', { className: 'del', textContent: 'supprimer le formulaire' });
-  rm.onclick = () => { delete p.form; renderForm(); refreshPreview(); };
+  rm.onclick = () => { delete p.form; rebuild(); refreshPreview(); };
   wrap.append(rm);
   wrap.append(el('p', { className: 'hint', textContent: 'Clés attendues : login, password' + (f.action === 'register' ? ', confirm' : '') + '. Le décor (titre ou écran raw) s\'affiche, puis les champs se saisissent.' }));
   return wrap;
@@ -584,8 +585,16 @@ function renderScreenNav() {
     return;
   }
   const p = site.pages[screenName];
-  host.append(el('p', { className: 'hint', textContent: 'Navigation (menu sur fond d\'écran) : ces touches routent par-dessus le décor. Les libellés sont dessinés dans l\'écran ci-dessus (pas de colonne « libellé » ici), aucune invite n\'est ajoutée.' }));
-  host.append(entriesEditor(p, renderScreenNav, { hideLabel: true }));
+  if (p.form) {
+    // Page de saisie : le décor (grille) sert de fond, le formulaire pose ses
+    // champs (positionnables par X/Y). C'est l'applet « form ».
+    host.append(el('p', { className: 'hint', textContent: 'Formulaire de saisie (applet) sur cet écran : compose le décor ci-dessus, place les champs avec X/Y.' }));
+    host.append(formEditor(p, renderScreenNav));
+  } else {
+    host.append(el('p', { className: 'hint', textContent: 'Navigation (menu sur fond d\'écran) : ces touches routent par-dessus le décor (→ page ou ▶ applet). Les libellés sont dessinés dans l\'écran ci-dessus.' }));
+    host.append(entriesEditor(p, renderScreenNav, { hideLabel: true }));
+    host.append(formEditor(p, renderScreenNav)); // bouton « + formulaire » (login/inscription)
+  }
 }
 
 function refreshScreenPages() {
