@@ -54,13 +54,18 @@ entrées de menu (type « ▶ applet », sélectionnables dans le studio) :
   pour du texte ; pour un binaire finissant réellement par 0x1A, prévoir un format
   enveloppe (YMODEM) ultérieurement.
 
-## Reste à faire (côté Oric)
+## Côté Oric
 
-- **Mode transfert** dans `client/term.s` : suspendre l'interprétation OASCII
-  (octets 0–31 / plot) et router les octets vers le moteur XMODEM.
-- **XMODEM 6502** : récepteur/émetteur.
-- **Stockage** : écriture/lecture sur carte SD (LOCI), Microdisc ou cassette.
-- **Telnet binaire** : privilégier un canal **raw** (le serveur filtre `IAC` en
-  saisie), surtout pour le téléversement.
+- **Download : fait.** `client/xmodem.s` implémente le **récepteur XMODEM 6502**
+  (mode somme de contrôle). Le serveur envoie la séquence **`1F FE`** (`oascii.RecvCmd`)
+  avant l'envoi ; `term.s` (`handle_rx`) bascule alors en `xmodem_recv`, qui reçoit
+  le fichier en **RAM (`$4000`)** et affiche « FICHIER RECU EN 4000 ». Validé dans
+  l'émulateur (`docs/img/xmodem-download.png`).
+- **Reste à faire** :
+  - **Upload** : émetteur XMODEM 6502 (déclenché par `1F FD` / `oascii.SendCmd`).
+  - **Stockage** : écrire/lire le buffer `$4000` sur carte SD (LOCI), Microdisc ou
+    cassette (aujourd'hui réception en RAM uniquement → l'utilisateur peut `CSAVE`).
+  - **Telnet binaire** : privilégier un canal **raw** (le serveur filtre `IAC` en
+    saisie), surtout pour le téléversement.
 
 Voir aussi : `docs/agile/backlog.md` (G1), `docs/connexion-materielle.md`.

@@ -65,11 +65,12 @@
 ## Épopée G — Transfert de fichiers (étude, non planifié)
 
 - [~] **G1** (8) En tant qu'utilisateur, je veux **télécharger/téléverser** des fichiers via le BBS.
-  *Côté **serveur fait** : protocole `internal/xmodem` (checksum+CRC, testé), bibliothèque
-  `server/internal/files`, applets `download`/`upload`, `Session.Raw()`, flags `-files`/
-  `-max-upload`, studio. Doc `docs/transfert.md`. **Reste côté Oric** (`term.s`) : mode
-  transfert (suspendre OASCII), XMODEM 6502, stockage carte SD (LOCI)/Microdisc/cassette ;
-  canal telnet raw pour le binaire. Alternative légère : `ATGET https://…` du modem.*
+  *Côté **serveur fait** (`internal/xmodem`, `server/internal/files`, applets
+  `download`/`upload`, `Session.Raw()`, flags `-files`/`-max-upload`, studio, doc
+  `docs/transfert.md`). **Download Oric fait** : récepteur XMODEM 6502
+  (`client/xmodem.s`), déclenché par `1F FE`, réception en RAM `$4000` — validé
+  émulateur (`docs/img/xmodem-download.png`). **Reste** : upload 6502 (émetteur) et
+  **stockage** carte SD (LOCI)/Microdisc/cassette (réception en RAM pour l'instant).*
 
 ## Definition of Done (DoD)
 - Code versionné, `CHANGELOG.md` et `ROADMAP.md` mis à jour.

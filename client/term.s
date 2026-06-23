@@ -303,10 +303,16 @@ hr_begin:
 hr_coord:
         cpx #1
         bne hr_row
-        sta PLOTX                ; 1er octet = colonne
+        cmp #$FE                 ; 1F FE = commande "recevoir un fichier"
+        beq hr_recv
+        sta PLOTX                ; sinon 1er octet = colonne (plot)
         lda #2
         sta PLOTST
         rts
+hr_recv:
+        lda #0
+        sta PLOTST
+        jmp xmodem_recv          ; recoit en RAM (xmodem_recv fait rts)
 hr_row:
         jsr set_cursor_xy        ; A = ligne, PLOTX = colonne
         lda #0

@@ -58,6 +58,20 @@ func Plot(col, row int) string {
 	return string([]byte{PlotByte, byte(col), byte(row)})
 }
 
+// Commandes de transfert de fichiers : PlotByte suivi d'un second octet hors de
+// la plage des colonnes valides (0..39), donc sans ambiguïté avec un plot X,Y.
+// Le terminal Oric bascule alors en mode XMODEM.
+const (
+	recvByte = 0xFE // 1F FE : le terminal doit RECEVOIR un fichier (download)
+	sendByte = 0xFD // 1F FD : le terminal doit ENVOYER un fichier (upload)
+)
+
+// RecvCmd signale au terminal de démarrer une réception XMODEM (download).
+func RecvCmd() string { return string([]byte{PlotByte, recvByte}) }
+
+// SendCmd signale au terminal de démarrer un envoi XMODEM (upload).
+func SendCmd() string { return string([]byte{PlotByte, sendByte}) }
+
 // Octets d'attribut sériel. Chacun occupe une case écran.
 
 // InkAttr renvoie l'octet d'attribut qui fixe la couleur d'encre.

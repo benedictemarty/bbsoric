@@ -68,6 +68,10 @@ func downloadApplet(ctx context.Context, s *server.Session, ac *AppContext) Outc
 	info.Ink(oascii.White).Text("Demarrez la reception sur votre terminal.").Newline()
 	_ = s.Write(info.String())
 
+	// Signale au terminal Oric de basculer en réception XMODEM (les autres
+	// clients ignorent cette séquence de contrôle).
+	_ = s.Write(oascii.RecvCmd())
+
 	if err := xmodem.Send(s.Raw(), data); err != nil {
 		s.ClearDeadline()
 		writeErr(s, "Transfert echoue : "+err.Error())
@@ -103,6 +107,9 @@ func uploadApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcom
 	info.Newline().Ink(oascii.Yellow).Text("Pret a recevoir " + name + " (XMODEM)...").Newline()
 	info.Ink(oascii.White).Text("Demarrez l'envoi sur votre terminal.").Newline()
 	_ = s.Write(info.String())
+
+	// Signale au terminal Oric de basculer en envoi XMODEM.
+	_ = s.Write(oascii.SendCmd())
 
 	data, err := xmodem.Receive(s.Raw())
 	if err != nil {

@@ -6,6 +6,19 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Terminal Oric — réception de fichier XMODEM, download)
+- **`client/xmodem.s`** : récepteur **XMODEM 6502** (mode somme de contrôle), reçoit
+  un fichier en RAM (`$4000`), ACK/NAK, EOT. `xr_rx` préserve Y (que `ser_rx`
+  écrase) — bug de boucle corrigé.
+- **`client/term.s`** : `handle_rx` détecte la séquence **`1F FE`** envoyée par le
+  serveur et bascule en réception (`xmodem_recv`) ; `build.sh` intègre `xmodem.s`.
+- **Signalisation** : `oascii.RecvCmd()` (`1F FE`) / `SendCmd()` (`1F FD`) ;
+  l'applet `download` émet `RecvCmd` avant l'envoi XMODEM.
+- **Validé dans l'émulateur** : un Oric télécharge un fichier (128 o) du serveur,
+  reçu intact en RAM — `docs/img/xmodem-download.png` (« FICHIER RECU EN 4000 »).
+- *Reste* : upload 6502 (émetteur), stockage carte SD (LOCI)/Microdisc/cassette
+  (aujourd'hui réception en RAM uniquement) — backlog G1.
+
 ### Ajouté (Transfert de fichiers — download/upload XMODEM, côté serveur)
 - **`internal/xmodem`** : protocole XMODEM (blocs 128 o, somme de contrôle **et**
   CRC-16, ré-émission, élagage du remplissage `SUB`). Tests round-trip (checksum +
