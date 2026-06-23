@@ -6,6 +6,13 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Modifié (Studio — insertion d'applet par liste déroulante)
+- **Éditeur d'entrées** (onglets Édition *et* Écran) : pour une entrée
+  « ▶ applet », le nom se choisit désormais dans une **liste déroulante**
+  (`login`/`register`/`guest`, + la valeur courante si personnalisée) au lieu
+  d'un champ texte libre — plus de faute de frappe. `appletSelect` /
+  `KNOWN_APPLETS`.
+
 ### Modifié (Studio — retrait du compositeur, navigation Écran plus visible)
 - **Onglet « Édition »** : suppression du **compositeur de ligne** (canvas + palette
   `glyph-palette` + boutons `comp-*`), redondant avec l'éditeur d'écran case par
