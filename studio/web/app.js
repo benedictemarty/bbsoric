@@ -514,6 +514,28 @@ function pickAttr(b) {
   drawGrid();
   const c = $('screen-canvas'); if (c) c.focus();
 }
+// altActiveAt indique si le charset alternatif (police BBS) est actif à la cellule
+// (col,row), d'après la sérialisation depuis le début de ligne (l'ULA réinitialise
+// les attributs à chaque ligne ; seul le groupe 0x08 porte le bit alt).
+function altActiveAt(col, row) {
+  let attr = 0;
+  for (let x = 0; x < col; x++) {
+    const b = gridBuf[row * COLS + x];
+    if ((b & 0x60) === 0 && ((b & 0x1F) & 0x18) === 0x08) attr = b & 0x07;
+  }
+  return (attr & 1) !== 0;
+}
+// dropGlyph dépose un glyphe BBS au curseur. Un glyphe n'est rendu en police BBS
+// que si l'attribut « charset alternatif » est actif : on POSE donc d'abord la
+// case d'attribut alt (0x09) si elle ne l'est pas déjà, puis le glyphe.
+function dropGlyph(c) {
+  c &= 0x7F;
+  setBrush(c);
+  if (!altActiveAt(cur.col, cur.row)) putByteAdvance(0x09);
+  putByteAdvance(c);
+  drawGrid();
+  const cv = $('screen-canvas'); if (cv) cv.focus();
+}
 
 // renderScreenNav affiche, sous la grille, l'éditeur de navigation de la page
 // d'écran courante : on compose le décor au-dessus (fond raw) et on câble ici les
@@ -704,7 +726,7 @@ $('attr-blink').onclick = () => pickAttr(0x0C); // texte: clignotement
 $('attr-norm').onclick = () => pickAttr(0x08);  // texte: normal
 $('brush-char').oninput = () => { const v = $('brush-char').value; setBrush(((v ? v.charCodeAt(0) : 0x20) & 0x7F) | ($('brush-inv').checked ? 0x80 : 0)); };
 $('brush-inv').onchange = () => { if ((brushByte & 0x60) !== 0) setBrush((brushByte & 0x7F) | ($('brush-inv').checked ? 0x80 : 0)); };
-renderPaletteInto('screen-palette', (c) => { $('brush-char').value = String.fromCharCode(c); setBrush(c & 0x7F); });
+renderPaletteInto('screen-palette', (c) => dropGlyph(c)); // dépose le glyphe (+ alt si besoin)
 setBrush(0x20);
 
 const scv = $('screen-canvas');

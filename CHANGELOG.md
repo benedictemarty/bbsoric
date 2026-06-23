@@ -6,6 +6,14 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Modifié (Studio — dépose de glyphe : charset alternatif auto)
+- **Onglet « Écran »** : cliquer un glyphe BBS le **dépose** désormais directement
+  au curseur (au lieu de seulement charger le pinceau) et **pose l'attribut
+  charset alternatif (0x09) s'il n'est pas déjà actif** à cette position — un
+  glyphe n'est rendu en police BBS que si l'alt est actif. `altActiveAt` calcule
+  l'état par sérialisation depuis le début de ligne ; `dropGlyph` n'ajoute la case
+  d'attribut que si nécessaire (pas de doublon si l'alt est déjà posé).
+
 ### Modifié (Studio — palette de glyphes à droite de l'écran)
 - **Onglet « Écran »** : la palette de glyphes BBS passe **sous** le canvas à
   **droite** de celui-ci (conteneur flex `.screen-edit` : canvas + `.palette-side`).
