@@ -67,10 +67,11 @@
 - [~] **G1** (8) En tant qu'utilisateur, je veux **télécharger/téléverser** des fichiers via le BBS.
   *Côté **serveur fait** (`internal/xmodem`, `server/internal/files`, applets
   `download`/`upload`, `Session.Raw()`, flags `-files`/`-max-upload`, studio, doc
-  `docs/transfert.md`). **Download Oric fait** : récepteur XMODEM 6502
-  (`client/xmodem.s`), déclenché par `1F FE`, réception en RAM `$4000` — validé
-  émulateur (`docs/img/xmodem-download.png`). **Reste** : upload 6502 (émetteur) et
-  **stockage** carte SD (LOCI)/Microdisc/cassette (réception en RAM pour l'instant).*
+  `docs/transfert.md`). **Download ET upload Oric faits** : récepteur (checksum) +
+  émetteur (CRC-16) XMODEM 6502 (`client/xmodem.s`), déclenchés par `1F FE`/`1F FD`,
+  buffer RAM `$4000` — validés émulateur (`docs/img/xmodem-download.png`,
+  `xmodem-upload.png`). **Reste** : **stockage** carte SD (LOCI)/Microdisc/cassette
+  (buffer en RAM pour l'instant).*
 
 ## Definition of Done (DoD)
 - Code versionné, `CHANGELOG.md` et `ROADMAP.md` mis à jour.

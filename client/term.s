@@ -305,6 +305,8 @@ hr_coord:
         bne hr_row
         cmp #$FE                 ; 1F FE = commande "recevoir un fichier"
         beq hr_recv
+        cmp #$FD                 ; 1F FD = commande "envoyer un fichier"
+        beq hr_send
         sta PLOTX                ; sinon 1er octet = colonne (plot)
         lda #2
         sta PLOTST
@@ -313,6 +315,10 @@ hr_recv:
         lda #0
         sta PLOTST
         jmp xmodem_recv          ; recoit en RAM (xmodem_recv fait rts)
+hr_send:
+        lda #0
+        sta PLOTST
+        jmp xmodem_send          ; envoie le buffer RAM (xmodem_send fait rts)
 hr_row:
         jsr set_cursor_xy        ; A = ligne, PLOTX = colonne
         lda #0

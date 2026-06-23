@@ -6,6 +6,19 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Terminal Oric — envoi de fichier XMODEM, upload)
+- **`client/xmodem.s`** : émetteur **XMODEM 6502** en **CRC-16** (`xmodem_send` +
+  `crc_update`) — envoie `XSIZE` octets depuis le buffer RAM (`$4000`), ré-émission
+  sur NAK/timeout, EOT. Le CRC évite le délai de bascule côté récepteur (le serveur
+  démarre en CRC).
+- **`client/term.s`** : `handle_rx` détecte **`1F FD`** (`oascii.SendCmd`, émis par
+  l'applet `upload`) et lance `xmodem_send`.
+- **Validé dans l'émulateur** : un Oric téléverse 256 octets, reçus intacts et
+  stockés côté serveur — `docs/img/xmodem-upload.png` (« FICHIER ENVOYE » /
+  « Recu : f (256 octets) »). Transfert **bidirectionnel** Oric ↔ serveur complet.
+- *Reste* : **stockage** sur mémoire de masse (carte SD via LOCI / Microdisc /
+  cassette) — aujourd'hui le buffer est en RAM `$4000` (backlog G1).
+
 ### Ajouté (Terminal Oric — réception de fichier XMODEM, download)
 - **`client/xmodem.s`** : récepteur **XMODEM 6502** (mode somme de contrôle), reçoit
   un fichier en RAM (`$4000`), ACK/NAK, EOT. `xr_rx` préserve Y (que `ser_rx`

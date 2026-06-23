@@ -61,10 +61,12 @@ entrées de menu (type « ▶ applet », sélectionnables dans le studio) :
   avant l'envoi ; `term.s` (`handle_rx`) bascule alors en `xmodem_recv`, qui reçoit
   le fichier en **RAM (`$4000`)** et affiche « FICHIER RECU EN 4000 ». Validé dans
   l'émulateur (`docs/img/xmodem-download.png`).
+- **Upload : fait.** `xmodem_send` (CRC-16) envoie `XSIZE` octets du buffer `$4000`.
+  Le serveur (applet `upload`) émet **`1F FD`** (`oascii.SendCmd`) ; `term.s` bascule
+  alors en `xmodem_send`. Validé émulateur (`docs/img/xmodem-upload.png`, 256 o).
 - **Reste à faire** :
-  - **Upload** : émetteur XMODEM 6502 (déclenché par `1F FD` / `oascii.SendCmd`).
   - **Stockage** : écrire/lire le buffer `$4000` sur carte SD (LOCI), Microdisc ou
-    cassette (aujourd'hui réception en RAM uniquement → l'utilisateur peut `CSAVE`).
+    cassette (aujourd'hui buffer RAM → l'utilisateur peut `CSAVE`/`CLOAD`).
   - **Telnet binaire** : privilégier un canal **raw** (le serveur filtre `IAC` en
     saisie), surtout pour le téléversement.
 
