@@ -7,7 +7,7 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 ## [Non publié]
 
 ### Ajouté (Exemple — page de login plein écran + capture émulateur)
-- **`content/example-login.json`** : page de connexion **plein écran** combinant un
+- **`docs/examples/example-login.json`** : page de connexion **plein écran** combinant un
   **décor `raw`** 40×28 (cadre, titres colorés, libellés « Pseudo »/« Mot de passe »)
   et un **`form`** dont les champs sont **positionnés** (`at:[20,11]`, `[20,14]`) par
   plot X,Y. L'applet `form` affiche un décor raw plein écran depuis (0,0)
