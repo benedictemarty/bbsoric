@@ -6,6 +6,17 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Corrigé (Studio — éditeur d'écran : pose des attributs couleur)
+- **Onglet « Écran »** : cliquer une pastille **encre/fond** (ou un bouton
+  d'attribut texte alt/cli/norm) ne faisait que changer le pinceau **sans rien
+  poser** — la couleur semblait « ne pas s'appliquer » et le clic **volait le
+  focus** au canvas (frappe clavier inopérante ensuite). Désormais le clic
+  **pose la case d'attribut** à la position du curseur (un attribut OCCUPE une
+  case sur Oric : l'« espace » coloré), **avance le curseur**, et **rend le
+  focus** au canvas pour enchaîner la frappe (`pickAttr`/`putByteAdvance` dans
+  `studio/web/app.js`). Le pinceau reste réglé sur la valeur choisie (peinture
+  au clic toujours possible).
+
 ### Ajouté (Sprint 5 — Conteneurisation Docker)
 - **`Dockerfile`** multi-stage : build `golang:1.26-alpine` (binaire statique
   `CGO_ENABLED=0`, `-trimpath -ldflags='-s -w'`) → runtime `alpine:3.20`

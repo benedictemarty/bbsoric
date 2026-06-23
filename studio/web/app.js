@@ -496,6 +496,23 @@ function typeAt(ch) {
   gridBuf[cur.row * COLS + cur.col] = (ch.charCodeAt(0) & 0x7F) | inv;
   cur.col++; if (cur.col >= COLS) { cur.col = 0; if (cur.row < ROWS - 1) cur.row++; }
 }
+// putByteAdvance pose un octet brut (attribut ou caractère) à la position du
+// curseur puis avance — comme typeAt mais sans le masque/bit inverse réservés
+// aux caractères imprimables.
+function putByteAdvance(b) {
+  gridBuf[cur.row * COLS + cur.col] = b & 0xFF;
+  cur.col++; if (cur.col >= COLS) { cur.col = 0; if (cur.row < ROWS - 1) cur.row++; }
+}
+// pickAttr est appelé par les pastilles couleur / boutons d'attribut : sur Oric un
+// attribut OCCUPE une case (l'« espace » coloré), on le POSE donc au curseur et on
+// avance. On garde aussi le pinceau (peinture au clic) et on redonne le focus au
+// canvas pour enchaîner la frappe sans cliquer dans la grille.
+function pickAttr(b) {
+  setBrush(b);
+  putByteAdvance(b);
+  drawGrid();
+  const c = $('screen-canvas'); if (c) c.focus();
+}
 
 function refreshScreenPages() {
   const sel = $('screen-page'); sel.innerHTML = '';
@@ -657,16 +674,16 @@ function colorSwatches(hostId, mk) {
     const c = PAL[i];
     const b = el('button', { className: 'swatch', title: mk.label + ' ' + n });
     b.style.background = 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
-    b.onclick = () => setBrush(mk.attr(i));
+    b.onclick = () => pickAttr(mk.attr(i));
     host.append(b);
   });
 }
 initGrid();
 colorSwatches('ink-swatches', { label: 'encre', attr: (i) => i });          // encre = 0..7
 colorSwatches('paper-swatches', { label: 'fond', attr: (i) => 0x10 | i });  // fond = 16..23
-$('attr-alt').onclick = () => setBrush(0x09);   // texte: charset alternatif
-$('attr-blink').onclick = () => setBrush(0x0C); // texte: clignotement
-$('attr-norm').onclick = () => setBrush(0x08);  // texte: normal
+$('attr-alt').onclick = () => pickAttr(0x09);   // texte: charset alternatif
+$('attr-blink').onclick = () => pickAttr(0x0C); // texte: clignotement
+$('attr-norm').onclick = () => pickAttr(0x08);  // texte: normal
 $('brush-char').oninput = () => { const v = $('brush-char').value; setBrush(((v ? v.charCodeAt(0) : 0x20) & 0x7F) | ($('brush-inv').checked ? 0x80 : 0)); };
 $('brush-inv').onchange = () => { if ((brushByte & 0x60) !== 0) setBrush((brushByte & 0x7F) | ($('brush-inv').checked ? 0x80 : 0)); };
 renderPaletteInto('screen-palette', (c) => { $('brush-char').value = String.fromCharCode(c); setBrush(c & 0x7F); });
