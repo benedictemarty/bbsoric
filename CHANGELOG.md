@@ -6,6 +6,13 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Modifié (Studio — navigation raw : colonne « libellé » masquée)
+- **Onglet « Écran », bloc Navigation** : la colonne **« Libellé »** est retirée.
+  Sur un « menu sur fond d'écran » (page raw), le libellé est **dessiné dans le
+  décor** et `e.label` est ignoré au rendu (`RawScreen`) — seul compte le mapping
+  touche → cible/applet. `entriesEditor` reçoit une option `hideLabel` (la colonne
+  reste affichée dans l'onglet « Édition » pour les menus normaux).
+
 ### Modifié (Studio — dépose de glyphe : charset alternatif auto)
 - **Onglet « Écran »** : cliquer un glyphe BBS le **dépose** désormais directement
   au curseur (au lieu de seulement charger le pinceau) et **pose l'attribut

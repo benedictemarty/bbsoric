@@ -214,13 +214,18 @@ function targetSelect(value, onChange) {
   return sel;
 }
 
-function entriesEditor(p, rebuild) {
+function entriesEditor(p, rebuild, opts) {
   rebuild = rebuild || renderForm; // qui re-construit l'éditeur après +/✕/type
+  // hideLabel : sur un « menu sur fond d'écran » (page raw), le libellé est dessiné
+  // dans le décor — e.label est ignoré au rendu, on masque donc sa colonne.
+  const hideLabel = !!(opts && opts.hideLabel);
   const tbl = el('table', { className: 'rows' });
-  tbl.append(el('tr', {}, ['Touche', 'Libellé', 'Type', 'Destination', ''].map(t => el('th', { textContent: t }))));
+  const headers = hideLabel ? ['Touche', 'Type', 'Destination', ''] : ['Touche', 'Libellé', 'Type', 'Destination', ''];
+  tbl.append(el('tr', {}, headers.map(t => el('th', { textContent: t }))));
   (p.entries || []).forEach((e, i) => {
     const k = el('input', { type: 'text', value: e.key || '' }); k.oninput = () => { e.key = k.value; refreshPreview(); };
-    const l = el('input', { type: 'text', value: e.label || '' }); l.oninput = () => { e.label = l.value; refreshPreview(); };
+    let l = null;
+    if (!hideLabel) { l = el('input', { type: 'text', value: e.label || '' }); l.oninput = () => { e.label = l.value; refreshPreview(); }; }
 
     // Type d'entrée : navigation (→ page) ou applet (▶ applet)
     const kind = el('select');
@@ -244,7 +249,8 @@ function entriesEditor(p, rebuild) {
 
     const del = el('button', { className: 'del', textContent: '✕' });
     del.onclick = () => { p.entries.splice(i, 1); rebuild(); refreshPreview(); };
-    tbl.append(el('tr', {}, [td(k), td(l), td(kind), td(dest), td(del)]));
+    const cells = hideLabel ? [td(k), td(kind), td(dest), td(del)] : [td(k), td(l), td(kind), td(dest), td(del)];
+    tbl.append(el('tr', {}, cells));
   });
   const add = el('button', { textContent: '+ entrée' });
   add.onclick = () => { p.entries.push({ key: '', label: '', target: Object.keys(site.pages)[0] || '__quit__' }); rebuild(); };
@@ -545,8 +551,8 @@ function renderScreenNav() {
   host.innerHTML = '';
   if (!screenName || !site.pages[screenName]) return;
   const p = site.pages[screenName];
-  host.append(el('p', { className: 'hint', textContent: 'Navigation (menu sur fond d\'écran) : ces touches routent par-dessus le décor. Dessine les libellés dans l\'écran ci-dessus ; aucune invite n\'est ajoutée.' }));
-  host.append(entriesEditor(p, renderScreenNav));
+  host.append(el('p', { className: 'hint', textContent: 'Navigation (menu sur fond d\'écran) : ces touches routent par-dessus le décor. Les libellés sont dessinés dans l\'écran ci-dessus (pas de colonne « libellé » ici), aucune invite n\'est ajoutée.' }));
+  host.append(entriesEditor(p, renderScreenNav, { hideLabel: true }));
 }
 
 function refreshScreenPages() {
