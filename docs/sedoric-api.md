@@ -129,6 +129,37 @@ Faits établis :
 3. **Déploiement** : le terminal devra tourner **sous Sedoric résident** (booté
    depuis une `.dsk` Sedoric), cf. « Le mur du déploiement » plus bas.
 
+## Voie retenue : injection de commande (décidé 24/06/2026)
+
+Plutôt que d'appeler une routine SAVE interne avec une convention de paramètres
+reverse-engineerée (fragile, spécifique à l'image), le terminal **injecte une
+ligne de commande Sedoric et la fait exécuter** — exactement le chemin validé du
+`SAVE` BASIC. Robuste et proche du matériel réel.
+
+### Données reverse établies (image `sedoric3.dsk`, `oric1-emu`)
+
+| Élément | Adresse | Source |
+|---|---|---|
+| **Buffer ligne de commande** | **`$0035`** | dump RAM : la ligne tapée `SAVE"…",A#…,E#…` y réside (buffer d'entrée BASIC Oric) |
+| Table de mots-clés Sedoric | ~`$CA6F` | dump RAM : `SAVE`, `FIELD`, `RSEC`, `INIT`, `INSTR`… ; accédée via pointeur `$E8/$E9` |
+| Code interpréteur (zone) | `$CA00`–`$CA6E` | trace : exécution `$CA3F` (arith. pointeur `ADC $E9`) au moment du dispatch |
+| Routine de sauvegarde (cluster) | `$D33A`/`$D342`/`$D398`/`$D39E` | trace : JSR peu imbriqués juste avant l'écriture |
+| Primitive FDC write secteur | **`$D075`** | trace : commandes Type II `$A8`/`$AC` sur `$0310` |
+
+### Reste à déterminer (prochaine session)
+
+1. **Entrée exacte de l'interpréteur** : l'adresse à `JSR` après avoir posé la
+   commande (CR-terminée) en `$0035`. Pistes : (a) la doc « Sedoric à nu »
+   (entrée commande) ; (b) un watchpoint sur la **lecture** de `$0035` pendant le
+   dispatch (debugger TUI `oric1-emu`, plus chirurgical que la trace 258 Mo) ;
+   (c) l'entrée BASIC d'exécution de ligne directe que Sedoric hooke.
+2. **Convention** : terminaison de la commande (CR `$0D` ?), état mapping requis,
+   registres/zéro-page à préparer, gestion d'erreur au retour.
+3. **Déploiement** : terminal sous Sedoric résident (cf. ci-dessous).
+
+> Recette de trace rapide (save-state au prompt, voir plus haut) pour itérer sans
+> rejouer le boot : `--load-state /tmp/sed.state --type-keys '…SAVE…\n'`.
+
 ## Le mur du déploiement
 
 Le terminal `client/term.s` est aujourd'hui une **cassette autorun** (`$1000`) sur
