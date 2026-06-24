@@ -301,10 +301,18 @@ LOAD"TERM":CALL#1000
   `; found BOOTUPCOM ? executes !BOOTUP`). **Mais** sur `sedoric3.dsk` (master/
   outils) le menu « WELCOME TO SEDORIC DOS V3.0 » n'est **pas** un fichier
   directory remplaçable : `DESTROY"BOOTUP.COM"` répond *FILE NOT FOUND* → le menu
-  est **intégré au système** du master. Un vrai hands-free demande donc soit une
-  **disquette Sedoric minimale** (créée par `INIT`, sans menu master, où poser
-  `BOOTUP.COM`), soit de modifier le système — chantier d'outillage à part. En
-  l'état, **une commande** lance le terminal (`LOAD"TERM":CALL#1000`).
+  est **intégré au système** du master (sur le master, `DESTROY"BOOTUP.COM"` =
+  *FILE NOT FOUND* alors que le menu tourne quand même).
+- **Blocage émulateur pour le hands-free** : créer une disquette Sedoric vierge
+  où poser `BOOTUP.COM` exige `INIT` (formatage) → *Write Track* du FDC. Or, dans
+  `oric1-emu`, `FDC_OP_WRITE_TRACK` est positionné (`src/storage/disk.c`) mais
+  **sans handler de données** = **no-op** : le formatage n'écrit rien. `INIT` ne
+  peut donc pas produire de disquette bootable dans l'émulateur.
+- **Conséquence** : l'auto-démarrage hands-free **n'est pas validable dans
+  l'émulateur**. Sur **matériel réel** (où `INIT` formate normalement), la voie
+  est : `INIT` une disquette Sedoric minimale → y copier `TERM.COM` → créer
+  `BOOTUP.COM` = lanceur (`LOAD"TERM":CALL#1000`). En l'état (émulateur **et**
+  master), **une commande** lance le terminal (`LOAD"TERM":CALL#1000`).
 
 ## Le mur du déploiement
 
