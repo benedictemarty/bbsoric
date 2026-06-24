@@ -111,9 +111,36 @@
           "target": "services"
         },
         {
+          "key": "5",
+          "label": "Fichiers",
+          "target": "fichiers"
+        },
+        {
           "key": "Q",
           "label": "Quitter",
           "target": "__quit__"
+        }
+      ]
+    },
+    "fichiers": {
+      "title": "FICHIERS",
+      "entries": [
+        {
+          "key": "1",
+          "label": "Telecharger",
+          "applet": "download",
+          "next": "fichiers"
+        },
+        {
+          "key": "2",
+          "label": "Televerser",
+          "applet": "upload",
+          "next": "fichiers"
+        },
+        {
+          "key": "R",
+          "label": "Retour",
+          "target": "__back__"
         }
       ]
     },

@@ -6,6 +6,14 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Contenu — sous-menu Fichiers : download/upload accessibles)
+- **`content/site.json`** : entrée **« Fichiers »** (touche `5`) au menu principal
+  → page **`fichiers`** avec **Télécharger** (applet `download`) et **Téléverser**
+  (applet `upload`), `next: fichiers` (retour au sous-menu), plus `Retour`.
+  Les applets XMODEM (déjà codés/testés) sont enfin **joignables depuis l'UI**
+  (ils étaient enregistrés mais câblés nulle part). JSON validé, cibles
+  cohérentes, tests `content`/`bbs` verts.
+
 ### Ajouté (Infrastructure — sauvegarde & restauration de l'état)
 - **`scripts/backup.sh`** : archive `tar.gz` horodatée de l'état persistant
   (comptes `users.json`, bibliothèque `files/`, contenu `site.json`) dans
