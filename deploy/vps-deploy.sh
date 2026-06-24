@@ -85,6 +85,17 @@ $SCP "$SCRIPT_DIR/bbsoric-monitor.service" "$VPS_USER@$VPS_HOST:/etc/systemd/sys
 $SCP "$SCRIPT_DIR/bbsoric-monitor.timer" "$VPS_USER@$VPS_HOST:/etc/systemd/system/$SERVICE-monitor.timer"
 $SSH "systemctl daemon-reload && systemctl enable --now $SERVICE-monitor.timer >/dev/null 2>&1 || true"
 
+# 4c. Sauvegardes : script de backup + timer systemd (quotidien, rotation)
+echo "--- Sauvegardes ($SERVICE-backup.timer) ---"
+$SCP "$ROOT/scripts/backup.sh" "$VPS_USER@$VPS_HOST:/usr/local/bin/bbsoric-backup.sh"
+$SSH "chmod 755 /usr/local/bin/bbsoric-backup.sh"
+$SCP "$SCRIPT_DIR/bbsoric-backup.service" "$VPS_USER@$VPS_HOST:/etc/systemd/system/$SERVICE-backup.service"
+$SCP "$SCRIPT_DIR/bbsoric-backup.timer" "$VPS_USER@$VPS_HOST:/etc/systemd/system/$SERVICE-backup.timer"
+# Script de restauration disponible sur le serveur (exécution manuelle).
+$SCP "$ROOT/scripts/restore.sh" "$VPS_USER@$VPS_HOST:/usr/local/bin/bbsoric-restore.sh"
+$SSH "chmod 755 /usr/local/bin/bbsoric-restore.sh"
+$SSH "systemctl daemon-reload && systemctl enable --now $SERVICE-backup.timer >/dev/null 2>&1 || true"
+
 # 5. Redémarrage + vérification
 if $DO_RESTART; then
     echo "--- Restart de $SERVICE ---"

@@ -50,6 +50,10 @@
   *(terminal validé dans l'émulateur ; test matériel en attente d'un Oric physique)*
 - [x] **E3** (3) En tant qu'admin, je veux **déployer** le serveur (Docker) et le **superviser**.
   *(prod systemd + image Docker ~18 Mo + `/healthz`,`/metrics` + sonde/timer)*
+- [x] **E4** (3) En tant qu'admin, je veux **sauvegarder et restaurer l'état** (comptes,
+  fichiers, contenu) pour ne rien perdre en cas d'incident.
+  *(`scripts/backup.sh`/`restore.sh`, timer quotidien + rotation, à chaud, test e2e
+  `scripts/test-backup.sh`, doc `docs/backup.md` ; déploiement via `vps-deploy.sh`)*
 
 ## Épopée F — Studio « Forge » (outillage de contenu)
 

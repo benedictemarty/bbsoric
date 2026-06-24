@@ -85,6 +85,11 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
   validés (BBS sur 6502, healthcheck `ok`). Doc : `docs/docker.md`. (prod = systemd)
 - [x] **Documentation utilisateur** : `docs/guide-utilisateur.md` (connexion depuis
   un Oric réel et depuis un PC pour tester, navigation, comptes, dépannage).
+- [x] **Sauvegarde & restauration de l'état** : `scripts/backup.sh` (archive
+  `tar.gz` horodatée comptes+fichiers+contenu, rotation, à chaud) +
+  `scripts/restore.sh`, timer systemd quotidien (`bbsoric-backup.{service,timer}`),
+  test e2e `scripts/test-backup.sh` (13 cas verts), doc `docs/backup.md`.
+  Déploiement intégré à `vps-deploy.sh`.
 
 ## Studio « Forge » — outillage de contenu ⏳ (en cours)
 Sous-projet `studio/` : app web Go locale pour éditer le(s) `site.json` et déployer par

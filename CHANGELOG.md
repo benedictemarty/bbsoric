@@ -6,6 +6,22 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Infrastructure — sauvegarde & restauration de l'état)
+- **`scripts/backup.sh`** : archive `tar.gz` horodatée de l'état persistant
+  (comptes `users.json`, bibliothèque `files/`, contenu `site.json`) dans
+  `/var/backups/bbsoric/`, avec **rotation** (14 par défaut) et **manifeste**.
+  Sauvegarde **« à chaud »** (écritures serveur atomiques → pas d'arrêt requis).
+- **`scripts/restore.sh`** : restauration d'une archive (`<fichier>`, `latest`
+  ou `--list`) — arrêt service → mise à l'écart `*.pre-restore` → restauration
+  → redémarrage (systemd réapproprie le `StateDirectory` sous `DynamicUser`).
+- **`deploy/bbsoric-backup.{service,timer}`** : sauvegarde **quotidienne**
+  (03h30, `Persistent=true`), durcie (`ReadWritePaths` au seul dossier backups).
+- **`deploy/vps-deploy.sh`** : installe scripts backup/restore + active le timer.
+- **`scripts/test-backup.sh`** : test bout-en-bout (13 cas) — sauvegarde,
+  contenu d'archive, restauration après corruption, `latest`, rotation. **Vert.**
+- **`docs/backup.md`** : procédure complète (cible, mécanisme, restauration,
+  note `DynamicUser`, hors-site).
+
 ### En cours (Stockage Microdisc/Sedoric — voie B, exploration)
 - **`docs/sedoric-api.md`** : API Sedoric extraite du désassemblage (vecteurs
   `$FF73`/`$FF76`/`$FF79`/`$FF7C`, variables `BUFNOM`/`DESALO`/`FISALO`) + séquences

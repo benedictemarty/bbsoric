@@ -1,0 +1,22 @@
+[Unit]
+Description=BBS Oric — sauvegarde de l'état (comptes + fichiers + contenu)
+After=network.target bbsoric.service
+
+[Service]
+Type=oneshot
+# Sauvegarde « à chaud » : pas besoin d'arrêter le BBS (écritures atomiques).
+# Adapter les chemins/rétention au déploiement si besoin.
+Environment=BBS_STATE_DIR=/var/lib/bbsoric
+Environment=BBS_CONTENT=/etc/bbsoric/site.json
+Environment=BBS_BACKUP_DIR=/var/backups/bbsoric
+Environment=BBS_BACKUP_KEEP=14
+ExecStart=/usr/local/bin/bbsoric-backup.sh
+
+# Durcissement : accès en lecture à l'état + écriture au seul dossier de backups.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/backups/bbsoric
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true

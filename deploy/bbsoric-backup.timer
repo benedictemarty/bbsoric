@@ -1,0 +1,14 @@
+[Unit]
+Description=BBS Oric — sauvegarde quotidienne de l'état
+
+[Timer]
+# Tous les jours à 03h30 (heure locale du serveur).
+OnCalendar=*-*-* 03:30:00
+# Étale le déclenchement (évite la rafale si plusieurs services planifiés).
+RandomizedDelaySec=5min
+# Rattrape une sauvegarde manquée (machine éteinte/suspendue à l'heure dite).
+Persistent=true
+Unit=bbsoric-backup.service
+
+[Install]
+WantedBy=timers.target
