@@ -48,11 +48,29 @@ V_EXSALO   = $C056
 ;  XSIZE (mot, zero-page) = taille recue ; defini par term.s/xmodem.s.
 ; ---------------------------------------------------------------------------
 sed_save:
+        ; --- garde PRE-bascule (RAM page 4 toujours mappee) ---
+        ; Sedoric installe au boot une table de saut en $04F2/$04F5/$04F8
+        ; (4C xx 04 = JMP $04xx). Sans Sedoric (terminal cassette sans disque),
+        ; JSR $04F2 sauterait dans du code aleatoire -> on verifie d'abord.
+        lda OVL_TOGGLE           ; $04F2 = 4C (JMP) ?
+        cmp #$4C
+        bne sed_ret
+        lda OVL_TOGGLE+2         ; cible en page 4 ($04xx) ?
+        cmp #$04
+        bne sed_ret
+        lda OVL_TOGGLE+3         ; $04F5 = 4C (JMP) ? (2e entree de la table)
+        cmp #$4C
+        bne sed_ret
+        lda OVL_TOGGLE+5         ; cible en page 4 ?
+        cmp #$04
+        bne sed_ret
+        ; --- bascule + confirmation overlay ---
         jsr OVL_TOGGLE           ; ROM -> RAM overlay (XSAVEB visible)
-        lda XSAVEB               ; Sedoric resident ? (XSAVEB debute par SEI $78)
+        lda XSAVEB               ; XSAVEB debute par SEI $78 ?
         cmp #$78
         beq sed_go
-        jsr OVL_TOGGLE           ; pas Sedoric -> rebascule et abandonne
+        jsr OVL_TOGGLE           ; pas attendu -> rebascule et abandonne
+sed_ret:
         rts
 sed_go:
         ; --- nom de fichier dans BUFNOM ---

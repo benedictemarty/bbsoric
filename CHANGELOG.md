@@ -22,8 +22,15 @@ versionnage [SemVer](https://semver.org/lang/fr/).
   variables aux adresses documentées (`$C04D`/`$C051`/`$C052`/`$C054`…), détection
   `$78`. Assemble (`build.sh` vert). Deux PDF (« Sedoric à nu » V1.0 + manuel
   désassemblé V3.0) fournis par l'utilisateur exploités.
-- *Reste* : intégration (déclenchement par `term.s` après un download) +
-  déploiement du terminal sous Sedoric résident. Voir `docs/sedoric-api.md`.
+- **Garde de présence Sedoric (sûre sans disque)** : `sed_save` vérifie d'abord,
+  en RAM page 4 toujours mappée, la table de saut installée par Sedoric
+  (`$04F2`/`$04F5` = `4C xx 04`) **avant** tout `JSR $04F2`. Validé : sous Sedoric
+  la garde passe et le fichier est sauvé (`TESTG4 BIN`) ; sans disque `$04F2=$55`
+  → garde refuse, pas de plantage. Le même terminal est donc sûr en cassette et
+  sous Sedoric.
+- **Intégration déjà câblée** : `term.s` (`handle_rx`) appelle `sed_save` après un
+  download, `XSIZE` posé par le récepteur XMODEM.
+- *Reste* : déploiement du terminal sous Sedoric résident. Voir `docs/sedoric-api.md`.
 - *Détail outillage* : xa65 scinde les commentaires sur « : » (commentaires sans
   deux-points) ; `--type-keys` perd parfois le 1er caractère d'une ligne.
 

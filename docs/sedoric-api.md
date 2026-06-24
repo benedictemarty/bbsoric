@@ -246,9 +246,23 @@ persisté** dans la `.dsk` — entrée catalogue + write-back, md5 modifié) :
 
 `client/sedoric.s` implémente cette recette (`OVL_TOGGLE = $04F2`,
 `XSAVEB = $DE9C`, détection « XSAVEB débute par `SEI $78` »). Pour cibler la
-1.x/2.x, mettre `OVL_TOGGLE = $0472`. **L'incertitude est levée** : reste
-l'intégration (déclenchement par `term.s` après un download + déploiement du
-terminal sous Sedoric résident).
+1.x/2.x, mettre `OVL_TOGGLE = $0472`. **L'incertitude est levée** ; l'intégration
+`term.s` → `sed_save` (après un download, taille en `XSIZE`) est déjà câblée.
+
+### Garde de présence Sedoric (sûre sans disque)
+
+`sed_save` vérifie d'abord, en **RAM page 4 toujours mappée** (avant tout
+`JSR $04F2`), la **table de saut** que Sedoric installe au boot en `$04F2`/`$04F5`
+(`4C xx 04` = `JMP $04xx`). Validé :
+
+- **Sous Sedoric** : `$04F2 = $4C`, `$04F4 = $04` → garde OK, fichier sauvé
+  (`TESTG4 BIN` écrit dans la `.dsk`).
+- **Sans disque** (terminal cassette, Atmos seul) : `$04F2 = $55` (motif RAM) →
+  garde refuse, **aucun** `JSR $04F2`, pas de plantage.
+
+Ainsi le même terminal est sûr en cassette **et** sous Sedoric ; la sauvegarde ne
+s'active que si Sedoric est réellement résident. Reste le **déploiement** du
+terminal sous Sedoric résident (booté disquette ou `CLOAD`).
 
 > Détail validation : le harnais `--type-keys` perd parfois le 1er caractère
 > d'une ligne (n° de ligne BASIC, sans incidence sur les valeurs DATA) — prévoir
