@@ -59,9 +59,13 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
   (XMODEM 6502 + stockage SD/disquette/cassette). Voir backlog G1.
   - **Écriture disquette Sedoric PROUVÉE** (24/06) dans l'émulateur : `SAVE`
     persiste sur la `.dsk` avec le flag `--disk-writeback` (cause racine du faux
-    blocage, ce n'était pas les adresses API). Reste à tracer l'entrée d'appel
-    machine du `SAVE` et faire tourner le terminal sous Sedoric résident.
-    Voir `docs/sedoric-api.md`.
+    blocage, ce n'était pas les adresses API).
+  - **Reverse du dispatch SAVE complet** (24/06) : carte des routines/variables
+    établie (`docs/sedoric-api.md`). Conclusion : le `SAVE` est entrelacé avec la
+    ROM BASIC → **pas d'entrée ML isolable triviale**. Voie retenue = mécanisme
+    Sedoric documenté d'exécution de commande (à obtenir) ; déploiement par
+    `CLOAD` sous Sedoric résident (`tap2sedoric` étant un stub). **Bloqué sur
+    doc Sedoric / validation matériel réel.**
 
 ## Sprint 4 — Connexion matérielle réelle — ⏳ en cours
 - [x] **Doc de connexion WiFiModem + LOCI** (`docs/connexion-materielle.md`) : chaîne

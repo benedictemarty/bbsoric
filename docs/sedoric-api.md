@@ -136,29 +136,63 @@ reverse-engineerée (fragile, spécifique à l'image), le terminal **injecte une
 ligne de commande Sedoric et la fait exécuter** — exactement le chemin validé du
 `SAVE` BASIC. Robuste et proche du matériel réel.
 
-### Données reverse établies (image `sedoric3.dsk`, `oric1-emu`)
+### Carte reverse établie (image `sedoric3.dsk`, `oric1-emu`)
 
-| Élément | Adresse | Source |
+Reverse par save-state au prompt + trace CPU ciblée + watchpoint mémoire
+(`memory_set_trace`, type `MEM_READ`). Le `$` n'apparaissant que dans le
+désassemblage (colonne cycle décimale), on isole les accès mémoire sans ambiguïté.
+
+| Élément | Adresse | Comment validé |
 |---|---|---|
-| **Buffer ligne de commande** | **`$0035`** | dump RAM : la ligne tapée `SAVE"…",A#…,E#…` y réside (buffer d'entrée BASIC Oric) |
-| Table de mots-clés Sedoric | ~`$CA6F` | dump RAM : `SAVE`, `FIELD`, `RSEC`, `INIT`, `INSTR`… ; accédée via pointeur `$E8/$E9` |
-| Code interpréteur (zone) | `$CA00`–`$CA6E` | trace : exécution `$CA3F` (arith. pointeur `ADC $E9`) au moment du dispatch |
+| **Buffer ligne de commande** | **`$0035`** | dump RAM : la ligne `SAVE"…",A#…,E#…` y réside (buffer d'entrée BASIC Oric) |
+| **Scanner de buffer (auto-modifiant)** | **`$00E2`–`$00ED`** | trace : l'opérande de `LDA $00E8` est l'octet `$E9/$EA`, incrémenté pour avancer ; saute les espaces (`CMP #$20`) |
+| Lecture du buffer (absolu) | `LDA $0035`, `$0039`…`$0051` | trace : lectures byte-à-byte du buffer pendant le dispatch |
+| Table de mots-clés Sedoric | ~`$CA6F` | dump RAM : `SAVE FIELD RSEC INIT INSTR…` ; matchée via pointeur `$DE/$DF`, séparateur quote `$22` |
+| Helper compare-chaîne | `$D5B5` | trace : `LDA ($DE),Y` / `CMP $24/$25` |
 | Routine de sauvegarde (cluster) | `$D33A`/`$D342`/`$D398`/`$D39E` | trace : JSR peu imbriqués juste avant l'écriture |
-| Primitive FDC write secteur | **`$D075`** | trace : commandes Type II `$A8`/`$AC` sur `$0310` |
+| **Primitive FDC write secteur** | **`$D075`** | trace : commandes Type II `$A8`/`$AC` sur `$0310` |
+| Trampolines page 4 | `$04EF`→`JMP $C4A0`, `$0474`, `$0477` | trace : sauts indirects RAM ↔ Sedoric |
 
-### Reste à déterminer (prochaine session)
+### Conclusion : le dispatch est entrelacé avec la ROM BASIC
 
-1. **Entrée exacte de l'interpréteur** : l'adresse à `JSR` après avoir posé la
-   commande (CR-terminée) en `$0035`. Pistes : (a) la doc « Sedoric à nu »
-   (entrée commande) ; (b) un watchpoint sur la **lecture** de `$0035` pendant le
-   dispatch (debugger TUI `oric1-emu`, plus chirurgical que la trace 258 Mo) ;
-   (c) l'entrée BASIC d'exécution de ligne directe que Sedoric hooke.
-2. **Convention** : terminaison de la commande (CR `$0D` ?), état mapping requis,
-   registres/zéro-page à préparer, gestion d'erreur au retour.
-3. **Déploiement** : terminal sous Sedoric résident (cf. ci-dessous).
+Point décisif du reverse : **le `SAVE` n'est PAS dispatché par une entrée Sedoric
+isolable**. Quand on tape la commande + Return, c'est la **ROM BASIC**
+(`$F6xx`–`$F8xx`, routines d'entrée ligne) qui traite la ligne **puis** appelle le
+scanner Sedoric ; `$C4A0` (cœur du prompt) n'est exécuté qu'**une fois en idle**,
+pas sur le chemin du `SAVE`. Le dispatch dépend de nombreuses variables zéro-page
+(`$A9` position/ligne-prête, `$24/$25`, `$DE/$DF`, `$E9/$EA`, `$2E`, `$0252`,
+`$02F2`…) posées par la chaîne d'entrée BASIC.
 
-> Recette de trace rapide (save-state au prompt, voir plus haut) pour itérer sans
-> rejouer le boot : `--load-state /tmp/sed.state --type-keys '…SAVE…\n'`.
+**Conséquence** : appeler `SAVE` depuis du code machine **autonome** (le terminal)
+ne se réduit pas à un `JSR <entrée>` avec la commande en `$0035`. Il faut soit
+reproduire fidèlement le contexte d'entrée BASIC (fragile, spécifique à cette
+image), soit utiliser un mécanisme documenté de Sedoric pour exécuter une commande
+depuis l'ML.
+
+### Approches recommandées (par robustesse décroissante)
+
+1. **Mécanisme documenté Sedoric** — récupérer dans la doc « Sedoric à nu » (ou le
+   manuel) l'**entrée officielle d'exécution de commande ML** (Sedoric en expose
+   une : commande en buffer + appel d'un point d'entrée stable, conçu pour ça).
+   C'est la seule voie *version-portable* et *matériel-réel*. À privilégier.
+2. **Injection clavier (type-ahead)** — déposer la commande dans le tampon clavier
+   et rendre la main au prompt Sedoric, qui l'exécute « comme tapée ». Robuste,
+   mais suppose que le terminal puisse revenir proprement au prompt.
+3. **Reproduction du contexte BASIC** — poser `$0035` + toutes les variables
+   zéro-page ci-dessus et entrer dans la chaîne BASIC. **Déconseillé** : fragile,
+   non portable, à revalider à chaque version Sedoric.
+
+> Recette de trace rapide (save-state au prompt) pour itérer :
+> `--load-state sed.state --type-keys '…SAVE…\n' --trace t.log --trace-max 4000000`
+> puis grep des accès `$0035` (lecture buffer) et `$D075` (write FDC).
+
+### Déploiement validé sans repackaging disque
+
+Le terminal `client/term.s` est une **cassette** ; or `tap2sedoric` (outil
+`oric1-emu`) est un **stub non implémenté** → pas de fabrication directe de `.dsk`.
+Voie de déploiement **réaliste et testable** : booter Sedoric, puis **`CLOAD` le
+terminal depuis la cassette** — Sedoric **reste résident**, le terminal tourne
+avec l'API disque disponible. (Validé conceptuellement : Sedoric résident + tape.)
 
 ## Le mur du déploiement
 

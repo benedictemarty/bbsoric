@@ -3,20 +3,20 @@
 ;  Concatene a term.s. Prerequis  - Sedoric RESIDENT (Oric boote sur disquette
 ;  Sedoric, puis le terminal est charge en RAM).
 ;
-;  API (cf. docs/sedoric-api.md, desassemblage "Sedoric 3.0 a nu")  -
-;    $FF76 XDEFSA  defauts de sauvegarde (A -> VSALO0)
-;    $FF7C XSAVEB  sauve selon BUFNOM, DESALO, FISALO, EXSALO
-;    BUFNOM $C029 (9 nom + 3 ext)  DESALO $C052 (debut)  FISALO $C054 (fin)
+;  ATTENTION (24/06/2026) - approche par vecteurs $FF7x SUPERSEDED. Le reverse
+;  (cf. docs/sedoric-api.md) a etabli :
+;    - l'ecriture disquette est PROUVEE de bout en bout (SAVE Sedoric V3.0 ->
+;      .dsk persistee) ; le faux blocage etait le flag emulateur --disk-writeback.
+;    - les vecteurs $FF73.. du PDF ne sont PAS exposes par microdis.rom (page $FF
+;      vide) -> le code XSAVEB ci-dessous ne s'execute jamais (garde de detection).
+;    - le dispatch du SAVE est ENTRELACE avec la ROM BASIC ($F6xx-$F8xx) + de
+;      nombreuses variables zero-page ; il n'existe pas d'entree ML isolable
+;      triviale. Voie retenue : injection de commande via un mecanisme Sedoric
+;      documente (a obtenir) - cf. docs/sedoric-api.md "Approches recommandees".
 ;
-;  Detection  - si le vecteur XSAVEB ($FF7C) ne contient pas JMP $DE.. , Sedoric
-;  est absent -> on ne fait rien (le fichier reste en RAM $4000).
-;
-;  Statut (24/06/2026)  - l'ecriture disquette est PROUVEE de bout en bout dans
-;  l'emulateur (SAVE Sedoric V3.0 -> .dsk persistee, cf. docs/sedoric-api.md).
-;  Le faux blocage etait le flag emulateur --disk-writeback, PAS les adresses.
-;  Les vecteurs $FF73.. du PDF ne sont PAS exposes tels quels par microdis.rom :
-;  l'entree d'appel machine reelle reste a tracer a partir du SAVE BASIC valide.
-;  Ce code (vecteurs PDF) n'est donc PAS encore l'appel correct -> a recaler.
+;  Le code ci-dessous est conserve SEULEMENT comme garde no-op sure (detection
+;  $FF7C == 4C, fausse sur Microdisc -> ne fait rien, fichier reste en RAM $4000).
+;  Il sera remplace par la routine d'injection une fois l'entree ML confirmee.
 ; ---------------------------------------------------------------------------
 
 XDEFSA = $FF76

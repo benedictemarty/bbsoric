@@ -22,6 +22,27 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 - **`docs/backup.md`** : procédure complète (cible, mécanisme, restauration,
   note `DynamicUser`, hors-site).
 
+### Investigué (Sedoric — reverse complet du dispatch SAVE)
+- **Carte reverse établie** (save-state au prompt + trace CPU + watchpoint
+  `memory_set_trace`) : buffer commande **`$0035`**, **scanner auto-modifiant
+  `$00E2`–`$00ED`** (opérande de `LDA $00E8` avancée via `$E9/$EA`), table de
+  mots-clés **`$CA6F`** (match via `$DE/$DF`, séparateur `$22`), helper compare
+  `$D5B5`, cluster save `$D33x`–`$D39x`, primitive FDC `$D075`, trampolines
+  page 4 (`$04EF`→`$C4A0`).
+- **Conclusion décisive** : le `SAVE` est **dispatché par la ROM BASIC**
+  (`$F6xx`–`$F8xx`) puis le scanner Sedoric — `$C4A0` n'est exécuté qu'une fois
+  en idle, pas sur le chemin du SAVE. Le dispatch dépend de nombreuses variables
+  zéro-page → **pas d'entrée ML isolable triviale** ; appeler `SAVE` depuis du
+  code autonome n'est pas un simple `JSR`.
+- **Voie retenue** : mécanisme **documenté** d'exécution de commande Sedoric
+  depuis l'ML (à obtenir via « Sedoric à nu »/manuel) — seule voie portable
+  matériel réel ; alternative : injection clavier (type-ahead).
+- **Déploiement** : `tap2sedoric` (oric1-emu) est un **stub** → pas de `.dsk`
+  directe ; voie réaliste = **`CLOAD` du terminal sous Sedoric résident**.
+- **`client/sedoric.s`** : code par vecteurs `$FF7x` marqué **superseded**
+  (garde no-op sûre conservée). **`docs/sedoric-api.md`** : carte + approches
+  recommandées + déploiement.
+
 ### Investigué (Stockage Microdisc/Sedoric — écriture disquette PROUVÉE)
 - **Cause racine du « blocage » identifiée** : ce n'était ni les adresses de
   l'API Sedoric ni le mapping ROMDIS, mais le flag émulateur **`--disk-writeback`**
