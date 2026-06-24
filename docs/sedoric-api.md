@@ -214,26 +214,46 @@ variables système (`$C04D` VSALO0, `$C051` FTYPE, `$C052` DESALO, `$C054`
 FISALO…) sont aux mêmes adresses. La séquence de `client/sedoric.s` (poser les
 variables + `JSR $FF7C`) est donc **correcte**.
 
-### ⚠️ La bascule ROM↔overlay est SPÉCIFIQUE À LA VERSION
+### Bascule overlay — spécifique à la version (V3.0 résolue)
 
-Le seul écart : pour rendre la table `$FF` visible, il faut basculer sur la RAM
-overlay. Le PDF (V1.0) documente **`JSR $0472`** (routine page 4). Sur V3.0 :
+Pour rendre les routines `$C000-$FFFF` visibles, il faut basculer sur la RAM
+overlay. **L'adresse de la bascule change selon la version** :
 
-- **`$0472` n'est PAS cette bascule** (page 4 V3.0 dynamique/auto-modifiante ;
-  octet lu `$77` = opcode illégal). `JSR $0472` **plante** (écran noir).
-- L'overlay y est mappé par une routine FDC bas-niveau en **`$D0B6`**
-  (`$0314 = $84` : romdis=1, diskrom=0), pas par une bascule page-4 propre.
-- Écrire `$0314` brut depuis l'ML **plante aussi** : XSAVEB exige le contexte
-  runtime Sedoric (drive courant, buffers) que seule la bascule officielle pose.
+| Version | Bascule overlay (toggle) | Source |
+|---|---|---|
+| Sedoric 1.0/2.x | `JSR $0472` | PDF « Sedoric à nu » |
+| **Sedoric 3.0** | **`JSR $04F2`** | manuel désassemblé SEDORIC 3.0, ANNEXE 15 |
 
-### État de `client/sedoric.s`
+Sur V3.0, `$0472` n'est pas la bascule (page 4 réorganisée par la gestion de
+**banques** de la 3.0) → `JSR $0472` **plante**. Le manuel 3.0 documente
+explicitement : « en langage machine, faire un `JSR $04F2` pour accéder à la RAM
+overlay, appeler les sous-programmes voulus, et terminer par un autre `JSR $04F2`
+pour revenir ». L'écriture `$0314` brute plante (XSAVEB exige le contexte runtime).
 
-Le code suit l'**API documentée** (`JSR $0472` → variables → `JSR $FF7C` →
-`JSR $0472`), **correcte pour Sedoric 1.x/2.x**. Le symbole `OVL_TOGGLE` isole la
-bascule : pour cibler une autre version (V3.0/V4.0), il faut y mettre l'adresse de
-**sa** bascule overlay (à obtenir via le désassemblage de la version cible, non
-fourni par ce PDF). Validation end-to-end : disquette Sedoric 1.x **ou** matériel
-réel de la version visée.
+### ✅ Recette V3.0 VALIDÉE end-to-end (24/06/2026)
+
+Testée dans l'émulateur sur `sedoric3.dsk` (un fichier `TESTML  BIN` **écrit et
+persisté** dans la `.dsk` — entrée catalogue + write-back, md5 modifié) :
+
+```asm
+        jsr $04F2          ; ROM -> RAM overlay (toggle V3.0)
+        ; poser BUFNOM ($C029), VSALO0 ($C04D=#00), FTYPE ($C051=#40),
+        ;   DESALO ($C052=$4000), FISALO ($C054=fin), LGSALO ($C04F=taille),
+        ;   EXSALO ($C056=0), VSALO1 ($C04E=0)
+        jsr $DE9C          ; XSAVEB (entree directe = cible du vecteur $FF7C)
+        jsr $04F2          ; RAM overlay -> ROM
+```
+
+`client/sedoric.s` implémente cette recette (`OVL_TOGGLE = $04F2`,
+`XSAVEB = $DE9C`, détection « XSAVEB débute par `SEI $78` »). Pour cibler la
+1.x/2.x, mettre `OVL_TOGGLE = $0472`. **L'incertitude est levée** : reste
+l'intégration (déclenchement par `term.s` après un download + déploiement du
+terminal sous Sedoric résident).
+
+> Détail validation : le harnais `--type-keys` perd parfois le 1er caractère
+> d'une ligne (n° de ligne BASIC, sans incidence sur les valeurs DATA) — prévoir
+> un `\n` de purge en tête. Confirmé d'abord par l'exemple « HELLO ANDRE » de
+> l'ANNEXE 15 (`JSR $04F2`/`JSR $D637`/`JSR $04F2`), puis par XSAVEB.
 
 ## Le mur du déploiement
 

@@ -76,11 +76,12 @@
   buffer RAM `$4000` — validés émulateur (`docs/img/xmodem-download.png`,
   `xmodem-upload.png`). **Reste** : **stockage** carte SD (LOCI)/Microdisc/cassette
   (buffer en RAM pour l'instant).*
-  - **Voie B (Sedoric) — reverse 24/06** : écriture disquette PROUVÉE en
-    émulateur (flag `--disk-writeback`) ; dispatch SAVE cartographié
-    (`docs/sedoric-api.md`) mais entrelacé avec la ROM BASIC → pas d'entrée ML
-    triviale. **Bloqué** sur l'entrée ML documentée Sedoric / validation matériel
-    réel. Déploiement envisagé : `CLOAD` sous Sedoric résident.
+  - **Voie B (Sedoric) — ✅ sauvegarde ML VALIDÉE sur V3.0 (24/06)** : écriture
+    disquette prouvée (flag `--disk-writeback`) ; recette ML validée end-to-end
+    (`JSR $04F2` overlay → variables → `JSR $DE9C` XSAVEB → `JSR $04F2`), un
+    fichier écrit/persisté dans la `.dsk`. `client/sedoric.s` finalisée. **Reste**
+    l'intégration `term.s` (déclencher après un download) + déploiement du
+    terminal sous Sedoric résident. Voir `docs/sedoric-api.md`.
 
 ## Definition of Done (DoD)
 - Code versionné, `CHANGELOG.md` et `ROADMAP.md` mis à jour.

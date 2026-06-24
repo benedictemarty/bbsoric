@@ -4,14 +4,15 @@
 ;  Sedoric, le terminal tourne sous Sedoric).
 ;  (NB xa scinde les commentaires sur le deux-points -> on n'en met pas.)
 ;
-;  METHODE (API documentee "Sedoric a nu", F.BROCHE/D.SEBBAG)
-;    Les vecteurs API vivent dans la RAM OVERLAY ($C000-$FFFF), MASQUEE par
-;    defaut (ROM Microdisc / BASIC). Il faut donc
-;      1. JSR $0472   basculer ROM -> RAM overlay (la table $FF.. devient visible)
+;  METHODE (API documentee "Sedoric a nu" + manuel desassemble SEDORIC 3.0)
+;    Les routines API vivent dans la RAM OVERLAY ($C000-$FFFF), MASQUEE par
+;    defaut (ROM Microdisc / BASIC). Recette langage machine (ANNEXE 15 du
+;    manuel SEDORIC 3.0) -
+;      1. JSR $04F2   basculer ROM -> RAM overlay (toggle)
 ;      2. poser les variables systeme (en RAM overlay $C0xx)
-;      3. JSR XSAVEB ($FF7C)   sauver
-;      4. JSR $0472   rebasculer RAM overlay -> ROM
-;    $0472 est une bascule (toggle) ; un 2e JSR $0472 revient sur la ROM.
+;      3. JSR XSAVEB ($DE9C)   sauver (entree directe = cible du vecteur $FF7C)
+;      4. JSR $04F2   rebasculer RAM overlay -> ROM
+;    $04F2 est la bascule overlay de SEDORIC 3.0 (V1.0/2.x = $0472).
 ;
 ;  Variables RAM overlay (cf. desassemblage XSAVEB $DE9C)
 ;    BUFNOM $C029 (9 nom + 3 ext, espaces), drive en $C028
@@ -23,15 +24,15 @@
 ;    FISALO $C054/$C055   adresse fin
 ;    EXSALO $C056/$C057   adresse d'execution (0 non executable)
 ;
-;  PORTEE / VALIDATION - recette de l'API documentee (Sedoric 1.x/2.x). L'image
-;  de test de l'emulateur est SEDORIC V3.0 dont les adresses de page 4 (dont la
-;  bascule overlay) DIFFERENT (page 4 dynamique/auto-modifiante). La validation
-;  end-to-end requiert une disquette Sedoric 1.x ou du materiel reel. Voir
-;  docs/sedoric-api.md (section "Ecart V1.0 doc / V3.0 image").
+;  VALIDATION - recette VALIDEE end-to-end dans l'emulateur sur SEDORIC V3.0 :
+;  un fichier ("TESTML  BIN") ecrit et persiste dans la .dsk (entree catalogue +
+;  write-back). XSAVEB ($DE9C) et la table $FF sont identiques V1.0/V3.0 ; seule
+;  la bascule overlay change ($04F2 en V3.0). Voir docs/sedoric-api.md.
+;  (NB xa scinde les commentaires sur le deux-points -> on n'en met pas.)
 ; ---------------------------------------------------------------------------
 
-OVL_TOGGLE = $0472          ; bascule ROM <-> RAM overlay (toggle)
-XSAVEB     = $FF7C          ; JMP $DE9C, sauve selon BUFNOM/VSALO0/DESALO/FISALO
+OVL_TOGGLE = $04F2          ; bascule ROM <-> RAM overlay SEDORIC 3.0 (toggle)
+XSAVEB     = $DE9C          ; entree directe XSAVEB (sauve selon BUFNOM/VSALO0/...)
 B_DRIVE    = $C028
 B_BUFNOM   = $C029
 V_VSALO0   = $C04D
@@ -47,9 +48,9 @@ V_EXSALO   = $C056
 ;  XSIZE (mot, zero-page) = taille recue ; defini par term.s/xmodem.s.
 ; ---------------------------------------------------------------------------
 sed_save:
-        jsr OVL_TOGGLE           ; ROM -> RAM overlay (table $FF visible)
-        lda XSAVEB               ; Sedoric resident ? (vecteur = JMP ..)
-        cmp #$4C
+        jsr OVL_TOGGLE           ; ROM -> RAM overlay (XSAVEB visible)
+        lda XSAVEB               ; Sedoric resident ? (XSAVEB debute par SEI $78)
+        cmp #$78
         beq sed_go
         jsr OVL_TOGGLE           ; pas Sedoric -> rebascule et abandonne
         rts

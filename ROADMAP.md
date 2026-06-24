@@ -62,12 +62,12 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
     blocage, ce n'était pas les adresses API).
   - **Reverse du dispatch SAVE complet** (24/06) : carte des routines/variables
     établie (`docs/sedoric-api.md`).
-  - **API documentée exploitée** (« Sedoric à nu ») : `sed_save` réécrite sur la
-    recette officielle (`JSR $0472` overlay → variables → `JSR $FF7C` XSAVEB).
-    **Vecteurs publics confirmés identiques V1.0/V3.0** (`$FF7C`→`$DE9C`). Reste
-    un écart **version-spécifique** : la bascule overlay `$0472` (V1.0) plante sur
-    l'image V3.0 (page 4 différente). Code correct pour Sedoric 1.x/2.x ; cibler
-    V3.0 = adresse de sa bascule (désassemblage cible) ou validation matériel réel.
+  - **✅ Sauvegarde Sedoric VALIDÉE end-to-end sur SEDORIC V3.0** : un fichier est
+    écrit et persisté dans la `.dsk` depuis le langage machine. Recette (manuel
+    désassemblé V3.0) : `JSR $04F2` (bascule overlay V3.0) → variables système →
+    `JSR $DE9C` (XSAVEB) → `JSR $04F2`. Vecteurs publics confirmés identiques
+    V1.0/V3.0. `client/sedoric.s` finalisée (assemble). **Reste** : déclenchement
+    par `term.s` après un download + déploiement du terminal sous Sedoric résident.
 
 ## Sprint 4 — Connexion matérielle réelle — ⏳ en cours
 - [x] **Doc de connexion WiFiModem + LOCI** (`docs/connexion-materielle.md`) : chaîne

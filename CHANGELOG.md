@@ -6,23 +6,26 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
-### Modifié (Sedoric — sed_save réécrite sur l'API documentée + vecteurs confirmés)
-- **Doc « Sedoric à nu » (`sednb3_0.pdf`) exploitée** : la recette ML est
-  `JSR $0472` (ROM→overlay) → poser BUFNOM/VSALO0/FTYPE/DESALO/FISALO/LGSALO/
-  EXSALO → `JSR $FF7C` (XSAVEB) → `JSR $0472`.
-- **Vecteurs publics CONFIRMÉS identiques V1.0/V3.0** : dump de la vue CPU
-  pendant un SAVE → `$FF7C = JMP $DE9C` (XSAVEB), `$FF76 = JMP $DE28` (XDEFSA),
-  exactement comme le PDF. La table `$FF43-$FFC6` est l'interface stable.
-- **`client/sedoric.s` réécrite** : séquence overlay + variables système aux
-  adresses documentées (`$C04D` VSALO0, `$C051` FTYPE, `$C052` DESALO, `$C054`
-  FISALO…), `OVL_TOGGLE` isolé. Assemble (`build.sh` vert).
-- **Écart V1.0/V3.0 identifié** : la **bascule overlay** est version-spécifique.
-  `$0472` (doc V1.0) plante sur V3.0 (page 4 différente, dynamique) ; l'overlay
-  V3.0 est mappé en `$D0B6` (`$0314=$84`). Le brut `$0314` plante aussi (XSAVEB
-  exige le contexte runtime). Code correct pour Sedoric 1.x/2.x ; cibler V3.0
-  demande l'adresse de sa bascule (désassemblage version cible). Validation
-  end-to-end = disquette Sedoric 1.x ou matériel réel. Voir `docs/sedoric-api.md`.
-- *Détail* : xa65 scinde les commentaires sur « : » → commentaires sans deux-points.
+### ✅ Sedoric — sauvegarde disquette VALIDÉE end-to-end sur SEDORIC V3.0
+- **Sauvegarde Sedoric prouvée depuis le langage machine** : un fichier
+  (`TESTML  BIN`) est **écrit et persisté** dans `sedoric3.dsk` (entrée catalogue
+  + write-back, md5 modifié) par la séquence ML, testée dans l'émulateur.
+- **Recette V3.0** (manuel désassemblé SEDORIC 3.0, ANNEXE 15) — `JSR $04F2`
+  (bascule ROM→overlay) → poser BUFNOM/VSALO0/FTYPE/DESALO/FISALO/LGSALO/EXSALO
+  → `JSR $DE9C` (XSAVEB) → `JSR $04F2`. La bascule overlay **change selon la
+  version** : `$04F2` en V3.0, `$0472` en 1.x/2.x. Confirmé d'abord par l'exemple
+  « HELLO ANDRE » de l'ANNEXE 15, puis par XSAVEB.
+- **Vecteurs publics confirmés identiques V1.0/V3.0** (dump vue CPU pendant SAVE) :
+  `$FF7C = JMP $DE9C` (XSAVEB), `$FF76 = JMP $DE28` (XDEFSA). `$DE9C` débute par
+  `SEI $78` (sert de détection « Sedoric résident »).
+- **`client/sedoric.s` finalisée** : `OVL_TOGGLE = $04F2`, `XSAVEB = $DE9C`,
+  variables aux adresses documentées (`$C04D`/`$C051`/`$C052`/`$C054`…), détection
+  `$78`. Assemble (`build.sh` vert). Deux PDF (« Sedoric à nu » V1.0 + manuel
+  désassemblé V3.0) fournis par l'utilisateur exploités.
+- *Reste* : intégration (déclenchement par `term.s` après un download) +
+  déploiement du terminal sous Sedoric résident. Voir `docs/sedoric-api.md`.
+- *Détail outillage* : xa65 scinde les commentaires sur « : » (commentaires sans
+  deux-points) ; `--type-keys` perd parfois le 1er caractère d'une ligne.
 
 ### Ajouté (Contenu — sous-menu Fichiers : download/upload accessibles)
 - **`content/site.json`** : entrée **« Fichiers »** (touche `5`) au menu principal
