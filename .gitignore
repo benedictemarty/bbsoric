@@ -32,3 +32,4 @@ deploy/profiles/**/*.conf
 # Binaires (à la racine uniquement — ne pas ignorer le dossier cmd/forge/)
 /bbsd
 /forge
+client/term-boot.dsk

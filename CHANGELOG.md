@@ -30,7 +30,14 @@ versionnage [SemVer](https://semver.org/lang/fr/).
   sous Sedoric.
 - **Intégration déjà câblée** : `term.s` (`handle_rx`) appelle `sed_save` après un
   download, `XSIZE` posé par le récepteur XMODEM.
-- *Reste* : déploiement du terminal sous Sedoric résident. Voir `docs/sedoric-api.md`.
+- **✅ Disquette bootable du terminal** : `client/build-disk.sh` (reproductible)
+  produit `term-boot.dsk` = disquette Sedoric master + **TERM.COM** (terminal
+  injecté en RAM par fast-load tape puis `SAVE` Sedoric). Le terminal **tourne**
+  depuis la disquette (`LOAD"TERM":CALL#1000` → menu modem affiché, ~2,6 M
+  instructions exécutées). Le `BREAK` initial venait de l'option `,J` (résolu :
+  `LOAD`+`CALL`). L'ACIA `$03A0` (LOCI) est un choix runtime (menu) pour cohabiter
+  avec le Microdisc — pas de variante de build. Auto-démarrage hands-free =
+  raffinement (remplacer le programme de boot du master). Voir `docs/sedoric-api.md`.
 - *Détail outillage* : xa65 scinde les commentaires sur « : » (commentaires sans
   deux-points) ; `--type-keys` perd parfois le 1er caractère d'une ligne.
 

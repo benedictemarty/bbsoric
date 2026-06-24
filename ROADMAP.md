@@ -66,8 +66,13 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
     écrit et persisté dans la `.dsk` depuis le langage machine. Recette (manuel
     désassemblé V3.0) : `JSR $04F2` (bascule overlay V3.0) → variables système →
     `JSR $DE9C` (XSAVEB) → `JSR $04F2`. Vecteurs publics confirmés identiques
-    V1.0/V3.0. `client/sedoric.s` finalisée (assemble). **Reste** : déclenchement
-    par `term.s` après un download + déploiement du terminal sous Sedoric résident.
+    V1.0/V3.0. `client/sedoric.s` finalisée (assemble). Déclenchement par `term.s`
+    déjà câblé.
+  - **✅ Disquette bootable du terminal** : `client/build-disk.sh` produit
+    `term-boot.dsk` (Sedoric master + TERM.COM) ; le terminal **tourne** depuis la
+    disquette (`LOAD"TERM":CALL#1000`, menu modem affiché). ACIA `$03A0` (LOCI) au
+    runtime pour cohabiter avec le Microdisc. **Reste** : auto-démarrage hands-free
+    (remplacer le programme de boot du master) + **test sur Oric réel**.
 
 ## Sprint 4 — Connexion matérielle réelle — ⏳ en cours
 - [x] **Doc de connexion WiFiModem + LOCI** (`docs/connexion-materielle.md`) : chaîne

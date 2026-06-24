@@ -269,6 +269,37 @@ terminal sous Sedoric résident (booté disquette ou `CLOAD`).
 > un `\n` de purge en tête. Confirmé d'abord par l'exemple « HELLO ANDRE » de
 > l'ANNEXE 15 (`JSR $04F2`/`JSR $D637`/`JSR $04F2`), puis par XSAVEB.
 
+## ✅ Disquette bootable du terminal (déploiement voie B)
+
+`client/build-disk.sh` fabrique une disquette Sedoric contenant le terminal, de
+façon **reproductible** (validé dans l'émulateur) :
+
+1. assemble `term.bin` (`build.sh`) ;
+2. fabrique une cassette **non-autorun** du terminal (octet autorun `$C7` → `$00`) ;
+3. pilote `oric1-emu` : boot Sedoric (master) + **fast-load** de la cassette — le
+   terminal est injecté en RAM `$1000` à ~3M cycles (phase 1 du fast-load, *sans
+   CLOAD*) et **survit au boot Sedoric** ; au prompt, `SAVE"TERM",A#1000,E#1E26`
+   écrit **TERM.COM** sur une copie du master ;
+4. `--disk-writeback` persiste → `client/term-boot.dsk`.
+
+**Lancement du terminal** depuis la disquette (validé — le menu modem s'affiche) :
+
+```
+LOAD"TERM":CALL#1000
+```
+
+> Au menu « TYPE DE MODEM », choisir **LOCI `$03A0`** si un Microdisc est présent :
+> l'ACIA `$031C` chevauche la plage I/O Microdisc `$0310-$031F`. Le terminal gère
+> les deux adresses au runtime (`ACIAPTR`), aucune variante de build n'est requise.
+
+**Notes de mise au point** :
+- Le terminal **tourne** sous Sedoric (≈2,6 M instructions exécutées, menu affiché) ;
+  le `BREAK ON BYTE #1000` initial venait de l'option Sedoric `,J` (`LOAD"TERM",J`),
+  **pas** d'un conflit runtime → utiliser `LOAD` + `CALL`.
+- Auto-démarrage *hands-free* : `sedoric3.dsk` est un master/outils avec son propre
+  menu de boot ; un lancement 100 % automatique demanderait de remplacer son
+  programme de boot (raffinement à venir). En l'état, une commande suffit.
+
 ## Le mur du déploiement
 
 Le terminal `client/term.s` est aujourd'hui une **cassette autorun** (`$1000`) sur
