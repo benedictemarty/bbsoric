@@ -296,9 +296,15 @@ LOAD"TERM":CALL#1000
 - Le terminal **tourne** sous Sedoric (≈2,6 M instructions exécutées, menu affiché) ;
   le `BREAK ON BYTE #1000` initial venait de l'option Sedoric `,J` (`LOAD"TERM",J`),
   **pas** d'un conflit runtime → utiliser `LOAD` + `CALL`.
-- Auto-démarrage *hands-free* : `sedoric3.dsk` est un master/outils avec son propre
-  menu de boot ; un lancement 100 % automatique demanderait de remplacer son
-  programme de boot (raffinement à venir). En l'état, une commande suffit.
+- Auto-démarrage *hands-free* : mécanisme identifié — au boot, Sedoric cherche
+  **`BOOTUP.COM`** et exécute `!BOOTUP` (manuel SEDORIC 3.0, désassemblage
+  `; found BOOTUPCOM ? executes !BOOTUP`). **Mais** sur `sedoric3.dsk` (master/
+  outils) le menu « WELCOME TO SEDORIC DOS V3.0 » n'est **pas** un fichier
+  directory remplaçable : `DESTROY"BOOTUP.COM"` répond *FILE NOT FOUND* → le menu
+  est **intégré au système** du master. Un vrai hands-free demande donc soit une
+  **disquette Sedoric minimale** (créée par `INIT`, sans menu master, où poser
+  `BOOTUP.COM`), soit de modifier le système — chantier d'outillage à part. En
+  l'état, **une commande** lance le terminal (`LOAD"TERM":CALL#1000`).
 
 ## Le mur du déploiement
 
