@@ -1,71 +1,100 @@
 ; ---------------------------------------------------------------------------
 ;  sedoric.s - sauvegarde du buffer recu sur disquette via l'API Sedoric.
-;  Concatene a term.s. Prerequis  - Sedoric RESIDENT (Oric boote sur disquette
-;  Sedoric, puis le terminal est charge en RAM).
+;  Concatene a term.s. Prerequis - Sedoric RESIDENT (Oric boote sur disquette
+;  Sedoric, le terminal tourne sous Sedoric).
+;  (NB xa scinde les commentaires sur le deux-points -> on n'en met pas.)
 ;
-;  ATTENTION (24/06/2026) - approche par vecteurs $FF7x SUPERSEDED. Le reverse
-;  (cf. docs/sedoric-api.md) a etabli :
-;    - l'ecriture disquette est PROUVEE de bout en bout (SAVE Sedoric V3.0 ->
-;      .dsk persistee) ; le faux blocage etait le flag emulateur --disk-writeback.
-;    - les vecteurs $FF73.. du PDF ne sont PAS exposes par microdis.rom (page $FF
-;      vide) -> le code XSAVEB ci-dessous ne s'execute jamais (garde de detection).
-;    - le dispatch du SAVE est ENTRELACE avec la ROM BASIC ($F6xx-$F8xx) + de
-;      nombreuses variables zero-page ; il n'existe pas d'entree ML isolable
-;      triviale. Voie retenue : injection de commande via un mecanisme Sedoric
-;      documente (a obtenir) - cf. docs/sedoric-api.md "Approches recommandees".
+;  METHODE (API documentee "Sedoric a nu", F.BROCHE/D.SEBBAG)
+;    Les vecteurs API vivent dans la RAM OVERLAY ($C000-$FFFF), MASQUEE par
+;    defaut (ROM Microdisc / BASIC). Il faut donc
+;      1. JSR $0472   basculer ROM -> RAM overlay (la table $FF.. devient visible)
+;      2. poser les variables systeme (en RAM overlay $C0xx)
+;      3. JSR XSAVEB ($FF7C)   sauver
+;      4. JSR $0472   rebasculer RAM overlay -> ROM
+;    $0472 est une bascule (toggle) ; un 2e JSR $0472 revient sur la ROM.
 ;
-;  Le code ci-dessous est conserve SEULEMENT comme garde no-op sure (detection
-;  $FF7C == 4C, fausse sur Microdisc -> ne fait rien, fichier reste en RAM $4000).
-;  Il sera remplace par la routine d'injection une fois l'entree ML confirmee.
+;  Variables RAM overlay (cf. desassemblage XSAVEB $DE9C)
+;    BUFNOM $C029 (9 nom + 3 ext, espaces), drive en $C028
+;    VSALO0 $C04D   type de SAVE (#00 SAVEO ecrase, #80 SAVE, #C0 SAVEU .BAK)
+;    VSALO1 $C04E
+;    LGSALO $C04F/$C050   longueur (FISALO - DESALO)
+;    FTYPE  $C051   type fichier (#40 bloc de donnees)
+;    DESALO $C052/$C053   adresse debut (source du SAVE)
+;    FISALO $C054/$C055   adresse fin
+;    EXSALO $C056/$C057   adresse d'execution (0 non executable)
+;
+;  PORTEE / VALIDATION - recette de l'API documentee (Sedoric 1.x/2.x). L'image
+;  de test de l'emulateur est SEDORIC V3.0 dont les adresses de page 4 (dont la
+;  bascule overlay) DIFFERENT (page 4 dynamique/auto-modifiante). La validation
+;  end-to-end requiert une disquette Sedoric 1.x ou du materiel reel. Voir
+;  docs/sedoric-api.md (section "Ecart V1.0 doc / V3.0 image").
 ; ---------------------------------------------------------------------------
 
-XDEFSA = $FF76
-XSAVEB = $FF7C
-B_BUFNOM = $C029
-B_DESALO = $C052
-B_FISALO = $C054
+OVL_TOGGLE = $0472          ; bascule ROM <-> RAM overlay (toggle)
+XSAVEB     = $FF7C          ; JMP $DE9C, sauve selon BUFNOM/VSALO0/DESALO/FISALO
+B_DRIVE    = $C028
+B_BUFNOM   = $C029
+V_VSALO0   = $C04D
+V_VSALO1   = $C04E
+V_LGSALO   = $C04F
+V_FTYPE    = $C051
+V_DESALO   = $C052
+V_FISALO   = $C054
+V_EXSALO   = $C056
 
 ; ---------------------------------------------------------------------------
 ;  sed_save - sauve XSIZE octets de $4000 en fichier "BBSFILE.BIN".
+;  XSIZE (mot, zero-page) = taille recue ; defini par term.s/xmodem.s.
 ; ---------------------------------------------------------------------------
 sed_save:
-        lda XSAVEB               ; Sedoric resident ? (vecteur = JMP $DE9C)
+        jsr OVL_TOGGLE           ; ROM -> RAM overlay (table $FF visible)
+        lda XSAVEB               ; Sedoric resident ? (vecteur = JMP ..)
         cmp #$4C
-        bne sed_ret
-        lda XSAVEB+2
-        cmp #$DE
-        bne sed_ret
-
-        cli                      ; autorise les IRQ (FDC Microdisc)
-        lda #$00                 ; type SAVEO (ecrase si existe)
-        jsr XDEFSA               ; defauts (A -> VSALO0, FTYPE, EXSALO=0)
-        ldx #0
+        beq sed_go
+        jsr OVL_TOGGLE           ; pas Sedoric -> rebascule et abandonne
+        rts
+sed_go:
+        ; --- nom de fichier dans BUFNOM ---
+        ldx #11
 sed_nm:
         lda sed_fname,x
         sta B_BUFNOM,x
-        inx
-        cpx #12                  ; 9 nom + 3 ext
-        bne sed_nm
-        lda #$00                 ; DESALO = $4000
-        sta B_DESALO
+        dex
+        bpl sed_nm
+        ; --- type et flags ---
+        lda #$00                 ; SAVEO, ecrase sans creer de .BAK
+        sta V_VSALO0
+        sta V_VSALO1
+        sta V_EXSALO             ; EXSALO = 0000 (non executable)
+        sta V_EXSALO+1
+        lda #$40                 ; FTYPE = bloc de donnees
+        sta V_FTYPE
+        ; --- DESALO = $4000 ---
+        lda #$00
+        sta V_DESALO
         lda #$40
-        sta B_DESALO+1
-        clc                      ; FISALO = $4000 + XSIZE
+        sta V_DESALO+1
+        ; --- FISALO = $4000 + XSIZE ---
+        clc
         lda #$00
         adc XSIZE
-        sta B_FISALO
+        sta V_FISALO
         lda #$40
         adc XSIZE+1
-        sta B_FISALO+1
-        jsr XSAVEB               ; sauve le fichier
-        sei                      ; le terminal rebascule en IRQ off (clavier)
+        sta V_FISALO+1
+        ; --- LGSALO = XSIZE ---
+        lda XSIZE
+        sta V_LGSALO
+        lda XSIZE+1
+        sta V_LGSALO+1
+        ; --- sauvegarde ---
+        jsr XSAVEB               ; XSAVEB ecrit le fichier sur disquette
+        jsr OVL_TOGGLE           ; RAM overlay -> ROM
         lda #<msg_saved
         sta STRPTR
         lda #>msg_saved
         sta STRPTR+1
         jmp print_string         ; fait rts
-sed_ret:
-        rts
 
 sed_fname:
         .byt "BBSFILE  BIN"      ; 9 (BBSFILE + 2 esp) + 3 (BIN)

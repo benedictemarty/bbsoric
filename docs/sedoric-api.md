@@ -194,6 +194,47 @@ Voie de déploiement **réaliste et testable** : booter Sedoric, puis **`CLOAD` 
 terminal depuis la cassette** — Sedoric **reste résident**, le terminal tourne
 avec l'API disque disponible. (Validé conceptuellement : Sedoric résident + tape.)
 
+## API documentée confirmée + écart V1.0 doc / V3.0 image (24/06/2026)
+
+La doc **« Sedoric à nu »** (`sednb3_0.pdf`) donne l'API officielle. Vérifications
+faites contre l'image **sedoric3.dsk (SEDORIC V3.0)** de l'émulateur.
+
+### ✅ Table de vecteurs publique — IDENTIQUE V1.0 et V3.0
+
+En dumpant la **vue CPU `$C000-$FFFF` pendant un SAVE** (overlay mappé), on lit
+sur V3.0 exactement les vecteurs du PDF (qui décrit SEDORIC 1.0) :
+
+| Vecteur | Contenu (V3.0 mesuré) | = PDF V1.0 |
+|---|---|---|
+| `$FF7C` XSAVEB | `4C 9C DE` → JMP `$DE9C` | ✅ identique |
+| `$FF76` XDEFSA | `4C 28 DE` → JMP `$DE28` | ✅ identique |
+
+→ **La table `$FF43-$FFC6` est l'interface stable** (c'est son rôle). Les
+variables système (`$C04D` VSALO0, `$C051` FTYPE, `$C052` DESALO, `$C054`
+FISALO…) sont aux mêmes adresses. La séquence de `client/sedoric.s` (poser les
+variables + `JSR $FF7C`) est donc **correcte**.
+
+### ⚠️ La bascule ROM↔overlay est SPÉCIFIQUE À LA VERSION
+
+Le seul écart : pour rendre la table `$FF` visible, il faut basculer sur la RAM
+overlay. Le PDF (V1.0) documente **`JSR $0472`** (routine page 4). Sur V3.0 :
+
+- **`$0472` n'est PAS cette bascule** (page 4 V3.0 dynamique/auto-modifiante ;
+  octet lu `$77` = opcode illégal). `JSR $0472` **plante** (écran noir).
+- L'overlay y est mappé par une routine FDC bas-niveau en **`$D0B6`**
+  (`$0314 = $84` : romdis=1, diskrom=0), pas par une bascule page-4 propre.
+- Écrire `$0314` brut depuis l'ML **plante aussi** : XSAVEB exige le contexte
+  runtime Sedoric (drive courant, buffers) que seule la bascule officielle pose.
+
+### État de `client/sedoric.s`
+
+Le code suit l'**API documentée** (`JSR $0472` → variables → `JSR $FF7C` →
+`JSR $0472`), **correcte pour Sedoric 1.x/2.x**. Le symbole `OVL_TOGGLE` isole la
+bascule : pour cibler une autre version (V3.0/V4.0), il faut y mettre l'adresse de
+**sa** bascule overlay (à obtenir via le désassemblage de la version cible, non
+fourni par ce PDF). Validation end-to-end : disquette Sedoric 1.x **ou** matériel
+réel de la version visée.
+
 ## Le mur du déploiement
 
 Le terminal `client/term.s` est aujourd'hui une **cassette autorun** (`$1000`) sur

@@ -61,11 +61,13 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
     persiste sur la `.dsk` avec le flag `--disk-writeback` (cause racine du faux
     blocage, ce n'était pas les adresses API).
   - **Reverse du dispatch SAVE complet** (24/06) : carte des routines/variables
-    établie (`docs/sedoric-api.md`). Conclusion : le `SAVE` est entrelacé avec la
-    ROM BASIC → **pas d'entrée ML isolable triviale**. Voie retenue = mécanisme
-    Sedoric documenté d'exécution de commande (à obtenir) ; déploiement par
-    `CLOAD` sous Sedoric résident (`tap2sedoric` étant un stub). **Bloqué sur
-    doc Sedoric / validation matériel réel.**
+    établie (`docs/sedoric-api.md`).
+  - **API documentée exploitée** (« Sedoric à nu ») : `sed_save` réécrite sur la
+    recette officielle (`JSR $0472` overlay → variables → `JSR $FF7C` XSAVEB).
+    **Vecteurs publics confirmés identiques V1.0/V3.0** (`$FF7C`→`$DE9C`). Reste
+    un écart **version-spécifique** : la bascule overlay `$0472` (V1.0) plante sur
+    l'image V3.0 (page 4 différente). Code correct pour Sedoric 1.x/2.x ; cibler
+    V3.0 = adresse de sa bascule (désassemblage cible) ou validation matériel réel.
 
 ## Sprint 4 — Connexion matérielle réelle — ⏳ en cours
 - [x] **Doc de connexion WiFiModem + LOCI** (`docs/connexion-materielle.md`) : chaîne

@@ -6,6 +6,24 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Modifié (Sedoric — sed_save réécrite sur l'API documentée + vecteurs confirmés)
+- **Doc « Sedoric à nu » (`sednb3_0.pdf`) exploitée** : la recette ML est
+  `JSR $0472` (ROM→overlay) → poser BUFNOM/VSALO0/FTYPE/DESALO/FISALO/LGSALO/
+  EXSALO → `JSR $FF7C` (XSAVEB) → `JSR $0472`.
+- **Vecteurs publics CONFIRMÉS identiques V1.0/V3.0** : dump de la vue CPU
+  pendant un SAVE → `$FF7C = JMP $DE9C` (XSAVEB), `$FF76 = JMP $DE28` (XDEFSA),
+  exactement comme le PDF. La table `$FF43-$FFC6` est l'interface stable.
+- **`client/sedoric.s` réécrite** : séquence overlay + variables système aux
+  adresses documentées (`$C04D` VSALO0, `$C051` FTYPE, `$C052` DESALO, `$C054`
+  FISALO…), `OVL_TOGGLE` isolé. Assemble (`build.sh` vert).
+- **Écart V1.0/V3.0 identifié** : la **bascule overlay** est version-spécifique.
+  `$0472` (doc V1.0) plante sur V3.0 (page 4 différente, dynamique) ; l'overlay
+  V3.0 est mappé en `$D0B6` (`$0314=$84`). Le brut `$0314` plante aussi (XSAVEB
+  exige le contexte runtime). Code correct pour Sedoric 1.x/2.x ; cibler V3.0
+  demande l'adresse de sa bascule (désassemblage version cible). Validation
+  end-to-end = disquette Sedoric 1.x ou matériel réel. Voir `docs/sedoric-api.md`.
+- *Détail* : xa65 scinde les commentaires sur « : » → commentaires sans deux-points.
+
 ### Ajouté (Contenu — sous-menu Fichiers : download/upload accessibles)
 - **`content/site.json`** : entrée **« Fichiers »** (touche `5`) au menu principal
   → page **`fichiers`** avec **Télécharger** (applet `download`) et **Téléverser**
