@@ -22,6 +22,25 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 - **`docs/backup.md`** : procédure complète (cible, mécanisme, restauration,
   note `DynamicUser`, hors-site).
 
+### Investigué (Stockage Microdisc/Sedoric — écriture disquette PROUVÉE)
+- **Cause racine du « blocage » identifiée** : ce n'était ni les adresses de
+  l'API Sedoric ni le mapping ROMDIS, mais le flag émulateur **`--disk-writeback`**
+  (write-back opt-in, désactivé par défaut). Sans lui, le `SAVE` écrit l'image
+  **en mémoire** mais rien n'est persisté dans la `.dsk` hôte.
+- **Chaîne d'écriture validée end-to-end** dans `oric1-emu` : boot **Sedoric V3.0**
+  résident (`-r basic11b.rom --disk-rom microdis.rom -d sedoric3.dsk`), `SAVE`
+  binaire depuis le prompt → fichier réel écrit (entrée catalogue `TEST     BIN`,
+  données + bitmap), persisté avec `--disk-writeback` (md5 `.dsk` modifié).
+  Primitive FDC d'écriture secteur en `$D075` (cmds Type II `$A8`/`$AC`).
+- **`microdis.rom` = `Oric DOS V0.6`** : page `$FF` vide → les vecteurs du PDF
+  (`$FF73`…) n'y sont pas ; l'API Sedoric est installée en RAM overlay au boot.
+- **`docs/sedoric-api.md`** : section « Écriture disquette VALIDÉE » (cause
+  racine, recette reproductible, conséquences). **`client/sedoric.s`** : statut
+  corrigé (l'appel par vecteurs PDF reste à recaler via trace du `SAVE`).
+- *Reste (G1, voie B)* : tracer l'**entrée d'appel machine** du `SAVE` pour la
+  reproduire depuis le terminal, et faire tourner le terminal **sous Sedoric
+  résident** (`.dsk` bootable).
+
 ### En cours (Stockage Microdisc/Sedoric — voie B, exploration)
 - **`docs/sedoric-api.md`** : API Sedoric extraite du désassemblage (vecteurs
   `$FF73`/`$FF76`/`$FF79`/`$FF7C`, variables `BUFNOM`/`DESALO`/`FISALO`) + séquences

@@ -80,30 +80,54 @@ XWDESC écrit les descripteurs ; `$FF88` XLIBSE secteur libre ; etc.)
   préalable n'est requise au-delà du boot Sedoric.
 - **Gestion d'erreur** : `XSAVEB`/`XLOADA` peuvent lever DISK_FULL, etc.
 
-## ⚠️ Découvertes émulateur (mapping mémoire) — à intégrer
+## ✅ Écriture disquette VALIDÉE dans l'émulateur (24/06/2026)
 
-Tests dans `oric1-emu` (ROM `microdis.rom` + `sedoric3.dsk`, sorti vers BASIC) :
+La chaîne d'écriture a été **prouvée de bout en bout** dans `oric1-emu`. Le
+« blocage » précédent (vecteurs `$FF73` introuvables) était un **faux problème** :
+ce n'était ni les adresses API, ni le mapping ROMDIS, mais un **flag de l'émulateur**.
 
-- **Les vecteurs page `$FF` sont MASQUÉS** par la **ROM Microdisc** (overlay
-  `$E000-$FFFF`) : `$FF7C` lit `20 F5 F9` (ROM microdis), pas `4C 9C DE`. On ne
-  peut donc **pas** appeler `XSAVEB` via `$FF7C` sans gérer le mapping (ROMDIS,
-  registre `$0314`).
-- **`$C000-$DFFF` est de la RAM Sedoric** (accessible) ; les routines en `$C0xx`/
-  `$DExx` y sont, mais celles en `$E0xx` (ex `XLOADA $E0E5`) sont masquées.
-- **Les adresses du PDF ne collent pas à cette image** : `$DE9C` contient
-  `D0 84 DF 60…` (pas le début attendu de XSAVEB). Le désassemblage « à nu »
-  correspond à une **version/un mapping différents** — les adresses doivent être
-  **recalées sur la version Sedoric cible**.
+### Cause racine : le write-back est opt-in
 
-**Conséquence** : l'appel API n'est pas un simple `JSR $FF7C`. Il faut (1) recaler
-les adresses sur l'image Sedoric utilisée, et (2) gérer le bascule ROMDIS pour
-exposer la RAM Sedoric à l'appel. C'est un travail de reverse spécifique à la
-version, mieux mené avec l'image cible (et idéalement validé sur matériel réel).
+`oric1-emu` n'écrit les modifications dans le fichier `.dsk` hôte **que si on passe
+`--disk-writeback`** (désactivé par défaut pour ne jamais écraser une `.dsk` par
+accident — `src/main.c:3630`, gate `disk_writeback`). Sans ce flag, le `SAVE`
+Sedoric s'exécute, écrit bien les secteurs dans l'image **en mémoire** (primitive
+FDC en `$D075`, commandes Type II `$A8`/`$AC` sur `$0310`), mais **rien n'est
+persisté** → d'où le faux constat « ça ne marche pas ».
 
-> **Statut du code** : `client/sedoric.s` (`sed_save`) est assemblé et **protégé
-> par une détection** (`$FF7C == 4C…`) : si le mapping ne l'expose pas, il **ne
-> fait rien** (le fichier reste en RAM `$4000`, pas de plantage). Il n'est donc
-> **pas encore opérationnel** sur la config Microdisc émulée — voir ci-dessus.
+### Recette de validation (reproductible)
+
+```sh
+cd ~/Oric1
+cp disks/sedoric3.dsk /tmp/sedtest.dsk
+KEYS='13000000:\n\p1POKE#4000,65:POKE#4001,66\n\p1SAVE"TEST.BIN",A#4000,E#4002\n\p8'
+./oric1-emu -n -r roms/basic11b.rom --disk-rom roms/microdis.rom -d /tmp/sedtest.dsk \
+    --disk-writeback -c 32000000 --type-keys "$KEYS" --screenshot /tmp/sedok.ppm
+# -> log "Disk write-back: drive A", md5 de la .dsk change,
+#    entrée catalogue "TEST     BIN" écrite. Boot = "SEDORIC V3.0".
+```
+
+Faits établis :
+- **Boot Sedoric V3.0 résident** : `-r basic11b.rom --disk-rom microdis.rom -d <dsk>`
+  amène au prompt `Ready` (Sedoric installé). Pour booter, `-r` est **obligatoire**.
+- **`SAVE"NOM.EXT",A#deb,E#fin`** depuis le prompt écrit un **vrai fichier**
+  (catalogue + données + bitmap), persisté avec `--disk-writeback`.
+- `microdis.rom` est `Oric DOS V0.6` : sa **page `$FF` est vide** (seuls les
+  vecteurs CPU `$FFFA-$FFFF`). Les vecteurs API du PDF (`$FF73`…) n'y sont donc
+  pas — l'API Sedoric V3 est installée **en RAM overlay** par le boot.
+
+### Conséquences pour le projet
+
+1. **Test storage** : tout test émulateur de stockage disquette doit passer
+   `--disk-writeback`, sinon l'écriture ne persiste pas (piège silencieux).
+2. **Terminal `client/sedoric.s`** : l'objectif n'exige **pas** de recaler les
+   `$FF73` du PDF. La voie fiable est d'invoquer Sedoric comme le fait le `SAVE`
+   BASIC. Reste à déterminer l'**entrée d'appel machine** (interpréteur de
+   commande Sedoric, ou primitive de sauvegarde) à appeler depuis le terminal —
+   à tracer à partir du chemin du `SAVE` validé ci-dessus (`$D075` est la
+   primitive FDC d'écriture secteur ; l'entrée haut niveau est au-dessus).
+3. **Déploiement** : le terminal devra tourner **sous Sedoric résident** (booté
+   depuis une `.dsk` Sedoric), cf. « Le mur du déploiement » plus bas.
 
 ## Le mur du déploiement
 

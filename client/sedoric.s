@@ -10,7 +10,13 @@
 ;
 ;  Detection  - si le vecteur XSAVEB ($FF7C) ne contient pas JMP $DE.. , Sedoric
 ;  est absent -> on ne fait rien (le fichier reste en RAM $4000).
-;  Statut  - assemble ; appel a VALIDER sur environnement Sedoric (cf. doc).
+;
+;  Statut (24/06/2026)  - l'ecriture disquette est PROUVEE de bout en bout dans
+;  l'emulateur (SAVE Sedoric V3.0 -> .dsk persistee, cf. docs/sedoric-api.md).
+;  Le faux blocage etait le flag emulateur --disk-writeback, PAS les adresses.
+;  Les vecteurs $FF73.. du PDF ne sont PAS exposes tels quels par microdis.rom :
+;  l'entree d'appel machine reelle reste a tracer a partir du SAVE BASIC valide.
+;  Ce code (vecteurs PDF) n'est donc PAS encore l'appel correct -> a recaler.
 ; ---------------------------------------------------------------------------
 
 XDEFSA = $FF76

@@ -57,6 +57,11 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
   bibliothèque `server/internal/files`, applets `download`/`upload`, flags `-files`/
   `-max-upload`, studio, doc `docs/transfert.md`) ; **reste le terminal Oric**
   (XMODEM 6502 + stockage SD/disquette/cassette). Voir backlog G1.
+  - **Écriture disquette Sedoric PROUVÉE** (24/06) dans l'émulateur : `SAVE`
+    persiste sur la `.dsk` avec le flag `--disk-writeback` (cause racine du faux
+    blocage, ce n'était pas les adresses API). Reste à tracer l'entrée d'appel
+    machine du `SAVE` et faire tourner le terminal sous Sedoric résident.
+    Voir `docs/sedoric-api.md`.
 
 ## Sprint 4 — Connexion matérielle réelle — ⏳ en cours
 - [x] **Doc de connexion WiFiModem + LOCI** (`docs/connexion-materielle.md`) : chaîne
