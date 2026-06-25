@@ -50,6 +50,48 @@ Aucun BBS Oric clé en main repéré. Les différences clés vs C64/Atari :
 - Tester d'abord **dans `Oric1/oric1-emu`** (Phosphoric, `--serial tcp:`) avant tout matériel
   — c'est l'émulateur de référence du projet (cf. `test-emulateurs.md`).
 
+## 6. Parité fonctionnelle — écarts et plan (mise à jour 25/06/2026)
+
+Le cadrage initial (sections 1–5) portait sur l'**architecture**. Cette section
+compare les **fonctionnalités** du serveur BBS Oric à l'état de l'art (référence
+petscii-bbs) pour guider les prochains incréments.
+
+### 6.1 Ce que le serveur offre déjà
+- Menus mono-touche, sessions multiples (1 goroutine/connexion).
+- Accès **invité** + **comptes utilisateurs** (PBKDF2, store haché atomique).
+- **Formulaires** déclaratifs (login/inscription + génériques), réessai + page d'échec.
+- **Bibliothèque de fichiers** avec **XMODEM download/upload**.
+- Pages statiques, **positionnement curseur** (plot X,Y), **buffer écran différentiel**.
+- Exploitation : métriques Prometheus, `/healthz`, sauvegarde/restauration.
+
+### 6.2 Écarts vs état de l'art
+
+Le cœur historique d'un BBS, ce sont les **espaces de communication entre
+appelants** — c'est ce qui distingue un BBS d'un simple système de menus.
+Aujourd'hui le « Livre d'or » est une **page statique**, non inscriptible.
+
+| # | Fonction | Référence | Effort | Impact | Note Oric/OASCII |
+|---|----------|-----------|:------:|:------:|------------------|
+| 1 | **Message base / forums** (lire + poster, fils, persisté) | petscii-bbs (cœur) | ●●● | ●●● | Lecture paginée via buffer différentiel |
+| 2 | **Mur one-liner / livre d'or inscriptible** (message persisté) | universel | ● | ●● | Réutilise `form` + store JSON atomique |
+| 3 | **Qui est en ligne + chat / paging** inter-appelants | trait signature BBS | ●● | ●● | Exploite le moteur multi-session existant |
+| 4 | **Messagerie privée** entre comptes | petscii-bbs | ●● | ●● | Réutilise `internal/user` |
+| 5 | **Fil d'actualités / RSS → OASCII** | petscii-bbs « internet services » | ●● | ●● | Vitrine, borné réseau |
+| 6 | **Door game** (jeu en ligne) | petscii-bbs (nombreux) | ●●● | ● | Valorise le buffer différentiel |
+
+### 6.3 Ordre recommandé
+1. **#2 mur one-liner inscriptible** — quick win, établit le **pattern « applet
+   d'écriture persistée »** (store JSON atomique calqué sur `internal/user`).
+2. **#1 message base** — *la* feature qui fait passer de « menus » à « BBS » au
+   sens état-de-l'art ; le pattern du #2 s'y généralise (fils, lecture paginée).
+3. **#3 qui-est-en-ligne / chat** — différenciateur le moins cher (moteur déjà
+   multi-session) : exposer la présence + un relais de messages entre sessions.
+4. Puis #4 messagerie privée, #5 actualités, #6 door game.
+
+> Ces fonctions s'insèrent dans l'architecture **pilotée par le contenu**
+> (`content/site.json` + applets enregistrés via `bbs.Register`), sans rupture :
+> chaque feature = un applet + (si besoin) un store persisté.
+
 ## Sources
 - https://github.com/sblendorio/petscii-bbs
 - https://github.com/retrocomputacion/retrobbs

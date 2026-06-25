@@ -6,6 +6,16 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Documentation (État de l'art — parité fonctionnelle / écarts, 25/06/2026)
+- **`docs/etat-de-l-art.md` §6** : comparaison **fonctionnelle** du serveur à
+  l'état de l'art (réf. petscii-bbs). Recense l'existant, puis l'écart principal —
+  les **espaces de communication entre appelants** (le « Livre d'or » est statique,
+  non inscriptible) — et priorise 6 features : mur one-liner (#2), message
+  base/forums (#1), qui-est-en-ligne + chat (#3), messagerie privée (#4),
+  actualités RSS→OASCII (#5), door game (#6).
+- **`ROADMAP.md`** : nouveau **Sprint 7 — Communication entre appelants** reprenant
+  ce backlog (chaque feature = un applet `bbs.Register` + store persisté).
+
 ### Communication (Annonce alpha publiée — Defence Force, 25/06/2026)
 - **Annonce publique de la version alpha** (serveur + terminal Oric + studio
   « Forge ») sur le **forum Defence Force** :
