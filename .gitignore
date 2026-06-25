@@ -33,3 +33,7 @@ deploy/profiles/**/*.conf
 /bbsd
 /forge
 client/term-boot.dsk
+
+# Outillage assistant IA (non distribué — local uniquement)
+CLAUDE.md
+.claude/

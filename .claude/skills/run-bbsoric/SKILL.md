@@ -112,6 +112,13 @@ Sedoric disk build for the terminal is `client/build-disk.sh` (see
 
 ## Gotchas
 
+- **Emulator: never `--loci` together with `--acia-addr 03A0`.** Both map to
+  `$03A0-$03BF` (LOCI MIA + ACIA); the MIA shadows the ACIA *and* drives the PSG
+  that the keyboard scan reads → `get_key` spins → the terminal freezes on the
+  directory. `--loci` is for SD/flash ops, not the modem. Correct wiring for the
+  BBS terminal (menu option `2` = `$03A0`):
+  `oric1-emu -t client/term.tap -f -r roms/basic11b.rom --serial picowifi --acia-addr 03A0 --serial-buffer 512`
+  (no `--loci`). Phosphoric ≥ 1.27.2 warns on the overlap. See `phosphoric-findings.md` (F1).
 - **OASCII, not plain text.** The wire bytes `$00-$1F` are colour/attribute
   codes, not text. `driver.render()` turns them into `·`; don't expect clean
   strings on a raw `nc`. Single key = one menu choice (no Enter for menus).
