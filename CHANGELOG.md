@@ -6,6 +6,20 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Validé (Téléchargement XMODEM client↔prod — bout-en-bout + diagnostic démarrage)
+- **Download end-to-end PROUVÉ** : un terminal Oric émulé connecté à la **prod**
+  (`pavi.3617.fr` via backend modem) télécharge `ASTERORIC.TAP` (22 Ko) jusqu'à
+  « FICHIER RECU EN 4000 / Téléchargement terminé » (réception en RAM `$4000`).
+  Rendu possible par le cadençage `--realtime` de Phosphoric (sinon timing
+  non déterministe). Vidéo : `~/bbsoric-client-prod-demo.mp4`.
+- **Diagnostic (trace série)** : le `1F FE` (RecvCmd) est bien reçu et
+  `handle_rx` bascule en `xmodem_recv`, mais le **démarrage est lent** — le
+  récepteur ré-émet le NAK 2-3 fois avec un **timeout long (~32 s)** avant de se
+  synchroniser et d'ACK les blocs. Course de démarrage (ordre RecvCmd→1er bloc
+  vs NAK du récepteur). **Piste d'optimisation** : raccourcir le timeout de
+  re-NAK de `xmodem_recv` (`client/xmodem.s`) et/ou garantir le flush du
+  `RecvCmd` avant `waitStart` côté serveur. Le transfert lui-même est intègre.
+
 ### Déployé (Production — alignement complet, 25/06/2026)
 - **Prod `pavi.3617.fr` (LXC pavi3617) ré-alignée sur le repo** via `make deploy`
   (binaire à jour + service avec `-files`/`-users`/`-metrics-addr` + timers
