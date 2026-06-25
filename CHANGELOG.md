@@ -6,6 +6,13 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Outillage — skill « run-bbsoric »)
+- **`.claude/skills/run-bbsoric/`** : skill de lancement/pilotage. `SKILL.md`
+  (build, run, test, studio, terminal) + **`driver.py`** : harnais qui pilote le
+  serveur BBS par socket TCP (envoi de touches, lecture/rendu OASCII, smoke flow
+  bannière + navigation menu, captures `/tmp/bbs-*.txt`). Vérifié de bout en bout
+  (`make build` → `./bbsd` → driver `exit 0`, 4 écrans validés).
+
 ### ✅ Sedoric — sauvegarde disquette VALIDÉE end-to-end sur SEDORIC V3.0
 - **Sauvegarde Sedoric prouvée depuis le langage machine** : un fichier
   (`TESTML  BIN`) est **écrit et persisté** dans `sedoric3.dsk` (entrée catalogue
