@@ -14,7 +14,7 @@ sériels de couleur). La machine Oric s'y connecte via un **modem WiFi** relié 
 |---------|-------|
 | **Client** | Oric-1 / Atmos + [LOCI](https://www.raxiss.com/article/id/38-LOCI) + WiFiModem USB (ACIA série ; MIA LOCI `$03A0-$03BF`, ACIA standard `$031C`) |
 | **Émulateur de test** | `Oric1/oric1-emu` (Phosphoric) **uniquement** — `--serial tcp:` vers le BBS. Voir [`docs/test-emulateurs.md`](docs/test-emulateurs.md) |
-| **Serveur** | Voir [`docs/architecture.md`](docs/architecture.md) — langage à confirmer (recommandation : Python 3 / asyncio) |
+| **Serveur** | **Go** (`server/cmd/bbsd`) — voir [`docs/architecture.md`](docs/architecture.md) |
 
 ## État du projet
 
@@ -23,6 +23,32 @@ Depuis un Oric (modem WiFi) : `ATD pavi.3617.fr:6502`.
 
 Sprints 0→2 bouclés (socle réseau + couche OASCII + moteur de menus + terminal Oric RX/TX),
 déployé via `make deploy`. Voir [`ROADMAP.md`](ROADMAP.md) et [`docs/agile/backlog.md`](docs/agile/backlog.md).
+
+## Terminal Oric (téléchargement)
+
+Le terminal Oric est distribué via les **[Releases GitHub](../../releases)** — les
+images ne sont **pas** versionnées dans le dépôt (artefacts régénérables, voir
+`.gitignore`). Dernière version : **[`v0.1.0-alpha`](../../releases/tag/v0.1.0-alpha)** :
+
+| Fichier | Quoi |
+|---------|------|
+| **`term.tap`** | Image cassette autorun (`$1000`) — pour émulateur ou interface cassette |
+| **`term-boot.dsk`** | Disquette Sedoric bootable (Microdisc) : boot puis `LOAD"TERM":CALL#1000` |
+
+Ou reconstruire depuis les sources :
+
+```bash
+make client              # -> client/term.tap   (nécessite xa65)
+client/build-disk.sh     # -> client/term-boot.dsk  (nécessite l'émulateur + ROM Microdisc + master Sedoric)
+```
+
+Lancer dans l'émulateur (ACIA `$031C`, ou LOCI `$03A0` — voir
+[`docs/connexion-materielle.md`](docs/connexion-materielle.md)) :
+
+```bash
+oric1-emu -t client/term.tap -f -r basic11b.rom \
+  --serial modem:pavi.3617.fr:6502 --serial-buffer 512
+```
 
 ## Déploiement
 
