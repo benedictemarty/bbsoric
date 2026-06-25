@@ -6,6 +6,14 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Déployé (Production — chat en ligne, 25/06/2026)
+- **Prod `pavi.3617.fr` mise à jour** via `make deploy` (binaire avec présence +
+  applets `who`/`chat`, service `bbsoric` actif, écoute 6502 OK) puis push du
+  `content/site.json` à jour (sauvegarde distante `site.json.bak-20260625-225909`,
+  rechargé à chaud). **Vérifié end-to-end sur `pavi.3617.fr:6502`** : invité →
+  menu principal → **Communauté** → *Qui est en ligne* / *Chat* (salon ouvert).
+  Le chat temps réel est désormais utilisable en ligne.
+
 ### Mis à niveau (Studio « Forge » — applets who/chat)
 - **`studio/web/app.js`** : `KNOWN_APPLETS` complété avec **`who`** et **`chat`**
   (la liste déroulante « ▶ applet » les propose désormais sans faute de frappe) ;
