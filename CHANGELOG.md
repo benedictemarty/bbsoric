@@ -6,6 +6,16 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Distribué (Release GitHub — terminal Oric alpha, 26/06/2026)
+- **Release `v0.1.0-alpha`** (prerelease) sur le dépôt public :
+  <https://github.com/benedictemarty/bbsoric/releases/tag/v0.1.0-alpha>.
+  Assets : **`term.tap`** (cassette autorun, 3 668 o) et **`term-boot.dsk`**
+  (disquette Sedoric bootable avec `TERM.COM`, 1 Mo) — tous deux reconstruits
+  depuis `term.s` courant (`make client` + `client/build-disk.sh`). Notes incluant
+  les commandes de lancement émulateur, dont le **piège LOCI** (ne pas combiner
+  `--loci` avec `--acia-addr 03A0` : double mappage `$03A0` qui fige le scan
+  clavier ; utiliser `--serial picowifi --acia-addr 03A0` sans `--loci`).
+
 ### Déployé (Production — chat en ligne, 25/06/2026)
 - **Prod `pavi.3617.fr` mise à jour** via `make deploy` (binaire avec présence +
   applets `who`/`chat`, service `bbsoric` actif, écoute 6502 OK) puis push du
