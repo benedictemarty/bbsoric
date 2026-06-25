@@ -10,9 +10,12 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 - **`phosphoric-findings.md`** (nouveau) : journal des défauts de l'émulateur
   Phosphoric repérés depuis bbsoric. F1 = `--loci` + `--acia-addr 03A0` fige le
   clavier (double mappage `$03A0` MIA/ACIA, la MIA masque l'ACIA et casse le scan
-  clavier via le PSG). Bonne commande : `--serial picowifi --acia-addr 03A0` **sans**
-  `--loci`. Garde-fou ajouté côté Phosphoric (≥ 1.27.2). Ligne de dépannage ajoutée
-  à `docs/connexion-materielle.md` et au skill `run-bbsoric`.
+  clavier via le PSG). **Le picowifi EST le modem du LOCI** → bon modèle fidèle :
+  `--loci --serial picowifi` (sans `--acia-addr` ; ACIA par défaut `$0380`), le
+  terminal devant adresser **`$0380`** et non `$03A0`. → **à corriger côté terminal**
+  (`client/term.s`) : l'option menu « `2` = `$03A0` » devrait viser `$0380`. Garde-fou
+  Phosphoric ≥ 1.27.3 (message pointant vers `$0380`). Dépannage ajouté à
+  `docs/connexion-materielle.md` et au skill `run-bbsoric`.
 
 ### Distribué (Release GitHub — terminal Oric alpha, 26/06/2026)
 - **Release `v0.1.0-alpha`** (prerelease) sur le dépôt public :

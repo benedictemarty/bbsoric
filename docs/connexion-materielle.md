@@ -148,7 +148,7 @@ terminal AT : `ATD pavi.3617.fr:6502` puis `Entrée`.
 
 | Symptôme | Pistes |
 |----------|--------|
-| Le menu modem ne répond pas / écran figé | mauvaise base ACIA → essayer l'autre choix (`1`/`2`) ; vérifier la base réelle de la carte. **Émulateur :** ne pas combiner `--loci` avec `--acia-addr 03A0` → la MIA LOCI masque l'ACIA et casse le scan clavier (annuaire gelé). Cf. `phosphoric-findings.md` (F1) ; bonne commande : `--serial picowifi --acia-addr 03A0` **sans** `--loci`. |
+| Le menu modem ne répond pas / écran figé | mauvaise base ACIA → essayer l'autre choix (`1`/`2`) ; vérifier la base réelle de la carte. **Émulateur LOCI :** le modem (picowifi) du vrai LOCI est une ACIA à **`$0380`**, pas `$03A0`. Lancer `--loci --serial picowifi` (sans `--acia-addr`) et adresser **`$0380`** ; ne PAS forcer `--acia-addr 03A0` (= espace MIA → masque l'ACIA + fige le clavier). Cf. `phosphoric-findings.md` (F1). |
 | `ATD` sans effet, pas de `CONNECT` | débit série ≠ 9600 8N1 ; modem non associé au WiFi ; hôte/port erronés ; contrôle de flux actif côté modem. |
 | Caractères parasites / texte illisible | désaccord de débit (vérifier `$1E` ACIA ↔ 9600 du modem) ; câblage TX/RX inversé. |
 | Couleurs absentes (texte blanc seul) | normal sur un terminal générique ; l'Oric rend les attributs sériels en écrivant directement la VRAM (`term.s`). |
