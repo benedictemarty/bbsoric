@@ -52,9 +52,11 @@ xr_wait:
         beq xr_done
         jmp xr_wait
 xr_block:
-        jsr xr_rx            ; numero de bloc
+        jsr xr_rx_t          ; numero de bloc (avec timeout)
+        bcc xr_start         ; bloc incomplet (gigue reseau) -> re-NAK rapide
         sta KTMP
-        jsr xr_rx            ; complement
+        jsr xr_rx_t          ; complement
+        bcc xr_start
         eor #$FF
         cmp KTMP
         bne xr_nak           ; en-tete corrompu
@@ -62,7 +64,8 @@ xr_block:
         sta XSUM
         ldy #0
 xr_data:
-        jsr xr_rx
+        jsr xr_rx_t
+        bcc xr_start         ; octet manquant -> re-NAK (le serveur renvoie le bloc)
         sta (XBUF),y
         clc
         adc XSUM
@@ -70,7 +73,8 @@ xr_data:
         iny
         cpy #128
         bne xr_data
-        jsr xr_rx            ; somme de controle recue
+        jsr xr_rx_t          ; somme de controle recue
+        bcc xr_start
         cmp XSUM
         bne xr_nak
         lda KTMP
@@ -112,19 +116,34 @@ xr_done:
         sta STRPTR+1
         jmp print_string     ; print_string fait rts
 
-; xr_rx - lit un octet (bloquant). A = octet. PRESERVE Y (ser_rx l'ecrase) car
-; xr_data s'en sert comme index/compteur ; X est utilise comme tampon.
-xr_rx:
+; xr_rx_t - lit un octet d'un bloc AVEC timeout (~1.3 s). PRESERVE Y (ser_rx
+; l'ecrase) car xr_data s'en sert comme index/compteur ; X sert de tampon.
+; carry=1 + A = octet ; carry=0 si timeout (bloc fige -> re-NAK rapide au lieu
+; de bloquer indefiniment sur une gigue reseau).
+xr_rx_t:
         tya
-        pha
-xr_rx_w:
+        pha                  ; sauve Y
+        lda #0
+        sta SRC
+        sta SRC+1
+xrt2_loop:
         jsr ser_rx_ready
-        beq xr_rx_w
+        bne xrt2_got
+        inc SRC
+        bne xrt2_loop
+        inc SRC+1
+        bne xrt2_loop
+        pla                  ; timeout - restaure Y, carry=0
+        tay
+        clc
+        rts
+xrt2_got:
         jsr ser_rx           ; A = octet (Y ecrase)
         tax
         pla
-        tay
+        tay                  ; restaure Y
         txa
+        sec
         rts
 
 ; xr_rx_timeout - attend un octet avec timeout (~1.3 s). carry=1 + A, ou carry=0.

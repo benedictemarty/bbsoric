@@ -6,6 +6,16 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Corrigé (XMODEM terminal — démarrage rapide, plus de figeage sur gigue réseau)
+- **`client/xmodem.s`** : la réception de bloc utilisait `xr_rx` **bloquant
+  (sans timeout)** → si un octet d'un bloc tardait (segmentation/gigue TCP vers
+  la prod), le terminal **se figeait indéfiniment** au lieu de re-NAK, d'où un
+  démarrage de download de ~43 s. Remplacé par **`xr_rx_t`** (timeout ~1,3 s,
+  préserve Y) ; sur octet manquant, `bcc xr_start` → **re-NAK rapide** (le
+  serveur renvoie le bloc). Mesuré sur la prod : démarrage **~43 s → ~2 s**,
+  fichier complet reçu (174 ACK). Le débit du transfert reste borné par le
+  réseau (XMODEM stop-and-wait, 1 aller-retour par bloc).
+
 ### Validé (Téléchargement XMODEM client↔prod — bout-en-bout + diagnostic démarrage)
 - **Download end-to-end PROUVÉ** : un terminal Oric émulé connecté à la **prod**
   (`pavi.3617.fr` via backend modem) télécharge `ASTERORIC.TAP` (22 Ko) jusqu'à
