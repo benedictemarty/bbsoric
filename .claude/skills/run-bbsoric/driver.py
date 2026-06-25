@@ -118,7 +118,7 @@ def main():
         c.read_screen()       # bannière + menu
         c.send(key)
         scr = c.render(c.read_screen())
-        c.send("\r")
+        c.send(" ")
         c.close()
         open(f"/tmp/bbs-{fname}.txt", "w").write(scr)
         checks.append((f"touche {key} -> {expect}", expect in scr))

@@ -115,10 +115,15 @@ Sedoric disk build for the terminal is `client/build-disk.sh` (see
 - **OASCII, not plain text.** The wire bytes `$00-$1F` are colour/attribute
   codes, not text. `driver.render()` turns them into `·`; don't expect clean
   strings on a raw `nc`. Single key = one menu choice (no Enter for menus).
-- **Navigation after a content screen is timing-fragile.** After "Appuyez sur
-  une touche", returning to the menu then sending the next digit often races the
-  menu redraw. The driver sidesteps this by testing each menu option from a
-  **fresh connection** — do the same for deterministic multi-screen checks.
+- **`ReadKey` ignores CR/LF/NUL** (`session.go` — they're line-ending residue
+  from `nc`-style clients). So a "press any key" prompt (e.g. "Appuyez sur une
+  touche") is NOT satisfied by `\r` — send a **real key like a space `" "`**.
+  Multi-hop flows (accueil → guest → menu → submenu) only work with real keys;
+  `\r` between screens silently does nothing. Verified guest→Fichiers→download
+  with spaces.
+- **Production-content flow** (`-content content/site.json`): accueil menu →
+  `"3"` (guest) → `" "` (any key) → main menu (incl. `"5"` Fichiers) → `"5"` →
+  Fichiers submenu → `"1"` download lists `-files` library. Use spaces, not CR.
 - **Default vs production content.** Without `-content`, the server serves a
   built-in menu (1/2/3/Q). The **Fichiers** (download/upload) entry only exists
   in `content/site.json` — pass `-content content/site.json`.
