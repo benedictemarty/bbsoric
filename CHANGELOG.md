@@ -6,6 +6,15 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Mis à niveau (Studio « Forge » — applets who/chat)
+- **`studio/web/app.js`** : `KNOWN_APPLETS` complété avec **`who`** et **`chat`**
+  (la liste déroulante « ▶ applet » les propose désormais sans faute de frappe) ;
+  ajout d'une **infobulle descriptive** par applet (`APPLET_DESC`). Le studio
+  charge/édite/prévisualise le menu **Communauté** (écran rendu via
+  `internal/render`, identique au serveur). Vérifié : `/api/site` charge la page,
+  `/api/screen?page=communaute` rend 192 octets OASCII (HTTP 200), tests studio
+  `-race` verts. Doc `studio/README.md` mise à jour (liste des applets connus).
+
 ### Ajouté (Sprint 7 — Qui est en ligne + chat entre appelants)
 - **Communication temps réel entre sessions** (première brique de parité
   état-de-l'art, cf. `docs/etat-de-l-art.md` §6) :

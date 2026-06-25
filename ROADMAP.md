@@ -124,6 +124,9 @@ profils. Voir `docs/adr/0003-studio-forge.md`.
   (`internal/{content,oascii}` partagés à la racine).
 - [x] **Forge** : éditeur web (pages menu/page/applet), aperçu OASCII couleur, validation
   par `internal/content`, enregistrement atomique.
+- [x] **Parité applets** : la liste « ▶ applet » couvre tous les applets serveur
+  (`login`/`register`/`guest`/`download`/`upload`/`who`/`chat`) avec infobulles —
+  édition/preview du menu **Communauté** (Sprint 7) opérationnelles.
 - [x] **Déploiement par profils** (dev/int/prod) : valide → sauvegarde → écrase → reload,
   dry-run ; `dev` local (hot-reload), `int`/`prod` ssh/scp. Validé end-to-end.
 - [x] **Menu sur fond d'écran** : une page `raw` (buffer 40×28 composé) se combine

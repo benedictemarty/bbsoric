@@ -58,7 +58,19 @@ const entryIsApplet = (e) => Object.prototype.hasOwnProperty.call(e, 'applet');
 
 // Applets autonomes proposés pour une entrée de menu (enregistrés côté serveur).
 // « form » est volontairement exclu : il se gère via le formulaire d'une page.
-const KNOWN_APPLETS = ['login', 'register', 'guest', 'download', 'upload'];
+// Doit rester aligné sur les applets enregistrés via bbs.Register (server).
+const KNOWN_APPLETS = ['login', 'register', 'guest', 'download', 'upload', 'who', 'chat'];
+
+// APPLET_DESC : libellé d'aide (infobulle) par applet, pour guider le câblage.
+const APPLET_DESC = {
+  login: 'identification (compte existant)',
+  register: 'création de compte',
+  guest: 'accès invité (lecture seule)',
+  download: 'téléchargement de fichier (XMODEM)',
+  upload: 'téléversement de fichier (XMODEM)',
+  who: 'qui est en ligne (liste des connectés)',
+  chat: 'salon de discussion temps réel',
+};
 
 // appletSelect : liste déroulante des applets connus (+ la valeur courante si
 // personnalisée), pour câbler une entrée « ▶ applet » sans faute de frappe.
@@ -67,8 +79,9 @@ function appletSelect(value, onChange) {
   const opts = KNOWN_APPLETS.slice();
   if (value && !opts.includes(value)) opts.unshift(value); // préserve un nom custom
   if (!value) sel.append(el('option', { value: '', textContent: '— applet —', selected: true }));
-  for (const a of opts) sel.append(el('option', { value: a, textContent: a, selected: value === a }));
+  for (const a of opts) sel.append(el('option', { value: a, textContent: a, title: APPLET_DESC[a] || '', selected: value === a }));
   sel.onchange = () => { onChange(sel.value); refreshPreview(); };
+  if (value && APPLET_DESC[value]) sel.title = APPLET_DESC[value];
   return sel;
 }
 
