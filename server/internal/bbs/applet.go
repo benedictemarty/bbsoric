@@ -5,17 +5,30 @@ import (
 
 	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/server/internal/files"
+	"github.com/benedictemarty/bbsoric/server/internal/presence"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
 
 // SessionState porte l'état d'une session : utilisateur connecté (nil si pas
 // encore authentifié), indicateur d'accès invité, et les dépendances injectées
-// au démarrage (bibliothèque de fichiers) accessibles aux applets.
+// au démarrage (bibliothèque de fichiers, registre de présence) accessibles aux
+// applets.
 type SessionState struct {
-	User  *user.User
-	Guest bool
-	Files *files.Library // bibliothèque de fichiers (peut être nil)
+	User     *user.User
+	Guest    bool
+	Files    *files.Library     // bibliothèque de fichiers (peut être nil)
+	Presence *presence.Registry // registre « qui est en ligne » + chat (peut être nil)
+	MemberID uint64             // identifiant de la session dans le registre de présence
+	Handle   string             // pseudo affiché (compte ou « Invité-N »)
+}
+
+// displayName renvoie le pseudo affiché de la session, avec un repli sûr.
+func (st *SessionState) displayName() string {
+	if st != nil && st.Handle != "" {
+		return st.Handle
+	}
+	return "Anonyme"
 }
 
 // LoggedIn indique si la session est authentifiée ou en accès invité.

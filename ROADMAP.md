@@ -143,16 +143,18 @@ profils. Voir `docs/adr/0003-studio-forge.md`.
 - [ ] Multi-sites avancé (création de nouveaux fichiers depuis l'UI), gestion des sauvegardes.
 - [ ] Authentification si le studio devait être exposé (aujourd'hui local-only).
 
-## Sprint 7 — Communication entre appelants (parité état-de-l'art) — 🆕 planifié
+## Sprint 7 — Communication entre appelants (parité état-de-l'art) — ⏳ en cours
 > Cœur historique d'un BBS, aujourd'hui absent (le « Livre d'or » est statique).
 > Analyse d'écart : `docs/etat-de-l-art.md` §6. Chaque feature = un applet
 > (`bbs.Register`) + un store persisté calqué sur `internal/user`.
+- [x] **Qui est en ligne + chat / paging** (#3) — registre de présence
+  (`server/internal/presence`) + applets `who` et `chat` (salon temps réel,
+  diffusion non bloquante, menu **Communauté**). Tests unitaires + intégration
+  deux clients, `-race` propre. *(exploite le moteur multi-session)*
 - [ ] **Mur one-liner inscriptible** (#2) — transforme le Livre d'or en mur de
   messages persisté ; établit le pattern « applet d'écriture persistée ».
 - [ ] **Message base / forums** (#1) — lire + poster en fils, lecture paginée via
   le buffer différentiel. *La* feature qui fait passer de « menus » à « BBS ».
-- [ ] **Qui est en ligne + chat / paging** (#3) — présence des appelants + relais
-  de messages entre sessions (exploite le moteur multi-session).
 - [ ] **Messagerie privée** (#4), **actualités RSS→OASCII** (#5), **door game** (#6).
 
 ---

@@ -22,6 +22,7 @@ import (
 	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/server/internal/bbs"
 	"github.com/benedictemarty/bbsoric/server/internal/files"
+	"github.com/benedictemarty/bbsoric/server/internal/presence"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
@@ -75,7 +76,8 @@ func main() {
 		log.Info("bibliothèque de fichiers", "dir", *filesDir)
 	}
 
-	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users, Files: lib}, log)
+	online := presence.New()
+	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users, Files: lib, Presence: online}, log)
 
 	// Arrêt propre sur SIGINT/SIGTERM.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

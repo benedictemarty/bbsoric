@@ -74,19 +74,20 @@ Aujourd'hui le « Livre d'or » est une **page statique**, non inscriptible.
 |---|----------|-----------|:------:|:------:|------------------|
 | 1 | **Message base / forums** (lire + poster, fils, persisté) | petscii-bbs (cœur) | ●●● | ●●● | Lecture paginée via buffer différentiel |
 | 2 | **Mur one-liner / livre d'or inscriptible** (message persisté) | universel | ● | ●● | Réutilise `form` + store JSON atomique |
-| 3 | **Qui est en ligne + chat / paging** inter-appelants | trait signature BBS | ●● | ●● | Exploite le moteur multi-session existant |
+| 3 | **Qui est en ligne + chat / paging** inter-appelants ✅ | trait signature BBS | ●● | ●● | **Fait** : `server/internal/presence` + applets `who`/`chat` (Sprint 7) |
 | 4 | **Messagerie privée** entre comptes | petscii-bbs | ●● | ●● | Réutilise `internal/user` |
 | 5 | **Fil d'actualités / RSS → OASCII** | petscii-bbs « internet services » | ●● | ●● | Vitrine, borné réseau |
 | 6 | **Door game** (jeu en ligne) | petscii-bbs (nombreux) | ●●● | ● | Valorise le buffer différentiel |
 
 ### 6.3 Ordre recommandé
+- ✅ **#3 qui-est-en-ligne / chat** — **livré au Sprint 7** : différenciateur le
+  moins cher (moteur déjà multi-session), registre `presence` + applets
+  `who`/`chat` (salon temps réel, diffusion non bloquante).
 1. **#2 mur one-liner inscriptible** — quick win, établit le **pattern « applet
    d'écriture persistée »** (store JSON atomique calqué sur `internal/user`).
 2. **#1 message base** — *la* feature qui fait passer de « menus » à « BBS » au
    sens état-de-l'art ; le pattern du #2 s'y généralise (fils, lecture paginée).
-3. **#3 qui-est-en-ligne / chat** — différenciateur le moins cher (moteur déjà
-   multi-session) : exposer la présence + un relais de messages entre sessions.
-4. Puis #4 messagerie privée, #5 actualités, #6 door game.
+3. Puis #4 messagerie privée, #5 actualités, #6 door game.
 
 > Ces fonctions s'insèrent dans l'architecture **pilotée par le contenu**
 > (`content/site.json` + applets enregistrés via `bbs.Register`), sans rupture :

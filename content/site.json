@@ -1,5 +1,5 @@
 {
-  "_comment": "Flux de pages du BBS Oric. Modifiable a chaud. Une page a un titre, du texte (lines) et/ou des choix (entries). Avec entries = ecran interactif, sinon ecran de contenu. Une entree navigue (target: page ou __quit__/__back__/__home__) OU lance un applet (applet + next). Une page peut aussi porter un form (action login/register, fields key/label/secret, next, fail, retries) = ecran de saisie declaratif. Applets: login, register, guest. Couleurs ink: black red green yellow blue magenta cyan white.",
+  "_comment": "Flux de pages du BBS Oric. Modifiable a chaud. Une page a un titre, du texte (lines) et/ou des choix (entries). Avec entries = ecran interactif, sinon ecran de contenu. Une entree navigue (target: page ou __quit__/__back__/__home__) OU lance un applet (applet + next). Une page peut aussi porter un form (action login/register, fields key/label/secret, next, fail, retries) = ecran de saisie declaratif. Applets: login, register, guest, download, upload, who (qui est en ligne), chat (salon temps reel). Couleurs ink: black red green yellow blue magenta cyan white.",
   "start": "accueil",
   "pages": {
     "accueil": {
@@ -116,9 +116,36 @@
           "target": "fichiers"
         },
         {
+          "key": "6",
+          "label": "Communaute",
+          "target": "communaute"
+        },
+        {
           "key": "Q",
           "label": "Quitter",
           "target": "__quit__"
+        }
+      ]
+    },
+    "communaute": {
+      "title": "COMMUNAUTE",
+      "entries": [
+        {
+          "key": "1",
+          "label": "Qui est en ligne",
+          "applet": "who",
+          "next": "communaute"
+        },
+        {
+          "key": "2",
+          "label": "Chat (salon)",
+          "applet": "chat",
+          "next": "communaute"
+        },
+        {
+          "key": "R",
+          "label": "Retour",
+          "target": "__back__"
         }
       ]
     },

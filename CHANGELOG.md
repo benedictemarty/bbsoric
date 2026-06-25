@@ -6,6 +6,29 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Sprint 7 — Qui est en ligne + chat entre appelants)
+- **Communication temps réel entre sessions** (première brique de parité
+  état-de-l'art, cf. `docs/etat-de-l-art.md` §6) :
+  - **`server/internal/presence`** : registre en mémoire des connectés
+    (« qui est en ligne ») + relais de chat **pub/sub à diffusion non bloquante**
+    (un abonné lent ne fige jamais l'émetteur) avec **rappel** des messages
+    récents. Tests : présence, tri par arrivée, backlog borné, non-blocage tampon
+    plein, désabonnement.
+  - **Applet `who`** : liste des appelants (pseudo + durée de présence, marqueur
+    « (vous) »).
+  - **Applet `chat`** : salon temps réel. **Un seul goroutine lit la session**
+    (lecture octet par octet avec échéance courte, drainage des messages entre
+    deux frappes) — pas de vol d'octets au moteur, écho local, `/q` pour quitter,
+    messages système d'arrivée/départ, horodatage `HH:MM`.
+  - Pseudo de présence posé à l'identification (`Invite-N` pour les invités,
+    pseudo du compte sinon) ; `SessionState` étendu (`Presence`, `MemberID`,
+    `Handle`) ; `WelcomeHandler.Presence` injecté depuis `cmd/bbsd`.
+  - **Contenu** : menu **Communauté** (touche 6 du menu principal) → *Qui est en
+    ligne* / *Chat*.
+- **Tests** : package `presence` + intégration `who`/`chat` (deux clients TCP,
+  relais de message vérifié). Suite complète verte, **`go test -race` propre**.
+  Validé aussi en live (deux invités, message relayé avec pseudo + horodatage).
+
 ### Documentation (État de l'art — parité fonctionnelle / écarts, 25/06/2026)
 - **`docs/etat-de-l-art.md` §6** : comparaison **fonctionnelle** du serveur à
   l'état de l'art (réf. petscii-bbs). Recense l'existant, puis l'écart principal —

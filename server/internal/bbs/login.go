@@ -48,6 +48,7 @@ func loginApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome
 			continue
 		}
 		ac.State.User = &u
+		setPresenceHandle(ac.State, u.Handle)
 		greet(s, u)
 		return Outcome{Done: true}
 	}
@@ -89,6 +90,7 @@ func registerApplet(ctx context.Context, s *server.Session, ac *AppContext) Outc
 			continue
 		}
 		ac.State.User = &u
+		setPresenceHandle(ac.State, u.Handle)
 		b := oascii.New()
 		b.Newline().Ink(oascii.Green).Text(center("Compte cree !")).Newline()
 		b.Ink(oascii.Yellow).Text(center("Bienvenue " + u.Handle + " !")).Newline()
@@ -105,6 +107,7 @@ func registerApplet(ctx context.Context, s *server.Session, ac *AppContext) Outc
 func guestApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome {
 	header(s, "ACCES INVITE")
 	ac.State.Guest = true
+	setPresenceHandle(ac.State, fmt.Sprintf("Invite-%d", ac.State.MemberID))
 	b := oascii.New()
 	b.Ink(oascii.White).Text(" Bienvenue, visiteur.").Newline()
 	b.Ink(oascii.Cyan).Text(" Acces en lecture seule.").Newline()
@@ -114,6 +117,18 @@ func guestApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome
 	}
 	_, _ = s.ReadKey()
 	return Outcome{Done: true}
+}
+
+// setPresenceHandle fixe le pseudo affiché de la session et le propage au
+// registre de présence (« qui est en ligne » + chat), si présent.
+func setPresenceHandle(st *SessionState, handle string) {
+	if st == nil {
+		return
+	}
+	st.Handle = handle
+	if st.Presence != nil {
+		st.Presence.SetHandle(st.MemberID, handle)
+	}
 }
 
 // --- helpers de présentation/saisie ---
