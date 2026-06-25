@@ -6,6 +6,19 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Communication (Annonce alpha publiée — Defence Force, 25/06/2026)
+- **Annonce publique de la version alpha** (serveur + terminal Oric + studio
+  « Forge ») sur le **forum Defence Force** :
+  <https://forum.defence-force.org/viewtopic.php?t=2897>. Vidéo de démo :
+  <https://youtu.be/YRFBYkpsKMc>. Texte source : `~/bbsoric-announce-defence-force.md`
+  / `.bbcode.txt`. Trace complète : **`docs/communication.md`**.
+- **Dépôt GitHub rendu public** : <https://github.com/benedictemarty/bbsoric>
+  (historique réécrit au préalable via `git filter-repo` pour purger les IP
+  internes ; placeholders dans `deploy/caddy-tls.md`).
+- L'annonce lance un **appel à test sur matériel réel** (rendu terminal, timing
+  XMODEM série, write Sedoric sur lecteur physique) — retours à consigner dans
+  `docs/communication.md`.
+
 ### Corrigé (XMODEM terminal — démarrage rapide, plus de figeage sur gigue réseau)
 - **`client/xmodem.s`** : la réception de bloc utilisait `xr_rx` **bloquant
   (sans timeout)** → si un octet d'un bloc tardait (segmentation/gigue TCP vers

@@ -107,6 +107,16 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
   test e2e `scripts/test-backup.sh` (13 cas verts), doc `docs/backup.md`.
   Déploiement intégré à `vps-deploy.sh`.
 
+## Annonce communautaire (alpha) — ✅ publiée (25/06/2026)
+- [x] **Annonce alpha publiée** sur le forum **Defence Force** :
+  <https://forum.defence-force.org/viewtopic.php?t=2897> (serveur + terminal Oric +
+  studio « Forge »). Vidéo : <https://youtu.be/YRFBYkpsKMc>. Trace : `docs/communication.md`.
+- [x] **Dépôt GitHub public** : <https://github.com/benedictemarty/bbsoric>
+  (historique purgé des IP internes via `git filter-repo`).
+- [ ] **Retours de test sur matériel réel** (appel à contribution de l'annonce) :
+  rendu terminal sur fer, timing XMODEM série réel, write Sedoric sur lecteur
+  physique (Microdisc/LOCI). À consigner dans `docs/communication.md`.
+
 ## Studio « Forge » — outillage de contenu ⏳ (en cours)
 Sous-projet `studio/` : app web Go locale pour éditer le(s) `site.json` et déployer par
 profils. Voir `docs/adr/0003-studio-forge.md`.
