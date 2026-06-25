@@ -6,6 +6,16 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Déployé (Production — alignement complet, 25/06/2026)
+- **Prod `pavi.3617.fr` (LXC pavi3617) ré-alignée sur le repo** via `make deploy`
+  (binaire à jour + service avec `-files`/`-users`/`-metrics-addr` + timers
+  sauvegarde/monitoring) puis push du `content/site.json` courant
+  (sauvegarde préalable `site.json.bak-20260625-111109`).
+- **Vérifié end-to-end** sur `pavi.3617.fr:6502` : accueil → invité → menu
+  principal → **Fichiers** → applet **Téléchargement** opérationnel (`-files`
+  actif, bibliothèque vide). La prod expose désormais le même niveau fonctionnel
+  que le repo (serveur = studio = client).
+
 ### Ajouté (Outillage — skill « run-bbsoric »)
 - **`.claude/skills/run-bbsoric/`** : skill de lancement/pilotage. `SKILL.md`
   (build, run, test, studio, terminal) + **`driver.py`** : harnais qui pilote le
