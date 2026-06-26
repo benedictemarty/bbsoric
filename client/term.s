@@ -129,6 +129,17 @@ mm_init:
         lda #$0B
         ldy #2                   ; command
         sta (ACIAPTR),y
+        ; Force le modem en mode BRUT (ATNET0) avant toute numerotation. En mode
+        ; telnet (defaut picowifi), le modem traite 0xFF (IAC) et le CR de facon
+        ; speciale et MUTILE les blocs XMODEM binaires (un .TAP contient 0xFF des
+        ; le bloc 1) -> checksum faux -> transfert bloque a 0%. En mode brut, le
+        ; flux binaire passe intact. Sans effet (ou ERROR ignore) sur un modem
+        ; sans commande ATNET. Cf. docs/hardware-connection.md.
+        lda #<at_atnet0
+        sta STRPTR
+        lda #>at_atnet0
+        sta STRPTR+1
+        jsr send_string
         jsr wait_release
 
 ; ---------------------------------------------------------------------------
@@ -842,6 +853,8 @@ at_atd:
         .byt "ATD",$00
 at_atdts:
         .byt "ATDT#",$00          ; dial securise TLS (picowifi v0.2.0)
+at_atnet0:
+        .byt "ATNET0",$0D,$00     ; modem en mode brut (XMODEM binaire intact)
 msg_dial:
         .byt $0D,$0A,$02,"Numerotation en cours...",$0D,$0A,$07,$00
 

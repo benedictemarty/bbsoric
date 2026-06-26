@@ -21,10 +21,18 @@ versioning [SemVer](https://semver.org/lang/en/).
   full transfer (`SOH→ACK×3→EOT→ACK`, "xmodem.Send OK"). Serial trace shows the
   emulated ACIA `OVERRUN` only when `--serial-buffer` is omitted (separate
   emulator-config footgun).
-- **Fix (operator side, no code change): put the modem in raw/binary mode for the
-  BBS.** picowifi emulator → `telnet=0` in `~/.phosphoric_picowifi.cfg`; real
-  Pico W → equivalent raw/binary `AT` setting. Documented in
-  `docs/hardware-connection.md` §6 (troubleshooting).
+- **Fix (terminal, in-project): the terminal now issues `ATNET0` at modem init**
+  (`client/term.s`, `mm_init`) to force the WiFi modem into **raw mode** before any
+  dialing, so binary XMODEM blocks pass through intact. No change to the emulator
+  or its config. Harmless (or `ERROR`, ignored) on a modem without `ATNET`; the
+  command is echoed like the existing `ATD`. **Validated end-to-end against the
+  default `telnet=1`**: with the fix, the same block-1 (`0xFF`/`0x0D`) transfer now
+  ACKs on the first try → gauge `[####################] 100%` → "FICHIER RECU EN
+  4000" (`--loci --serial picowifi`, modem left at `telnet=1`).
+- **Real Pico W hardware**: `ATNET0` is the standard "no telnet" command of WiFi
+  modems (Zimodem/WiFi232/PicoWiFiModemUSB); the same fix applies. Separately, if
+  the emulator drops bytes during the burst, keep `--serial-buffer 512` (one block
+  fits). Documented in `docs/hardware-connection.md` §6.
 
 ### Added (Phonebook — IDreamIn8Bits entry, 26/06/2026)
 - **New directory entry 6 `IDreamIn8Bits`** in the Oric terminal phonebook
