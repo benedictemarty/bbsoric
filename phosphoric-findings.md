@@ -41,9 +41,18 @@ que **sans** `--loci`, en posant une ACIA nue à `$03A0` — un contournement no
 
 Le terminal doit alors **adresser le modem à `$0380`**, pas `$03A0`.
 
+**Validé sur le firmware LOCI officiel** (`github.com/sodiumlb/loci-firmware`) :
+
+| Fait | Source |
+|------|--------|
+| Modem/série = **ACIA `$0380-$0383`** | `src/mia/oric/acia.h` : `ACIA_IO_DATA 0x0380` / `STAT 0x0381` / `CMD 0x0382` / `CTRL 0x0383` |
+| `$03A0-$03BF` = **registres MIA** | `src/mia/sys/mem.h` : `.equ regs, 0x200400A0  // Oric address 0x03A0-0x03BF` |
+| `$03A0`/`$03A2` = **console UART de la MIA** (≠ modem) | `src/mia/sys/mia.c` (0x03A0 « UART Tx/Rx flow control », 0x03A2 « UART Rx ») |
+| `$03A3` = **« ULA pattern match »** | `src/mia/sys/mia.c` `CASE_WRITE(0x03A3)` → explique pourquoi écrire l'« ACIA control » à `$03A3` casse l'ULA/PSG/clavier |
+
 **À corriger côté terminal (bbsoric).** L'option « `2` = LOCI / `$03A0` » du menu
-modem vise la mauvaise base : pour le vrai LOCI il faut **`$0380`**. → ajouter/ajuster
-une entrée « LOCI `$0380` » dans `client/term.s` (cf. ROADMAP).
+modem vise la mauvaise base : pour le vrai LOCI il faut **`$0380`** (registres
+`$0380-$0383`). → ajuster `client/term.s` (cf. `MESSAGE-equipe-terminal-LOCI.md`).
 
 **Côté Phosphoric (v1.27.2 → 1.27.3).** `oric1-emu` avertit quand `--loci` est actif
 et que `--acia-addr` tombe dans `$03A0–$03BF`, et **pointe désormais vers `$0380`** :
