@@ -69,8 +69,12 @@ func downloadApplet(ctx context.Context, s *server.Session, ac *AppContext) Outc
 	_ = s.Write(info.String())
 
 	// Signale au terminal Oric de basculer en réception XMODEM (les autres
-	// clients ignorent cette séquence de contrôle).
+	// clients ignorent cette séquence de contrôle), suivi du nombre total de
+	// blocs de 128 o (octet bas, octet haut) pour la jauge de progression du
+	// terminal. Un terminal plus ancien ignore ces 2 octets (non-SOH).
 	_ = s.Write(oascii.RecvCmd())
+	totalBlocks := (len(data) + 127) / 128
+	_ = s.Write(string([]byte{byte(totalBlocks & 0xFF), byte((totalBlocks >> 8) & 0xFF)}))
 
 	if err := xmodem.Send(s.Raw(), data); err != nil {
 		s.ClearDeadline()

@@ -25,6 +25,13 @@ CRCCHR = $43         ; 'C' (demarrage CRC)
 
 XBUFADDR = $4000     ; adresse du buffer de reception
 
+; --- Jauge de progression (barre %). Le serveur envoie le total de blocs apres
+;     1F FE (recus dans XTOTAL). On remplit une barre de BARLEN segments par un
+;     comptage de Bresenham (XACC) - pas de multiplication/division 16 bits.
+;     XTOTAL/XACC/XSEG sont definies dans term.s (utilisees par handle_rx).
+BARLEN = 20          ; longueur de la barre (segments) ; 100% / 20 = 5% par segment
+GAUGEROW = 25        ; ligne ecran de la barre (0..27)
+
 ; ---------------------------------------------------------------------------
 ;  xmodem_recv - recoit un fichier en RAM (somme de controle). A preserve nul.
 ; ---------------------------------------------------------------------------
@@ -38,6 +45,10 @@ xmodem_recv:
         lda #0
         sta XSIZE
         sta XSIZE+1
+        sta XACC             ; init jauge (A=0)
+        sta XACC+1
+        sta XSEG
+        jsr xr_gauge_draw    ; barre vide au demarrage (si XTOTAL non nul)
 xr_start:
         lda #NAK             ; demarrer / relancer en mode somme de controle
         jsr ser_tx
@@ -102,6 +113,7 @@ xr_nocarry:
 xr_ack:
         lda #ACK
         jsr ser_tx
+        jsr xr_gauge         ; avance la barre (apres l'ACK, pendant le RTT)
         jmp xr_wait
 xr_dup:
         lda #ACK
@@ -195,8 +207,20 @@ xmodem_send:
         lda XSIZE+1
         sta XREM+1
         ora XREM             ; rien a envoyer ?
-        bne xs_waitc
+        bne xs_init_gauge
         rts
+xs_init_gauge:
+        lda XSIZE            ; jauge - total blocs = XSIZE / 128
+        asl                  ; C = bit7 de l'octet bas
+        lda XSIZE+1
+        rol                  ; A = (hi<<1) | bit7 = nb de blocs (<32 Ko -> 1 octet)
+        sta XTOTAL
+        lda #0
+        sta XTOTAL+1
+        sta XACC
+        sta XACC+1
+        sta XSEG
+        jsr xr_gauge_draw    ; barre vide
 xs_waitc:
         jsr xr_rx_timeout    ; attendre 'C' (mode CRC) du recepteur
         bcc xs_waitc
@@ -245,6 +269,7 @@ xs_data:
         inc XBUF+1
 xs_nc:
         inc XBLK
+        jsr xr_gauge         ; avance la barre (bloc envoye et acquitte)
         sec                  ; XREM -= 128
         lda XREM
         sbc #128
@@ -282,6 +307,129 @@ cu_skip:
         dex
         bne cu_loop
         rts
+
+; ---------------------------------------------------------------------------
+;  xr_gauge - avance la barre d'un bloc (Bresenham) puis la redessine.
+;  xr_gauge_draw - redessine la barre a XSEG segments (sans avancer).
+;  Sans effet si XTOTAL = 0 (serveur sans annonce de taille).
+; ---------------------------------------------------------------------------
+xr_gauge:
+        lda XTOTAL
+        ora XTOTAL+1
+        beq xg_skip          ; pas de total -> pas de jauge
+        clc                  ; XACC += BARLEN
+        lda XACC
+        adc #BARLEN
+        sta XACC
+        bcc xg_chk
+        inc XACC+1
+xg_chk:
+        lda XACC+1           ; XACC >= XTOTAL ?
+        cmp XTOTAL+1
+        bcc xr_gauge_draw    ; XACC < XTOTAL -> dessiner
+        bne xg_step
+        lda XACC
+        cmp XTOTAL
+        bcc xr_gauge_draw
+xg_step:
+        sec                  ; XACC -= XTOTAL
+        lda XACC
+        sbc XTOTAL
+        sta XACC
+        lda XACC+1
+        sbc XTOTAL+1
+        sta XACC+1
+        lda XSEG             ; XSEG++ (plafonne a BARLEN)
+        cmp #BARLEN
+        bcs xg_chk
+        inc XSEG
+        jmp xg_chk
+xg_skip:
+        rts
+
+xr_gauge_draw:
+        lda XTOTAL
+        ora XTOTAL+1
+        beq xg_skip          ; pas de total -> rien
+        lda #<(SCREEN+GAUGEROW*40)   ; ligne fixe -> adresse ecran constante
+        sta SCRPTR
+        lda #>(SCREEN+GAUGEROW*40)
+        sta SCRPTR+1
+        lda #0
+        sta COL
+        lda #'['
+        jsr putbyte
+        ldx #0
+xg_bar:
+        cpx XSEG
+        bcs xg_empty         ; X >= XSEG -> segment vide
+        lda #'#'
+        bne xg_putc          ; '#' != 0 -> branche toujours prise
+xg_empty:
+        lda #'-'
+xg_putc:
+        jsr putbyte
+        inx
+        cpx #BARLEN
+        bne xg_bar
+        lda #']'
+        jsr putbyte
+        lda #$20
+        jsr putbyte
+        lda XSEG             ; pourcentage = XSEG * 5
+        asl
+        asl
+        clc
+        adc XSEG
+        jsr print_dec_byte
+        lda #'%'
+        jmp putbyte          ; putbyte fait rts
+
+; print_dec_byte - affiche A (0..100) en decimal, largeur 3, espaces de tete.
+; X sert d'indicateur "un chiffre significatif a deja ete affiche".
+print_dec_byte:
+        ldx #0
+        ldy #'0'-1           ; centaines
+pdc_h:
+        iny
+        sec
+        sbc #100
+        bcs pdc_h
+        adc #100
+        sta XSUM             ; reste 0..99 (XSUM libre hors data-loop)
+        cpy #'0'
+        beq pdc_hsp
+        tya
+        jsr putbyte
+        ldx #1               ; centaine affichee
+        jmp pdc_t0
+pdc_hsp:
+        lda #$20             ; centaine 0 -> espace
+        jsr putbyte
+pdc_t0:
+        lda XSUM             ; dizaines
+        ldy #'0'-1
+pdc_t:
+        iny
+        sec
+        sbc #10
+        bcs pdc_t
+        adc #10
+        sta XSUM             ; unites
+        cpy #'0'
+        bne pdc_tp           ; dizaine non nulle -> chiffre
+        cpx #1               ; centaine deja affichee -> chiffre 0
+        beq pdc_tp
+        lda #$20             ; sinon espace de tete
+        jsr putbyte
+        jmp pdc_u
+pdc_tp:
+        tya
+        jsr putbyte
+pdc_u:
+        lda XSUM
+        ora #'0'
+        jmp putbyte          ; putbyte fait rts
 
 msg_recu:
         .byt $0D,$0A,$02,"FICHIER RECU EN 4000",$0D,$0A,$07,$00

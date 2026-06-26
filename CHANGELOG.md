@@ -6,6 +6,25 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté (Transfert XMODEM — jauge de progression, 26/06/2026)
+- **Barre de progression `[####------]  NN%`** pendant les transferts XMODEM,
+  côté terminal (le canal étant du binaire brut, seul le terminal voit les blocs).
+  - **Protocole** : le serveur envoie le **nombre total de blocs** (2 octets, bas/haut)
+    juste après `1F FE` (`server/internal/bbs/xfer.go`). Un terminal antérieur
+    ignore ces 2 octets (non-SOH) ; un terminal récent **exige** ce total
+    (sinon pas de jauge). Download/upload : tests serveur verts.
+  - **Terminal** (`client/xmodem.s`) : `handle_rx` lit le total (états 3/4) ; la
+    barre (BARLEN=20 segments) se remplit par **comptage de Bresenham** (pas de
+    mult/div 16 bits), pourcentage = segments×5, affichage en ligne fixe (row 25).
+    L'upload calcule le total depuis `XSIZE`. Variables de jauge aliasées sur des
+    cases zero-page **inactives pendant un transfert** (saisie/plot/dial) ; `PLOTST`
+    réinitialisé après transfert (l'alias `XACC` l'écrase).
+  - **Validé** dans l'émulateur (download local) : barre à **40%** à mi-transfert,
+    **100% + « FICHIER RECU EN 4000 »** à la fin.
+  - ⚠️ La prod doit être redéployée (le serveur courant n'annonce pas encore le
+    total — un terminal v0.1.2 ne pourrait pas télécharger tant que la prod n'a
+    pas le nouveau `xfer.go`).
+
 ### Déployé (Production — backspace serveur, 26/06/2026)
 - **Prod `pavi.3617.fr` mise à jour** (`make deploy`) avec la gestion backspace
   (`Session.ReadLine` traite `$08`/`$7F`). Vérifié end-to-end : accueil rendu,

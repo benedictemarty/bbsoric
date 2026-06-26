@@ -54,6 +54,11 @@ PROTO     = $E5          ; 0 = telnet/raw, 1 = TLS
 PLOTST    = $E3          ; etat reception plot (0=normal 1=attend col 2=attend row)
 PLOTX     = $E4          ; colonne memorisee pendant la reception du plot
 SHIFTF    = $F3          ; etat SHIFT ($80 si LSHIFT/RSHIFT enfonce, 0 sinon)
+; Jauge XMODEM (definie ici car utilisee par handle_rx ; details dans xmodem.s).
+; Aliasees sur des cases INACTIVES pendant un transfert (page zero pleine).
+XTOTAL    = $E8          ; total de blocs attendus (alias BUFPTR - saisie)
+XACC      = $E3          ; accumulateur Bresenham (alias PLOTST/PLOTX - plot)
+XSEG      = $E5          ; segments dessines (alias PROTO - dial)
 
 ; --- Carte zero-page (source unique ; xmodem.s/sedoric.s reutilisent SRC/DST/
 ;     KTMP/STRPTR HORS de leurs fenetres d'usage clavier - ne pas reallouer sans
@@ -300,9 +305,26 @@ ks_ret:
 ;  handle_rx - traite un octet recu - commande plot (1F col row) ou affichage.
 ;  A = octet recu.
 ; ---------------------------------------------------------------------------
+; Etats PLOTST - 0 normal, 1 apres 1F, 2 attend ligne (plot), 3/4 attend le
+; total de blocs (lo/hi) annonce par le serveur apres 1F FE (pour la jauge).
+; NB la jauge alias XACC sur PLOTST/PLOTX -> on REINITIALISE PLOTST apres un
+; transfert (sinon la machine a etats reste desynchronisee).
 handle_rx:
         ldx PLOTST
-        bne hr_coord
+        beq hr_normal
+        cpx #1
+        beq hr_state1
+        cpx #2
+        beq hr_row
+        cpx #3
+        beq hr_totlo
+        sta XTOTAL+1             ; etat 4 - total blocs (hi) puis reception
+        jsr xmodem_recv          ; recoit en RAM ($4000) avec barre de progression
+        jsr sed_save             ; sauve sur disquette si Sedoric resident
+        lda #0
+        sta PLOTST               ; XACC a ecrase PLOTST -> reinit
+        rts
+hr_normal:
         cmp #PLOTCMD
         beq hr_begin
         jmp putbyte              ; octet normal -> affichage (putbyte fait rts)
@@ -310,26 +332,31 @@ hr_begin:
         lda #1
         sta PLOTST
         rts
-hr_coord:
-        cpx #1
-        bne hr_row
-        cmp #$FE                 ; 1F FE = commande "recevoir un fichier"
+hr_state1:
+        cmp #$FE                 ; 1F FE = "recevoir un fichier"
         beq hr_recv
-        cmp #$FD                 ; 1F FD = commande "envoyer un fichier"
+        cmp #$FD                 ; 1F FD = "envoyer un fichier"
         beq hr_send
         sta PLOTX                ; sinon 1er octet = colonne (plot)
         lda #2
         sta PLOTST
         rts
 hr_recv:
-        lda #0
+        lda #3                   ; 1F FE -> attendre le total de blocs (lo, hi)
         sta PLOTST
-        jsr xmodem_recv          ; recoit en RAM ($4000)
-        jmp sed_save             ; sauve sur disquette si Sedoric resident (sinon rien)
+        rts
 hr_send:
         lda #0
         sta PLOTST
-        jmp xmodem_send          ; envoie le buffer RAM (xmodem_send fait rts)
+        jsr xmodem_send          ; envoie le buffer RAM
+        lda #0
+        sta PLOTST               ; XACC a ecrase PLOTST -> reinit
+        rts
+hr_totlo:
+        sta XTOTAL               ; etat 3 - total blocs (lo)
+        lda #4
+        sta PLOTST
+        rts
 hr_row:
         jsr set_cursor_xy        ; A = ligne, PLOTX = colonne
         lda #0
