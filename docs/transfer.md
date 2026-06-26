@@ -85,8 +85,21 @@ menu entries (type "▶ applet", selectable in the studio):
     **LOCI SD card** (`client/loci.s`, MIA `OPEN`/`WRITE_XSTACK`/`CLOSE` at `$03A0`;
     LOCI detected via the signature opcodes at `$03B3/$03B5/$03B7`). Dispatch is in
     `save_received`: `sed_save` returns `A=1`/`A=0`, and on `A=0` `loci_save` runs.
-    Still to add: **user-editable name** at reception and the **cassette** (`.TAP`)
-    target, selected by available hardware.
+    User-editable name at reception is **done** (`edit_dlname`). The **cassette**
+    (`.TAP`) target is **deferred** (see spike below).
   - **Binary telnet**: handled — the terminal forces the modem to raw mode (`ATNET0`).
+
+### Cassette (.TAP) save — spike S3 (deferred, 27/06/2026)
+- **Feasible but not worth it now.** `oric1-emu` already **captures a ROM CSAVE to
+  a host `.tap`** (no flag; it patches the Atmos tape routines), so a cassette save
+  would be emulator-validatable. The relevant Atmos ROM hooks: `WriteFileHeader
+  $E607`, `WriteLeader $E75A`, `PutByte $E65E`, `csave_end $E93C`; staging buffers
+  filename `$027F`, header `$02A8..$02B0` (reversed on-tape order).
+- **Why deferred.** Implementing the ML CSAVE recipe (header staging layout +
+  entry point) is comparable in effort to the Sedoric save reverse-engineering
+  (a multi-day job), for **low value**: Sedoric (Microdisc) and the LOCI SD card
+  already cover persistent storage; tape-of-downloads is a niche fallback (slow,
+  needs a physical recorder, manual tape swaps). A future story can pick it up
+  cheaply from the hooks above.
 
 See also: `docs/agile/backlog.md` (G1), `docs/hardware-connection.md`.

@@ -55,11 +55,12 @@
   received file's proposed Sedoric name can be edited at the keyboard, then it is
   saved (Sedoric/LOCI) under the edited name. Reuses `input_line`; validated in
   `oric1-emu` via `--type-keys`.
-- [ ] **S2 — News / announcements page** (server): dated, persisted news applet
-  (store pattern à la `internal/user`), Go-tested + driver.
-- [ ] **S3 — Cassette (.TAP) save spike**: assess ROM-tape feasibility + emulator
-  validation; deliver if validatable, otherwise a **documented deferral** with
-  rationale (Sedoric/LOCI already cover real storage; tape-of-downloads is niche).
+- [ ] **S2 — News / announcements page** (server): not started. Dated, persisted
+  news applet (store pattern à la `internal/user`), Go-tested + driver. (D2.)
+- [x] **S3 — Cassette (.TAP) save spike** ✅ (27/06): **feasible** (`oric1-emu`
+  captures ROM CSAVE to a host `.tap`; Atmos hooks `$E607/$E75A/$E65E/$E93C`,
+  buffers `$027F`/`$02A8`) but **deferred** — ML CSAVE recipe ≈ the Sedoric R&E
+  effort for low value (Sedoric/LOCI already cover storage). See `docs/transfer.md`.
 
 ## Sprint 3 — Content modules
 - [ ] Messaging / forum (read, post)

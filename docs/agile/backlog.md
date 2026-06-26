@@ -75,8 +75,9 @@
   sender (CRC-16) XMODEM 6502 (`client/xmodem.s`), triggered by `1F FE`/`1F FD`,
   RAM buffer `$4000` — validated in the emulator (`docs/img/xmodem-download.png`,
   `xmodem-upload.png`). User-editable name at reception **done (S1, 27/06)**
-  (`edit_dlname`/`user_to_sedoric`, runtime-tested). **Remaining**: cassette
-  (.TAP) **storage** (spike S3).*
+  (`edit_dlname`/`user_to_sedoric`, runtime-tested). Cassette (.TAP) **storage**:
+  spike S3 done → **deferred** (feasible via emulator CSAVE capture, but ≈ Sedoric
+  R&E effort for low value; ROM hooks noted in `docs/transfer.md`).*
   - **Path C (LOCI SD) — ✅ implemented (26/06)**: `client/loci.s` writes the
     `$4000` buffer to the LOCI SD card via the MIA API (`OPEN`/`WRITE_XSTACK`/
     `CLOSE` at `$03A0`), used as a fallback by `save_received` when Sedoric is
