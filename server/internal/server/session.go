@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"strings"
 	"time"
 )
 
@@ -84,19 +83,19 @@ func (s *Session) Println(text string) error {
 // Renvoie la ligne sans le CR/LF final, en minuscules-insensible côté appelant.
 func (s *Session) ReadLine() (string, error) {
 	s.touch()
-	var b strings.Builder
+	var b []byte
 	for {
 		c, err := s.reader.ReadByte()
 		if err != nil {
-			return b.String(), err
+			return string(b), err
 		}
 		switch c {
 		case iac: // 0xFF : début d'une commande telnet → on consomme et on ignore
 			if err := s.skipTelnetCommand(); err != nil {
-				return b.String(), err
+				return string(b), err
 			}
 		case '\n':
-			return b.String(), nil
+			return string(b), nil
 		case '\r':
 			// L'Oric (RETURN) et de nombreux clients envoient CR seul ou CRLF.
 			// On termine la ligne sur CR et on absorbe un LF suivant SEULEMENT
@@ -107,11 +106,17 @@ func (s *Session) ReadLine() (string, error) {
 					_ = s.reader.UnreadByte()
 				}
 			}
-			return b.String(), nil
+			return string(b), nil
 		case 0:
 			// NUL ignoré (cf. comportement telnet)
+		case 8, 127: // BACKSPACE / DEL : efface le dernier caractère de la ligne.
+			// L'écho visuel est géré par le terminal (effacement local) ; le
+			// serveur garde seulement son tampon de ligne synchronisé.
+			if len(b) > 0 {
+				b = b[:len(b)-1]
+			}
 		default:
-			b.WriteByte(c)
+			b = append(b, c)
 		}
 	}
 }

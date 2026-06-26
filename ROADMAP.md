@@ -70,13 +70,13 @@ Approche **agile**, livraisons incrémentales. Chaque sprint produit un incréme
     déjà câblé.
   - **✅ Disquette bootable du terminal** : `client/build-disk.sh` produit
     `term-boot.dsk` (Sedoric master + TERM.COM) ; le terminal **tourne** depuis la
-    disquette (`LOAD"TERM":CALL#1000`, menu modem affiché). ACIA `$03A0` (LOCI) au
-    runtime pour cohabiter avec le Microdisc. **Reste** : auto-démarrage hands-free
+    disquette (`LOAD"TERM":CALL#1000`, menu modem affiché). ACIA `$0380` (modem
+    LOCI) au runtime pour cohabiter avec le Microdisc. **Reste** : auto-démarrage hands-free
     (remplacer le programme de boot du master) + **test sur Oric réel**.
 
 ## Sprint 4 — Connexion matérielle réelle — ⏳ en cours
 - [x] **Doc de connexion WiFiModem + LOCI** (`docs/connexion-materielle.md`) : chaîne
-  Oric→ACIA→modem→TCP, adressage ACIA `$031C` / LOCI `$03A0-$03BF`, registres 6551,
+  Oric→ACIA→modem→TCP, adressage ACIA `$031C` / modem LOCI `$0380` (MIA `$03A0-$03BF`), registres 6551,
   commandes AT (`ATD`/`ATDT#`/`AT$CA`/`AT$CV1`), réglages 9600 8N1, dépannage.
 - [x] **Programme client/terminal Oric** (`client/term.s`) — terminal autonome
   6502 (menu modem, répertoire, saisie manuelle, numérotation Hayes, mode terminal
@@ -168,7 +168,15 @@ profils. Voir `docs/adr/0003-studio-forge.md`.
 - **Port public** : `6502`.
 - **Test** : émulateur **unique** `Oric1/oric1-emu` (Phosphoric) via socket TCP (`--serial tcp:`).
 
+## Revue client (terminal Oric) — 26/06/2026
+Revue ingénieur du client 6502 (`docs/revue-client.md`). **Corrigés** : base LOCI
+`$03A0`→**`$0380`** (le `$03A0` était l'espace MIA, d'où le clavier figé), clamp
+plot (anti hors-VRAM), borne réception XMODEM (anti débordement), **majuscules**
+(SHIFT) et **backspace** (DEL, client + serveur). **Différés documentés** :
+contrôle de flux RX (#1), codes modem/DCD (#6), telnet IAC (#7), tests client (#12).
+
 ## Décisions ouvertes (ADR à formaliser)
-1. **Adressage ACIA** — supporter `$03A0-$03BF` (LOCI) et `$031C` (Telestrat/oric1-emu) côté client.
+1. **Adressage ACIA** — ✅ tranché : `$031C` (ACIA standard) et **`$0380`** (modem
+   WiFi LOCI ; `$03A0-$03BF` = espace MIA, pas le modem). À confirmer sur fer réel.
 2. **Protocole telnet** — négociation IAC complète vs filtrage minimal (actuel). À trancher au Sprint 1.
 3. **Rendu OASCII** — table d'attributs Téletexte Oric exacte à valider sur émulateur (Sprint 1).

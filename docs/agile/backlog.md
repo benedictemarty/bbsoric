@@ -45,7 +45,7 @@
 ## Épopée E — Réel & déploiement (Sprint 4–5)
 
 - [x] **E1** (3) En tant qu'utilisateur, je veux une **doc de connexion** WiFiModem + LOCI.
-  *(`docs/connexion-materielle.md` : ACIA `$031C`/LOCI `$03A0`, AT, 9600 8N1, recette T1–T9)*
+  *(`docs/connexion-materielle.md` : ACIA `$031C`/LOCI `$0380`, AT, 9600 8N1, recette T1–T9)*
 - [~] **E2** (5) En tant qu'utilisateur, je veux me connecter depuis un **Oric réel**.
   *(terminal validé dans l'émulateur ; test matériel en attente d'un Oric physique)*
 - [x] **E3** (3) En tant qu'admin, je veux **déployer** le serveur (Docker) et le **superviser**.

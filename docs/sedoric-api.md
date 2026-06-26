@@ -288,7 +288,7 @@ façon **reproductible** (validé dans l'émulateur) :
 LOAD"TERM":CALL#1000
 ```
 
-> Au menu « TYPE DE MODEM », choisir **LOCI `$03A0`** si un Microdisc est présent :
+> Au menu « TYPE DE MODEM », choisir **LOCI `$0380`** si un Microdisc est présent :
 > l'ACIA `$031C` chevauche la plage I/O Microdisc `$0310-$031F`. Le terminal gère
 > les deux adresses au runtime (`ACIAPTR`), aucune variante de build n'est requise.
 

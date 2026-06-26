@@ -71,6 +71,32 @@ func TestReadKeyDrainsTrailingEOL(t *testing.T) {
 	}
 }
 
+func TestReadLineBackspace(t *testing.T) {
+	// Le terminal envoie BACKSPACE ($08) et/ou DEL ($7F) pour corriger une
+	// saisie : ReadLine doit retirer le dernier caractère du tampon.
+	cases := []struct {
+		name, in, want string
+	}{
+		{"bs_milieu", "abX\bc\r", "abc"},       // X effacé par \b
+		{"del_127", "abX\x7fc\r", "abc"},       // X effacé par DEL
+		{"multiples", "abcde\b\b\bZ\r", "abZ"},   // 3 effacements
+		{"sur_vide", "\b\bok\r", "ok"},          // backspace sur tampon vide : no-op
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s, cli := pipeSession(t)
+			go func() { cli.Write([]byte(c.in)) }()
+			line, err := s.ReadLine()
+			if err != nil {
+				t.Fatalf("ReadLine : %v", err)
+			}
+			if line != c.want {
+				t.Errorf("got %q, want %q", line, c.want)
+			}
+		})
+	}
+}
+
 func TestReadKeyThenReadLine(t *testing.T) {
 	// Scénario réel : une touche de menu, puis une saisie ligne (champ texte).
 	s, cli := pipeSession(t)

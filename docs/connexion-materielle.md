@@ -16,7 +16,7 @@
 │   Oric-1 /   │  6502 +   │  Interface    │  TTL/RS232 │  Modem     │ ───────────► │  BBS Oric    │
 │   Atmos      │  ACIA ────│  série (ACIA  │ ──────────►│  WiFi      │   telnet     │  pavi.3617   │
 │  (term.tap)  │  $031C ou │  6551)        │  9600 8N1  │ (Hayes AT) │   :6502      │  .fr:6502    │
-└──────────────┘  $03A0    └───────────────┘            └────────────┘              └──────────────┘
+└──────────────┘  $0380    └───────────────┘            └────────────┘              └──────────────┘
 ```
 
 L'Oric ne fait **ni TCP, ni WiFi, ni TLS**. Il pilote une **ACIA 6551** (UART)
@@ -34,7 +34,7 @@ menu de démarrage choisit la base :
 | Choix menu | Base ACIA | Montage typique |
 |-----------|-----------|-----------------|
 | `1` | **`$031C`** | ACIA « standard » Telestrat / défaut `oric1-emu`. Cartes série branchées sur le bus d'extension à cette base. |
-| `2` | **`$03A0`** | **LOCI** (carte d'extension Oric moderne) — MIA LOCI mappée `$03A0–$03BF`. |
+| `2` | **`$0380`** | **LOCI** (carte d'extension Oric moderne) — son **modem WiFi** (PicoWiFiModemUSB) est exposé en ACIA à `$0380`. ⚠️ Ne pas confondre avec l'**espace MIA** du LOCI `$03A0–$03BF` (registres carte, pas le modem). |
 
 Les deux montages exposent le **même registre 6551** (offsets depuis la base) :
 
@@ -45,8 +45,10 @@ Les deux montages exposent le **même registre 6551** (offsets depuis la base) :
 | `+2` | Commande | `$0B` = DTR on, IRQ off, pas d'écho |
 | `+3` | Contrôle | `$1E` = **9600 bauds, 8N1** |
 
-> ⚠️ La base `$03A0` du LOCI est **à confirmer sur le matériel réel** (cf.
-> `docs/architecture.md` §4 et `ROADMAP.md` « Décisions ouvertes »). Le menu
+> ✅ La base **`$0380`** du modem LOCI est confirmée par le firmware de référence
+> `PicoWiFiModemUSB` (programme Oric : ACIA `$0380`) et validée dans l'émulateur
+> (`--loci --serial picowifi`, cf. `phosphoric-findings.md` F1). Reste à confirmer
+> sur le **matériel réel** (cf. `docs/architecture.md` §4). Le menu
 > permet de basculer sans recompiler ; si aucun des deux ne répond, vérifier le
 > brochage et la base de votre carte (voir §6 dépannage).
 
@@ -124,13 +126,13 @@ bannière BBS rendue à travers le tunnel (`docs/img/tls-dial.png`,
 
 ## 5. Procédure pas à pas (depuis un Oric réel)
 
-1. **Brancher** l'interface série (carte ACIA `$031C` ou LOCI `$03A0`) sur le bus
+1. **Brancher** l'interface série (carte ACIA `$031C` ou LOCI `$0380`) sur le bus
    d'extension de l'Oric, modem WiFi raccordé au port série, modem sous tension et
    associé au WiFi (§3).
 2. **Charger le terminal** `term.tap` :
    - Cassette / lecteur `.tap` : `CLOAD"TERM"` (autorun, le programme démarre seul).
    - Le `.tap` est produit par `client/build.sh` (autorun, chargement `$1000`).
-3. **Menu modem** : taper `1` (ACIA `$031C`) ou `2` (LOCI `$03A0`) selon la carte.
+3. **Menu modem** : taper `1` (ACIA `$031C`) ou `2` (LOCI `$0380`) selon la carte.
 4. **Répertoire** : taper le numéro de l'entrée voulue, par ex. `1` =
    `BBS Oric (prod) pavi.3617.fr`, ou `M` pour une **saisie manuelle**
    (hôte, port, protocole telnet/TLS).
@@ -166,7 +168,7 @@ terminal AT : `ATD pavi.3617.fr:6502` puis `Entrée`.
 > `docs/img/` et cocher dans `ROADMAP.md`.
 
 - [ ] **T1 — Chargement** : `term.tap` se charge et démarre (menu modem affiché).
-- [ ] **T2 — Backend ACIA** : le bon choix (`1`=`$031C` ou `2`=`$03A0`) initialise
+- [ ] **T2 — Backend ACIA** : le bon choix (`1`=`$031C` ou `2`=`$0380`) initialise
       l'ACIA sans blocage.
 - [ ] **T3 — Répertoire** : entrée `1` compose `ATD pavi.3617.fr:6502`, modem
       répond `CONNECT`.

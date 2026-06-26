@@ -22,7 +22,7 @@ C'est l'usage prévu : un Oric équipé d'une **interface série** (carte ACIA o
 
 1. Branchez l'interface série et le modem WiFi (modem associé à votre WiFi).
 2. Chargez le terminal : `CLOAD"TERM"` (le programme `term.tap` démarre seul).
-3. **Menu modem** : tapez `1` (ACIA `$031C`) ou `2` (LOCI `$03A0`) selon la carte.
+3. **Menu modem** : tapez `1` (ACIA `$031C`) ou `2` (LOCI `$0380`) selon la carte.
 4. **Répertoire** : tapez `1` pour *BBS Oric (prod)*, ou `M` pour saisir une
    adresse à la main.
 5. Le terminal compose tout seul l'appel et affiche la **bannière couleur** du BBS.

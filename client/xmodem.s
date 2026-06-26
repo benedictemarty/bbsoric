@@ -60,6 +60,11 @@ xr_block:
         eor #$FF
         cmp KTMP
         bne xr_nak           ; en-tete corrompu
+        lda XBUF+1           ; tampon plein ($4000..$B7FF avant l'ecran $BB80) ?
+        cmp #$B8
+        bcc xr_sizeok        ; place pour 128 octets -> continuer
+        jmp xr_overflow      ; fichier trop gros -> annuler (protege la RAM)
+xr_sizeok:
         lda #0
         sta XSUM
         ldy #0
@@ -113,6 +118,15 @@ xr_done:
         lda #<msg_recu
         sta STRPTR
         lda #>msg_recu
+        sta STRPTR+1
+        jmp print_string     ; print_string fait rts
+xr_overflow:
+        lda #CAN             ; annule la transmission cote serveur
+        jsr ser_tx
+        jsr ser_tx
+        lda #<msg_full
+        sta STRPTR
+        lda #>msg_full
         sta STRPTR+1
         jmp print_string     ; print_string fait rts
 
@@ -271,5 +285,7 @@ cu_skip:
 
 msg_recu:
         .byt $0D,$0A,$02,"FICHIER RECU EN 4000",$0D,$0A,$07,$00
+msg_full:
+        .byt $0D,$0A,$01,"FICHIER TROP GROS - ANNULE",$0D,$0A,$07,$00
 msg_envoye:
         .byt $0D,$0A,$02,"FICHIER ENVOYE",$0D,$0A,$07,$00

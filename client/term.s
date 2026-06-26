@@ -6,10 +6,11 @@
 ;
 ;  E/S serie abstraites via ACIAPTR (pointeur ZP sur la base de l'ACIA 6551)  -
 ;    backend 1 = ACIA 6551 direct  ($031C)
-;    backend 2 = LOCI / Pico W      ($03A0)   (meme interface 6551, autre base)
+;    backend 2 = LOCI / Pico W      ($0380)   (meme interface 6551, autre base)
 ;  (DTL2000 = V23/Minitel, hors sujet ; TLS = role du modem, voir docs.)
 ;
-;  Cible oric1-emu. Tester avec --serial modem [--acia-addr 03A0 pour LOCI].
+;  Cible oric1-emu. Tester ACIA $031C avec --serial modem ; LOCI $0380 avec
+;  --loci --serial picowifi (SANS --acia-addr - l'ACIA va par defaut a $0380).
 ;  Assemblage xa. Chargement 1000. Commentaires ASCII sans deux-points.
 ; ---------------------------------------------------------------------------
 
@@ -52,13 +53,22 @@ INMAX     = $E6
 PROTO     = $E5          ; 0 = telnet/raw, 1 = TLS
 PLOTST    = $E3          ; etat reception plot (0=normal 1=attend col 2=attend row)
 PLOTX     = $E4          ; colonne memorisee pendant la reception du plot
+SHIFTF    = $F3          ; etat SHIFT ($80 si LSHIFT/RSHIFT enfonce, 0 sinon)
+
+; --- Carte zero-page (source unique ; xmodem.s/sedoric.s reutilisent SRC/DST/
+;     KTMP/STRPTR HORS de leurs fenetres d'usage clavier - ne pas reallouer sans
+;     verifier les collisions). Libres connus - $F3 utilise ci-dessus pour SHIFTF.
+;     xmodem.s - XBUF $E0 XBLK $E2 XCRC $E6 XREM $EC XSUM $FD XSIZE $FE XSAVY $FC.
 
 NUM_ENTRIES = 5
 
 * = $1000
 
 start:
-        sei
+        sei                      ; IRQ off pour toute la session - le terminal
+                                 ; pilote lui-meme le clavier (scan matrice) et
+                                 ; la serie (polling ACIA), sans la ROM. Sedoric
+                                 ; (XSAVEB) re-SEI de son cote, donc OK.
         ; init clavier (VIA/PSG)
         lda VIA_PCR
         and #$11
@@ -102,8 +112,8 @@ mm_6551:
         sta ACIAPTR+1
         jmp mm_init
 mm_loci:
-        lda #$A0
-        sta ACIAPTR
+        lda #$80                 ; LOCI - modem WiFi expose en ACIA a $0380
+        sta ACIAPTR              ; ($03A0-$03BF = espace MIA du LOCI, PAS le modem)
         lda #$03
         sta ACIAPTR+1
 mm_init:
@@ -330,7 +340,17 @@ hr_row:
 ;  set_cursor_xy - SCRPTR = SCREEN + row*40 + col ; COL = col.  A = row (0-27).
 ; ---------------------------------------------------------------------------
 set_cursor_xy:
+        cmp #28                  ; clamp ligne 0..27 (coords reseau non fiables)
+        bcc scxy_rowok
+        lda #27
+scxy_rowok:
         tax                      ; X = row (compteur)
+        lda PLOTX
+        cmp #40                  ; clamp colonne 0..39
+        bcc scxy_colok
+        lda #39
+        sta PLOTX
+scxy_colok:
         lda #<SCREEN
         sta SCRPTR
         lda #>SCREEN
@@ -406,6 +426,8 @@ il_loop:
         jsr get_key
         cmp #$0D
         beq il_done
+        cmp #$08                 ; BACKSPACE (touche DEL Oric)
+        beq il_back
         cmp #$20
         bcc il_skip              ; ignore controle < espace
         ldx INLEN
@@ -415,6 +437,12 @@ il_loop:
         sta (BUFPTR),y
         inc INLEN
         jsr putbyte              ; echo (A preserve)
+il_back:
+        ldx INLEN
+        beq il_skip              ; rien tape -> ignore
+        dec INLEN
+        lda #$08
+        jsr putbyte             ; efface a l'ecran (putbyte gere $08)
 il_skip:
         jsr wait_release
         jmp il_loop
@@ -517,6 +545,8 @@ putbyte:
         beq pb_cr
         cmp #$0A
         beq pb_lf
+        cmp #$08
+        beq pb_bs
         ldx COL
         cpx #40
         bcs pb_done
@@ -528,6 +558,21 @@ putbyte:
 pb_adv:
         inc COL
 pb_done:
+        rts
+pb_bs:                           ; backspace destructif (recule, efface, recule)
+        lda COL
+        beq pb_done              ; deja en colonne 0 - rien a effacer
+        dec COL
+        sec
+        lda SCRPTR
+        sbc #1
+        sta SCRPTR
+        lda SCRPTR+1
+        sbc #0
+        sta SCRPTR+1
+        lda #$20
+        ldy #0
+        sta (SCRPTR),y
         rts
 pb_cr:
         sec
@@ -657,6 +702,7 @@ psg_write:
         rts
 
 key_scan:
+        jsr scan_shift           ; met SHIFTF selon LSHIFT/RSHIFT
         lda #0
         sta KCOL
 ks_colloop:
@@ -696,11 +742,58 @@ ks_rownext:
         bne ks_colloop
         lda #0
 ks_found:
+        cmp #$61                 ; lettre minuscule a..z ?
+        bcc ksf_done
+        cmp #$7B
+        bcs ksf_done
+        bit SHIFTF               ; SHIFT enfonce -> majuscule
+        bpl ksf_done
+        sec
+        sbc #$20                 ; 'a'..'z' -> 'A'..'Z'
+ksf_done:
         pha
         lda #$FF
         ldy #14
         jsr psg_write
         pla
+        rts
+
+; scan_shift - SHIFTF = $80 si LSHIFT (col4 row4) ou RSHIFT (col7 row4) enfonce,
+; sinon 0. rowmask ligne 4 = $EF. Appele en debut de key_scan.
+scan_shift:
+        lda #0
+        sta SHIFTF
+        lda VIA_ORB              ; colonne 4 (LSHIFT)
+        and #$F8
+        ora #4
+        sta VIA_ORB
+        lda #$EF
+        ldy #14
+        jsr psg_write
+        nop
+        nop
+        lda VIA_ORB
+        and #$08
+        bne ss_yes
+        lda VIA_ORB              ; colonne 7 (RSHIFT)
+        and #$F8
+        ora #7
+        sta VIA_ORB
+        lda #$EF
+        ldy #14
+        jsr psg_write
+        nop
+        nop
+        lda VIA_ORB
+        and #$08
+        beq ss_no
+ss_yes:
+        lda #$80
+        sta SHIFTF
+ss_no:
+        lda #$FF                 ; relacher les lignes
+        ldy #14
+        jsr psg_write
         rts
 
 ; ---------------------------------------------------------------------------
@@ -714,7 +807,7 @@ asciitab:
         .byt $6D,$36,$62,$34,$00,$7A,$32,$63
         .byt $6B,$39,$3B,$2D,$00,$00,$5C,$27
         .byt $20,$2C,$2E,$00,$00,$00,$00,$00
-        .byt $75,$69,$6F,$70,$00,$00,$5D,$5B
+        .byt $75,$69,$6F,$70,$00,$08,$5D,$5B   ; ...FUNCT(44) DEL=$08(45) ] [
         .byt $79,$68,$67,$65,$00,$61,$73,$77
         .byt $38,$6C,$30,$2F,$00,$0D,$00,$3D
 
@@ -730,7 +823,7 @@ mm_text:
         .byt $03,"           TYPE DE MODEM",$0D,$0A
         .byt "========================================",$0D,$0A,$0D,$0A
         .byt $06," 1  ",$07,"ACIA 6551 direct  (031C)",$0D,$0A
-        .byt $06," 2  ",$07,"LOCI / Pico W     (03A0)",$0D,$0A,$0D,$0A
+        .byt $06," 2  ",$07,"LOCI / Pico W     (0380)",$0D,$0A,$0D,$0A
         .byt $02,"Votre choix (1-2) > ",$07,$00
 
 pb_text:

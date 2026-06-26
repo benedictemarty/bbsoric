@@ -42,12 +42,17 @@ make client              # -> client/term.tap   (nécessite xa65)
 client/build-disk.sh     # -> client/term-boot.dsk  (nécessite l'émulateur + ROM Microdisc + master Sedoric)
 ```
 
-Lancer dans l'émulateur (ACIA `$031C`, ou LOCI `$03A0` — voir
+Lancer dans l'émulateur (ACIA `$031C`, ou LOCI `$0380` — voir
 [`docs/connexion-materielle.md`](docs/connexion-materielle.md)) :
 
 ```bash
+# ACIA standard $031C (menu modem : choix 1)
 oric1-emu -t client/term.tap -f -r basic11b.rom \
   --serial modem:pavi.3617.fr:6502 --serial-buffer 512
+
+# LOCI / Pico WiFi $0380 (menu modem : choix 2) — modèle fidèle, SANS --acia-addr
+oric1-emu -t client/term.tap -f -r basic11b.rom \
+  --loci --serial picowifi --serial-buffer 512
 ```
 
 ## Déploiement

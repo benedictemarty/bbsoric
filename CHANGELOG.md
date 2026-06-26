@@ -6,6 +6,28 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Corrigé (Terminal Oric — revue ingénieur, 26/06/2026)
+Revue complète du client 6502 (`docs/revue-client.md`). Correctifs livrés :
+- **LOCI — mauvaise base ACIA** (`client/term.s`) : l'option « 2 = LOCI » visait
+  **`$03A0`** (espace **MIA** du LOCI), pas le modem → collision MIA/ACIA, PSG
+  perturbé, **clavier figé sur l'annuaire**. Corrigé vers **`$0380`** (ACIA du
+  modem WiFi LOCI, cf. firmware `PicoWiFiModemUSB`). **Validé** émulateur
+  `--loci --serial picowifi` : `2`→`1`→`CONNECT pavi.3617.fr` (bannière rendue).
+  Détail : `phosphoric-findings.md` F1. Docs alignées (`$03A0`→`$0380`).
+- **Plot hors limites** (`set_cursor_xy`) : clamp `row<28`/`col<40` — supprime une
+  écriture hors VRAM pilotée par une entrée réseau non fiable (BBS tiers).
+- **Réception XMODEM non bornée** : refus au-delà de `$B800` (`CAN` + « FICHIER
+  TROP GROS ») — supprime un débordement de tampon depuis le réseau.
+- **Majuscules (SHIFT)** : `scan_shift` + `key_scan` (`a-z`→`A-Z`) — l'identification
+  avec mot de passe à casse mixte devient possible. Validé (trace : TX `Y`/`Z`).
+- **Backspace** : touche **DEL** (col5/row5) → `$08` ; `putbyte`/`input_line`
+  (client) et `Session.ReadLine` (serveur, `$08`/`$7F`) effacent le dernier
+  caractère. Test `TestReadLineBackspace` (4 cas).
+- Commentaire `sei` + carte zero-page documentée (`term.s`).
+- **Différés documentés** (avec justification) : contrôle de flux RX (#1), codes
+  modem/DCD (#6), telnet IAC (#7), overrun ACIA (#8), nom Sedoric (#9), tests
+  client (#12). Voir `docs/revue-client.md`.
+
 ### Documenté (findings émulateur, 26/06/2026)
 - **`phosphoric-findings.md`** (nouveau) : journal des défauts de l'émulateur
   Phosphoric repérés depuis bbsoric. F1 = `--loci` + `--acia-addr 03A0` fige le

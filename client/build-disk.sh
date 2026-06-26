@@ -14,7 +14,7 @@
 #
 # La disquette produite boote Sedoric ; lancer le terminal par :
 #     LOAD"TERM":CALL#1000
-# (choisir l'ACIA « LOCI $03A0 » au menu pour cohabiter avec le Microdisc —
+# (choisir l'ACIA « LOCI $0380 » au menu pour cohabiter avec le Microdisc —
 #  $031C entre en conflit avec la plage I/O Microdisc $0310-$031F).
 #
 # Prérequis : oric1-emu + ROMs + une disquette Sedoric master.
@@ -72,4 +72,4 @@ fi
 echo ""
 echo "=== Disquette bootable produite : $OUT ==="
 echo "    Boot Sedoric, puis lancer le terminal :  LOAD\"TERM\":CALL#1000"
-echo "    (au menu modem, choisir LOCI \$03A0 si Microdisc présent)"
+echo "    (au menu modem, choisir LOCI \$0380 si Microdisc présent)"
