@@ -341,7 +341,7 @@ handle_rx:
         cmp #12
         bcc hr_ret               ; <12 -> rester en etat 5
         jsr xmodem_recv          ; recoit en RAM ($4000) avec barre de progression
-        jsr sed_save             ; sauve sous le nom recu (Sedoric si resident)
+        jsr save_received        ; sauve sous le nom recu (Sedoric, sinon LOCI SD)
         lda #0
         sta PLOTST               ; XACC a ecrase PLOTST -> reinit
 hr_ret:

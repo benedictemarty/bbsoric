@@ -6,6 +6,23 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (Download — LOCI SD save fallback, 26/06/2026)
+- **The received file is now saved to the LOCI SD card when Sedoric is not
+  resident.** New module `client/loci.s` (concatenated by `client/build.sh` after
+  `sedoric.s`) writes the `$4000` buffer (`XSIZE` bytes) via the MIA API at `$03A0`
+  (`OPEN`/`WRITE_XSTACK`/`CLOSE`), pushing the path and 128-byte blocks onto the
+  XSTACK in reverse. LOCI presence is detected through the fixed signature opcodes
+  at `$03B3/$03B5/$03B7` (`A9/A2/60`), independent of the ROM init (the terminal
+  boots from tape). The filename is rebuilt from the 12-byte Sedoric 8.3 `dlname`
+  into `NAME.EXT`.
+- **Save dispatch** (`save_received`): `sed_save` now returns `A=1` if it persisted
+  to Sedoric, `A=0` otherwise (`client/sedoric.s`); on `A=0`, `save_received` falls
+  back to `loci_save`. `term.s` (`handle_rx` state 5) calls `save_received` instead
+  of `sed_save`. User feedback: `SAUVE SUR CARTE SD` / `ECHEC SAUVEGARDE LOCI`.
+- Terminal `.tap` rebuilt clean (`client/term.bin`/`term.tap`, `$1000`→`$21F8`).
+  Out-of-range forward branches to `ls_fail` reworked as inverse-branch + `jmp`.
+  Remaining tracked stage: user-editable name at reception, and **tape** target.
+
 ### Added (Download — real filename, save under it, 26/06/2026)
 - **The downloaded file is now saved under its real name** instead of the fixed
   `BBSFILE.BIN`. New **download header v2** (after `1F FE`): the 2 block-count

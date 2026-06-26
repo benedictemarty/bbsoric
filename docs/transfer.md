@@ -73,10 +73,13 @@ menu entries (type "▶ applet", selectable in the studio):
   The server (`upload` applet) emits **`1F FD`** (`oascii.SendCmd`); `term.s` then switches
   to `xmodem_send`. Validated in emulator (`docs/img/xmodem-upload.png`, 256 bytes).
 - **Remaining to do**:
-  - **Storage targets**: the `$4000` buffer is saved to **Sedoric** (Microdisc) under
-    the real name when Sedoric is resident. Still to add: **user-editable name** at
-    reception, **LOCI SD** (MIA `OPEN`/`WRITE_XRAM`/`CLOSE`) and **cassette** (`.TAP`)
-    targets, selected by available hardware.
+  - **Storage targets**: the `$4000` buffer is saved to **Sedoric** (Microdisc)
+    under the real name when Sedoric is resident, otherwise it falls back to the
+    **LOCI SD card** (`client/loci.s`, MIA `OPEN`/`WRITE_XSTACK`/`CLOSE` at `$03A0`;
+    LOCI detected via the signature opcodes at `$03B3/$03B5/$03B7`). Dispatch is in
+    `save_received`: `sed_save` returns `A=1`/`A=0`, and on `A=0` `loci_save` runs.
+    Still to add: **user-editable name** at reception and the **cassette** (`.TAP`)
+    target, selected by available hardware.
   - **Binary telnet**: handled — the terminal forces the modem to raw mode (`ATNET0`).
 
 See also: `docs/agile/backlog.md` (G1), `docs/hardware-connection.md`.

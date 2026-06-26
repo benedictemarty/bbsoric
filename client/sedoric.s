@@ -71,6 +71,7 @@ sed_save:
         beq sed_go
         jsr OVL_TOGGLE           ; pas attendu -> rebascule et abandonne
 sed_ret:
+        lda #0                   ; Sedoric absent -> non sauve
         rts
 sed_go:
         ; --- nom de fichier dans BUFNOM (dlname = nom recu du serveur) ---
@@ -113,7 +114,9 @@ sed_nm:
         sta STRPTR
         lda #>msg_saved
         sta STRPTR+1
-        jmp print_string         ; fait rts
+        jsr print_string
+        lda #1                   ; sauve sur Sedoric
+        rts
 
 msg_saved:
         .byt $0D,$0A,$02,"SAUVE SUR DISQUETTE",$0D,$0A,$07,$00
