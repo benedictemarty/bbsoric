@@ -6,6 +6,26 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Fixed (XMODEM download stuck at 0% — diagnosis, 26/06/2026)
+- **Root cause of "download frozen at `0%`" identified and proven**: the
+  **picowifi modem in TELNET mode (`telnet=1`)** mangles the binary XMODEM stream.
+  A telnet modem reinterprets `0xFF` (IAC) and bare CR; an XMODEM block routinely
+  carries `0xFF` (an Oric `.TAP` header has `0xFF` in its very first block) → the
+  block checksum fails → endless NAK → the gauge stays at `0%`. The handshake
+  (`1F FE` + block count) carries no `0xFF`, which is why the bar is **drawn** but
+  never **advances** — exactly the reported screen.
+- **Neither the server nor the 6502 receiver is at fault.** Verified with a
+  faithful end-to-end bench (real `oascii` + `xmodem` packages driving the real
+  `term.tap` in `oric1-emu`, `--loci --serial picowifi`): same 3-block file with
+  `0xFF`/`0x0D` in block 1 → `telnet=1` = stuck at `0%` (10× NAK), `telnet=0` =
+  full transfer (`SOH→ACK×3→EOT→ACK`, "xmodem.Send OK"). Serial trace shows the
+  emulated ACIA `OVERRUN` only when `--serial-buffer` is omitted (separate
+  emulator-config footgun).
+- **Fix (operator side, no code change): put the modem in raw/binary mode for the
+  BBS.** picowifi emulator → `telnet=0` in `~/.phosphoric_picowifi.cfg`; real
+  Pico W → equivalent raw/binary `AT` setting. Documented in
+  `docs/hardware-connection.md` §6 (troubleshooting).
+
 ### Added (Phonebook — IDreamIn8Bits entry, 26/06/2026)
 - **New directory entry 6 `IDreamIn8Bits`** in the Oric terminal phonebook
   (`client/term.s`): telnet `bbs.idreamtin8bits.com:6500` (ASCII/ANSI mode),
