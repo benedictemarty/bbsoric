@@ -6,6 +6,12 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+## [v0.1.3-alpha] — 2026-06-27
+Publiée : https://github.com/benedictemarty/bbsoric/releases/tag/v0.1.3-alpha
+(assets `term.tap`, `term-boot.dsk`). Téléchargement sous le vrai nom et à la
+taille exacte (header v3), sauvegarde LOCI SD en fallback, download binaire
+débloqué (`ATNET0`). Les entrées ci-dessous étaient sous `[Unreleased]`.
+
 ### Added (Download — exact file size + LOCI robustness/tests, 26/06/2026)
 - **Files are now saved at their exact size** (no more XMODEM 128-byte padding).
   New **download header v3**: after the 12-byte name, the server appends the
