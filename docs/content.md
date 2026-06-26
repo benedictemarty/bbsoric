@@ -1,15 +1,15 @@
-# Contenu dynamique — flux de pages en JSON
+# Dynamic content — page flow in JSON
 
-L'enchaînement des écrans du BBS (menus, pages de contenu, navigation) est
-**piloté par un fichier JSON rechargé à chaud** : le modifier met à jour le BBS
-sans recompiler ni redémarrer (prise en compte sous ~2 s, à la navigation suivante
-des sessions en cours).
+The sequence of BBS screens (menus, content pages, navigation) is
+**driven by a hot-reloaded JSON file**: editing it updates the BBS
+without recompiling or restarting (applied within ~2 s, at the next navigation
+of sessions in progress).
 
-- Fichier de référence versionné : [`../content/site.json`](../content/site.json)
-- En production : `/etc/bbsoric/site.json` (édité directement sur le serveur ;
-  le déploiement ne l'écrase jamais — il ne le sème qu'à l'initialisation).
-- Lancement : `bbsd -content /etc/bbsoric/site.json` (sans `-content`, contenu
-  intégré par défaut).
+- Versioned reference file: [`../content/site.json`](../content/site.json)
+- In production: `/etc/bbsoric/site.json` (edited directly on the server;
+  deployment never overwrites it — it only seeds it at initialization).
+- Launch: `bbsd -content /etc/bbsoric/site.json` (without `-content`, default
+  built-in content).
 
 ## Format
 
@@ -23,34 +23,34 @@ des sessions en cours).
 }
 ```
 
-- **`start`** : identifiant de la page de départ.
-- **`pages`** : dictionnaire `identifiant → page`.
+- **`start`**: identifier of the starting page.
+- **`pages`**: dictionary `identifier → page`.
 
-### La page (type unique)
-Une page a un **titre** et, **optionnellement**, du **texte** (`lines`) et/ou des
-**choix** (`entries`) :
-- **avec `entries`** → écran **interactif** : une touche route vers l'entrée choisie ;
-  le texte (`lines`) éventuel s'affiche **au-dessus** des choix ;
-- **sans `entries`** → écran de **contenu** : une touche revient en arrière
-  (mode caractère, cf. ADR-0002).
+### The page (single type)
+A page has a **title** and, **optionally**, **text** (`lines`) and/or
+**choices** (`entries`):
+- **with `entries`** → **interactive** screen: a key routes to the chosen entry;
+  the optional text (`lines`) is displayed **above** the choices;
+- **without `entries`** → **content** screen: a key goes back
+  (character mode, see ADR-0002).
 
-**Lignes de texte** (`lines`). Une ligne porte un **style** Oric (tous optionnels) :
+**Text lines** (`lines`). A line carries an Oric **style** (all optional):
 ```json
 { "text": " ALERTE ", "ink": "white", "paper": "red", "blink": true,
   "doubleHeight": false, "altCharset": false, "inverse": false }
 ```
-- `ink` : couleur du texte — `black red green yellow blue magenta cyan white` (défaut blanc).
-- `paper` : couleur de **fond** (mêmes noms ; défaut noir).
-- `blink` : **clignotement** · `doubleHeight` : **double hauteur** ·
-  `altCharset` : **police BBS** (filets/cadres, blocs, trames, symboles — charset
-  alternatif Oric redéfini, cf. `tools/genfont`) · `inverse` : **vidéo inverse**.
+- `ink`: text color — `black red green yellow blue magenta cyan white` (default white).
+- `paper`: **background** color (same names; default black).
+- `blink`: **blinking** · `doubleHeight`: **double height** ·
+  `altCharset`: **BBS font** (rules/frames, blocks, halftones, symbols — redefined
+  Oric alternate charset, see `tools/genfont`) · `inverse`: **inverse video**.
 
-> Avec `altCharset`, les caractères ne sont plus l'ASCII standard mais la **police BBS**
-> (ex. `a`/`b`/`c`/`d` = coins, `-`/`|` = filets, `0` = bloc plein, `5`/`6`/`7` = trames).
-> Le studio fournit une **palette** (onglet Édition) pour insérer ces glyphes ; l'aperçu et
-> le terminal Oric utilisent la même police.
+> With `altCharset`, the characters are no longer standard ASCII but the **BBS font**
+> (e.g. `a`/`b`/`c`/`d` = corners, `-`/`|` = rules, `0` = solid block, `5`/`6`/`7` = halftones).
+> The studio provides a **palette** (Edit tab) to insert these glyphs; the preview and
+> the Oric terminal use the same font.
 
-**Multicolore sur une ligne** — découper en `segments`, chacun avec son propre style :
+**Multicolor on one line** — split into `segments`, each with its own style:
 ```json
 { "segments": [
   { "text": "Score ", "ink": "white" },
@@ -58,47 +58,47 @@ Une page a un **titre** et, **optionnellement**, du **texte** (`lines`) et/ou de
   { "text": " GAME OVER ", "ink": "white", "paper": "red", "inverse": true }
 ]}
 ```
-Dans une ligne à segments, un attribut non renseigné reprend la **valeur par défaut**
-(encre blanche, fond noir, pas d'effet) ; le moteur n'émet que les **changements** d'attribut.
+In a line with segments, an unset attribute reverts to the **default value**
+(white ink, black background, no effect); the engine only emits attribute **changes**.
 
-> Rappel Oric : chaque octet d'attribut **occupe une case écran** (un changement « mange » une
-> colonne) et l'ULA réinitialise les attributs à chaque début de ligne. Pour du **dynamique**
-> (animation, valeurs calculées, interaction, positionnement, art semi-graphique élaboré),
-> écrire un **applet** (cf. `studio/README.md` / ADR-0001).
+> Oric reminder: each attribute byte **occupies a screen cell** (a change "eats" a
+> column) and the ULA resets attributes at the start of each line. For **dynamic** content
+> (animation, computed values, interaction, positioning, elaborate semi-graphical art),
+> write an **applet** (see `studio/README.md` / ADR-0001).
 
-**Choix** (`entries`) — une entrée **navigue** (`target`) **ou lance un applet** (`applet`
-+ `next`). Un menu peut donc proposer plusieurs applets au choix.
+**Choices** (`entries`) — an entry **navigates** (`target`) **or launches an applet** (`applet`
++ `next`). A menu can therefore offer several applets to choose from.
 
-Entrée de navigation :
+Navigation entry:
 ```json
 { "key": "1", "label": "Informations", "target": "info" }
 ```
-- `key` : touche (insensible à la casse).
-- `target` : identifiant de page **ou** cible spéciale :
-  - `__quit__` : termine la session,
-  - `__back__` : page précédente (pile),
-  - `__home__` : page de départ.
+- `key`: key (case-insensitive).
+- `target`: page identifier **or** special target:
+  - `__quit__`: ends the session,
+  - `__back__`: previous page (stack),
+  - `__home__`: starting page.
 
-Entrée-applet :
+Applet entry:
 ```json
 { "key": "1", "label": "Se connecter", "applet": "login", "next": "main" }
 ```
-- `applet` : nom de l'applet à lancer quand l'entrée est choisie (`login`, `register`,
-  `guest`…). **Ajouter un applet** = écrire une petite fonction Go et l'enregistrer.
-- `next` (optionnel) : page où aller **après succès** de l'applet (vide = on reste).
+- `applet`: name of the applet to launch when the entry is chosen (`login`, `register`,
+  `guest`…). **Adding an applet** = writing a small Go function and registering it.
+- `next` (optional): page to go to **after the applet succeeds** (empty = stay).
 
-> Compat : une page peut aussi porter `applet` (+ `next`) au niveau **page** (applet
-> auto-lancé à l'arrivée). Mécanisme historique conservé pour les JSON écrits à la main ;
-> préférez une **entrée-applet**.
+> Compat: a page can also carry `applet` (+ `next`) at the **page** level (applet
+> auto-launched on arrival). A historical mechanism kept for hand-written JSON;
+> prefer an **applet entry**.
 
-## Rendu (rappel OASCII)
+## Rendering (OASCII reminder)
 
-Titres en jaune, règles 40 colonnes, touches en cyan, libellés en blanc, invites
-en vert. Un octet d'attribut couleur occupe une case écran (cf. `oascii.md`) — éviter
-les libellés trop longs pour rester dans les 40 colonnes.
+Titles in yellow, 40-column rules, keys in cyan, labels in white, prompts
+in green. A color attribute byte occupies a screen cell (see `oascii.md`) — avoid
+labels that are too long to stay within 40 columns.
 
 ## Validation
 
-Un JSON invalide (syntaxe, `start` introuvable, cible inexistante, type inconnu)
-est **refusé** : l'ancienne version reste en service et l'erreur est journalisée.
-Le test `internal/content` vérifie aussi que `content/site.json` du dépôt est valide.
+An invalid JSON (syntax, `start` not found, nonexistent target, unknown type)
+is **rejected**: the previous version stays in service and the error is logged.
+The `internal/content` test also verifies that the repository's `content/site.json` is valid.

@@ -1,101 +1,101 @@
-# API Sedoric — sauvegarde/chargement de fichiers (voie B Microdisc)
+# Sedoric API — file save/load (Microdisc path B)
 
-> Extrait du désassemblage officiel **« Sedoric 3.0 à nu »**. Sert à écrire/lire
-> un vrai **fichier Sedoric** (catalogue, nom) depuis le terminal Oric, pour le
-> stockage Microdisc du transfert de fichiers (backlog **G1**, voie B).
+> Extracted from the official disassembly **"Sedoric 3.0 à nu"**. Used to
+> write/read a real **Sedoric file** (catalog, name) from the Oric terminal, for
+> Microdisc storage of file transfer (backlog **G1**, path B).
 >
-> **Prérequis : Sedoric résident** (Oric booté depuis une disquette Sedoric ;
-> ROM Microdisc active en overlay `$E000`, RAM Sedoric en `$C000+`, table de
-> vecteurs en page `$FF`). Le terminal doit donc tourner **sous Sedoric**, pas en
-> .tap cassette sur une machine sans disque.
+> **Prerequisite: resident Sedoric** (Oric booted from a Sedoric disk; Microdisc
+> ROM active as overlay at `$E000`, Sedoric RAM at `$C000+`, vector table in page
+> `$FF`). The terminal must therefore run **under Sedoric**, not as a .tap cassette
+> on a diskless machine.
 
-## Table de vecteurs (API publique, page `$FF`)
+## Vector table (public API, page `$FF`)
 
-| Vecteur | JMP | Routine | Rôle |
+| Vector | JMP | Routine | Role |
 |---------|-----|---------|------|
-| `$FF73` | `4C E5 E0` → `$E0E5` | **XLOADA** | charge le fichier de nom `BUFNOM` selon `VSALO0/1`, `DESALO` |
-| `$FF76` | `4C 28 DE` → `$DE28` | **XDEFSA** | positionne les valeurs par défaut pour `XSAVEB` |
-| `$FF79` | `4C E6 DF` → `$DFE6` | **XDEFLO** | positionne les valeurs par défaut pour `XLOADA` |
-| `$FF7C` | `4C 9C DE` → `$DE9C` | **XSAVEB** | sauve le fichier `BUFNOM` selon `VSALO0/1`, `DESALO`, `FISALO`, `EXSALO` |
+| `$FF73` | `4C E5 E0` → `$E0E5` | **XLOADA** | loads the file named `BUFNOM` according to `VSALO0/1`, `DESALO` |
+| `$FF76` | `4C 28 DE` → `$DE28` | **XDEFSA** | sets the default values for `XSAVEB` |
+| `$FF79` | `4C E6 DF` → `$DFE6` | **XDEFLO** | sets the default values for `XLOADA` |
+| `$FF7C` | `4C 9C DE` → `$DE9C` | **XSAVEB** | saves the `BUFNOM` file according to `VSALO0/1`, `DESALO`, `FISALO`, `EXSALO` |
 
-(Autres vecteurs utiles : `$FF70` charge selon POSNMX/POSNMP/POSNMS ; `$FF8B`
-XWDESC écrit les descripteurs ; `$FF88` XLIBSE secteur libre ; etc.)
+(Other useful vectors: `$FF70` loads according to POSNMX/POSNMP/POSNMS; `$FF8B`
+XWDESC writes the descriptors; `$FF88` XLIBSE free sector; etc.)
 
-## Variables système (RAM Sedoric)
+## System variables (Sedoric RAM)
 
-| Adresse | Nom | Rôle |
+| Address | Name | Role |
 |---------|-----|------|
-| `$C029`–`$C034` | **BUFNOM** | nom du fichier : 9 octets nom + 3 octets extension (complétés d'espaces) ; `$C028` = n° de drive |
-| `$C04A` | flag point d'entrée | b7 = mode d'appel |
-| `$C050` | VSALO0 | code « type de SAVE » (#00 = SAVEO, #40 = SAVEM…) |
+| `$C029`–`$C034` | **BUFNOM** | file name: 9 bytes name + 3 bytes extension (padded with spaces); `$C028` = drive number |
+| `$C04A` | entry point flag | b7 = call mode |
+| `$C050` | VSALO0 | "SAVE type" code (#00 = SAVEO, #40 = SAVEM…) |
 | `$C051` | VSALO1 | flag |
-| `$C052`/`$C053` | **DESALO** | adresse de début (source pour SAVE, cible pour LOAD) |
-| `$C054`/`$C055` | **FISALO** | adresse de fin (SAVE) |
-| `$C056`… | LGSALO / FTYPE | longueur (FISALO-DESALO) / type de fichier |
-| EXSALO | EXSALO | adresse d'exécution (0000 si non exécutable) |
+| `$C052`/`$C053` | **DESALO** | start address (source for SAVE, target for LOAD) |
+| `$C054`/`$C055` | **FISALO** | end address (SAVE) |
+| `$C056`… | LGSALO / FTYPE | length (FISALO-DESALO) / file type |
+| EXSALO | EXSALO | execution address (0000 if non-executable) |
 
-## Séquence d'appel — SAUVER un buffer
+## Call sequence — SAVE a buffer
 
 ```asm
-; sauve LGSALO octets de $4000 dans un fichier Sedoric nommé.
-; 1) remplir BUFNOM ($C029..) avec "NOM      EXT" (9+3, espaces)
-; 2) valeurs par défaut
+; saves LGSALO bytes from $4000 into a named Sedoric file.
+; 1) fill BUFNOM ($C029..) with "NOM      EXT" (9+3, spaces)
+; 2) default values
         jsr $FF76          ; XDEFSA
-; 3) override de la zone à sauver
+; 3) override of the zone to save
         lda #$00           ; DESALO = $4000
         sta $C052
         lda #$40
         sta $C053
-        clc                ; FISALO = $4000 + taille
+        clc                ; FISALO = $4000 + size
         lda #$00
         adc XSIZE
         sta $C054
         lda #$40
         adc XSIZE+1
         sta $C055
-; 4) sauvegarde
+; 4) save
         jsr $FF7C          ; XSAVEB
 ```
 
-## Séquence d'appel — CHARGER un fichier
+## Call sequence — LOAD a file
 
 ```asm
-; 1) remplir BUFNOM avec le nom
-        jsr $FF79          ; XDEFLO (défauts)
-; 2) DESALO = adresse cible ($4000) si chargement à adresse imposée
+; 1) fill BUFNOM with the name
+        jsr $FF79          ; XDEFLO (defaults)
+; 2) DESALO = target address ($4000) if loading at an imposed address
         lda #$00
         sta $C052
         lda #$40
         sta $C053
-        jsr $FF73          ; XLOADA  (taille lue dans LGSALO)
+        jsr $FF73          ; XLOADA  (size read into LGSALO)
 ```
 
-## Points à valider sur environnement Sedoric (non testés ici)
+## Points to validate on a Sedoric environment (not tested here)
 
-- **Format exact de `BUFNOM`** (drive en `$C028`, nom/ext justifiés à gauche,
-  octets de statut `pstt` en fin selon la version — cf. `$C029..$C038`).
-- **Rôle précis de `VSALO0/VSALO1`** après `XDEFSA` (type de SAVE, exécutable).
-- **Contexte d'appel** : interruptions, page de travail `$04`, bitmap (BUF2) — la
-  sauvegarde met à jour le catalogue + la bitmap ; vérifier qu'aucune init
-  préalable n'est requise au-delà du boot Sedoric.
-- **Gestion d'erreur** : `XSAVEB`/`XLOADA` peuvent lever DISK_FULL, etc.
+- **Exact format of `BUFNOM`** (drive at `$C028`, name/ext left-justified, status
+  bytes `pstt` at the end depending on the version — see `$C029..$C038`).
+- **Precise role of `VSALO0/VSALO1`** after `XDEFSA` (SAVE type, executable).
+- **Call context**: interrupts, work page `$04`, bitmap (BUF2) — the save updates
+  the catalog + the bitmap; check that no prior init is required beyond the Sedoric
+  boot.
+- **Error handling**: `XSAVEB`/`XLOADA` may raise DISK_FULL, etc.
 
-## ✅ Écriture disquette VALIDÉE dans l'émulateur (24/06/2026)
+## ✅ Disk writing VALIDATED in the emulator (24/06/2026)
 
-La chaîne d'écriture a été **prouvée de bout en bout** dans `oric1-emu`. Le
-« blocage » précédent (vecteurs `$FF73` introuvables) était un **faux problème** :
-ce n'était ni les adresses API, ni le mapping ROMDIS, mais un **flag de l'émulateur**.
+The write chain was **proven end to end** in `oric1-emu`. The previous "blocker"
+(vectors `$FF73` not found) was a **false problem**: it was neither the API
+addresses nor the ROMDIS mapping, but an **emulator flag**.
 
-### Cause racine : le write-back est opt-in
+### Root cause: write-back is opt-in
 
-`oric1-emu` n'écrit les modifications dans le fichier `.dsk` hôte **que si on passe
-`--disk-writeback`** (désactivé par défaut pour ne jamais écraser une `.dsk` par
-accident — `src/main.c:3630`, gate `disk_writeback`). Sans ce flag, le `SAVE`
-Sedoric s'exécute, écrit bien les secteurs dans l'image **en mémoire** (primitive
-FDC en `$D075`, commandes Type II `$A8`/`$AC` sur `$0310`), mais **rien n'est
-persisté** → d'où le faux constat « ça ne marche pas ».
+`oric1-emu` only writes changes to the host `.dsk` file **if `--disk-writeback`
+is passed** (disabled by default to never overwrite a `.dsk` by accident —
+`src/main.c:3630`, gate `disk_writeback`). Without this flag, the Sedoric `SAVE`
+runs, does write the sectors into the **in-memory** image (FDC primitive at
+`$D075`, Type II commands `$A8`/`$AC` on `$0310`), but **nothing is persisted** →
+hence the false "it doesn't work" conclusion.
 
-### Recette de validation (reproductible)
+### Validation recipe (reproducible)
 
 ```sh
 cd ~/Oric1
@@ -103,229 +103,228 @@ cp disks/sedoric3.dsk /tmp/sedtest.dsk
 KEYS='13000000:\n\p1POKE#4000,65:POKE#4001,66\n\p1SAVE"TEST.BIN",A#4000,E#4002\n\p8'
 ./oric1-emu -n -r roms/basic11b.rom --disk-rom roms/microdis.rom -d /tmp/sedtest.dsk \
     --disk-writeback -c 32000000 --type-keys "$KEYS" --screenshot /tmp/sedok.ppm
-# -> log "Disk write-back: drive A", md5 de la .dsk change,
-#    entrée catalogue "TEST     BIN" écrite. Boot = "SEDORIC V3.0".
+# -> log "Disk write-back: drive A", md5 of the .dsk changes,
+#    catalog entry "TEST     BIN" written. Boot = "SEDORIC V3.0".
 ```
 
-Faits établis :
-- **Boot Sedoric V3.0 résident** : `-r basic11b.rom --disk-rom microdis.rom -d <dsk>`
-  amène au prompt `Ready` (Sedoric installé). Pour booter, `-r` est **obligatoire**.
-- **`SAVE"NOM.EXT",A#deb,E#fin`** depuis le prompt écrit un **vrai fichier**
-  (catalogue + données + bitmap), persisté avec `--disk-writeback`.
-- `microdis.rom` est `Oric DOS V0.6` : sa **page `$FF` est vide** (seuls les
-  vecteurs CPU `$FFFA-$FFFF`). Les vecteurs API du PDF (`$FF73`…) n'y sont donc
-  pas — l'API Sedoric V3 est installée **en RAM overlay** par le boot.
+Established facts:
+- **Resident Sedoric V3.0 boot**: `-r basic11b.rom --disk-rom microdis.rom -d <dsk>`
+  reaches the `Ready` prompt (Sedoric installed). To boot, `-r` is **mandatory**.
+- **`SAVE"NOM.EXT",A#deb,E#fin`** from the prompt writes a **real file**
+  (catalog + data + bitmap), persisted with `--disk-writeback`.
+- `microdis.rom` is `Oric DOS V0.6`: its **page `$FF` is empty** (only the CPU
+  vectors `$FFFA-$FFFF`). The API vectors from the PDF (`$FF73`…) are therefore
+  not there — the Sedoric V3 API is installed **in RAM overlay** by the boot.
 
-### Conséquences pour le projet
+### Consequences for the project
 
-1. **Test storage** : tout test émulateur de stockage disquette doit passer
-   `--disk-writeback`, sinon l'écriture ne persiste pas (piège silencieux).
-2. **Terminal `client/sedoric.s`** : l'objectif n'exige **pas** de recaler les
-   `$FF73` du PDF. La voie fiable est d'invoquer Sedoric comme le fait le `SAVE`
-   BASIC. Reste à déterminer l'**entrée d'appel machine** (interpréteur de
-   commande Sedoric, ou primitive de sauvegarde) à appeler depuis le terminal —
-   à tracer à partir du chemin du `SAVE` validé ci-dessus (`$D075` est la
-   primitive FDC d'écriture secteur ; l'entrée haut niveau est au-dessus).
-3. **Déploiement** : le terminal devra tourner **sous Sedoric résident** (booté
-   depuis une `.dsk` Sedoric), cf. « Le mur du déploiement » plus bas.
+1. **Storage test**: any emulator test of disk storage must pass
+   `--disk-writeback`, otherwise the write does not persist (silent trap).
+2. **Terminal `client/sedoric.s`**: the goal does **not** require relocating the
+   PDF's `$FF73`. The reliable path is to invoke Sedoric the way the BASIC `SAVE`
+   does. It remains to determine the **machine call entry** (Sedoric command
+   interpreter, or save primitive) to call from the terminal — to be traced from
+   the path of the `SAVE` validated above (`$D075` is the FDC sector-write
+   primitive; the high-level entry is above it).
+3. **Deployment**: the terminal will have to run **under resident Sedoric**
+   (booted from a Sedoric `.dsk`), see "The deployment wall" below.
 
-## Voie retenue : injection de commande (décidé 24/06/2026)
+## Chosen path: command injection (decided 24/06/2026)
 
-Plutôt que d'appeler une routine SAVE interne avec une convention de paramètres
-reverse-engineerée (fragile, spécifique à l'image), le terminal **injecte une
-ligne de commande Sedoric et la fait exécuter** — exactement le chemin validé du
-`SAVE` BASIC. Robuste et proche du matériel réel.
+Rather than calling an internal SAVE routine with a reverse-engineered parameter
+convention (fragile, image-specific), the terminal **injects a Sedoric command
+line and has it executed** — exactly the validated path of the BASIC `SAVE`.
+Robust and close to real hardware.
 
-### Carte reverse établie (image `sedoric3.dsk`, `oric1-emu`)
+### Established reverse map (image `sedoric3.dsk`, `oric1-emu`)
 
-Reverse par save-state au prompt + trace CPU ciblée + watchpoint mémoire
-(`memory_set_trace`, type `MEM_READ`). Le `$` n'apparaissant que dans le
-désassemblage (colonne cycle décimale), on isole les accès mémoire sans ambiguïté.
+Reversed via save-state at the prompt + targeted CPU trace + memory watchpoint
+(`memory_set_trace`, type `MEM_READ`). Since `$` appears only in the disassembly
+(decimal cycle column), memory accesses are isolated unambiguously.
 
-| Élément | Adresse | Comment validé |
+| Element | Address | How validated |
 |---|---|---|
-| **Buffer ligne de commande** | **`$0035`** | dump RAM : la ligne `SAVE"…",A#…,E#…` y réside (buffer d'entrée BASIC Oric) |
-| **Scanner de buffer (auto-modifiant)** | **`$00E2`–`$00ED`** | trace : l'opérande de `LDA $00E8` est l'octet `$E9/$EA`, incrémenté pour avancer ; saute les espaces (`CMP #$20`) |
-| Lecture du buffer (absolu) | `LDA $0035`, `$0039`…`$0051` | trace : lectures byte-à-byte du buffer pendant le dispatch |
-| Table de mots-clés Sedoric | ~`$CA6F` | dump RAM : `SAVE FIELD RSEC INIT INSTR…` ; matchée via pointeur `$DE/$DF`, séparateur quote `$22` |
-| Helper compare-chaîne | `$D5B5` | trace : `LDA ($DE),Y` / `CMP $24/$25` |
-| Routine de sauvegarde (cluster) | `$D33A`/`$D342`/`$D398`/`$D39E` | trace : JSR peu imbriqués juste avant l'écriture |
-| **Primitive FDC write secteur** | **`$D075`** | trace : commandes Type II `$A8`/`$AC` sur `$0310` |
-| Trampolines page 4 | `$04EF`→`JMP $C4A0`, `$0474`, `$0477` | trace : sauts indirects RAM ↔ Sedoric |
+| **Command line buffer** | **`$0035`** | RAM dump: the line `SAVE"…",A#…,E#…` resides there (Oric BASIC input buffer) |
+| **Buffer scanner (self-modifying)** | **`$00E2`–`$00ED`** | trace: the operand of `LDA $00E8` is the byte `$E9/$EA`, incremented to advance; skips spaces (`CMP #$20`) |
+| Buffer read (absolute) | `LDA $0035`, `$0039`…`$0051` | trace: byte-by-byte reads of the buffer during dispatch |
+| Sedoric keyword table | ~`$CA6F` | RAM dump: `SAVE FIELD RSEC INIT INSTR…`; matched via pointer `$DE/$DF`, quote separator `$22` |
+| String-compare helper | `$D5B5` | trace: `LDA ($DE),Y` / `CMP $24/$25` |
+| Save routine (cluster) | `$D33A`/`$D342`/`$D398`/`$D39E` | trace: lightly nested JSRs just before the write |
+| **FDC sector-write primitive** | **`$D075`** | trace: Type II commands `$A8`/`$AC` on `$0310` |
+| Page 4 trampolines | `$04EF`→`JMP $C4A0`, `$0474`, `$0477` | trace: indirect jumps RAM ↔ Sedoric |
 
-### Conclusion : le dispatch est entrelacé avec la ROM BASIC
+### Conclusion: dispatch is interleaved with the BASIC ROM
 
-Point décisif du reverse : **le `SAVE` n'est PAS dispatché par une entrée Sedoric
-isolable**. Quand on tape la commande + Return, c'est la **ROM BASIC**
-(`$F6xx`–`$F8xx`, routines d'entrée ligne) qui traite la ligne **puis** appelle le
-scanner Sedoric ; `$C4A0` (cœur du prompt) n'est exécuté qu'**une fois en idle**,
-pas sur le chemin du `SAVE`. Le dispatch dépend de nombreuses variables zéro-page
-(`$A9` position/ligne-prête, `$24/$25`, `$DE/$DF`, `$E9/$EA`, `$2E`, `$0252`,
-`$02F2`…) posées par la chaîne d'entrée BASIC.
+Decisive point of the reverse: **`SAVE` is NOT dispatched by an isolable Sedoric
+entry**. When you type the command + Return, it is the **BASIC ROM**
+(`$F6xx`–`$F8xx`, line-input routines) that processes the line **then** calls the
+Sedoric scanner; `$C4A0` (prompt core) is executed only **once while idle**, not
+on the `SAVE` path. The dispatch depends on numerous zero-page variables
+(`$A9` position/line-ready, `$24/$25`, `$DE/$DF`, `$E9/$EA`, `$2E`, `$0252`,
+`$02F2`…) set by the BASIC input chain.
 
-**Conséquence** : appeler `SAVE` depuis du code machine **autonome** (le terminal)
-ne se réduit pas à un `JSR <entrée>` avec la commande en `$0035`. Il faut soit
-reproduire fidèlement le contexte d'entrée BASIC (fragile, spécifique à cette
-image), soit utiliser un mécanisme documenté de Sedoric pour exécuter une commande
-depuis l'ML.
+**Consequence**: calling `SAVE` from **standalone** machine code (the terminal)
+does not reduce to a `JSR <entry>` with the command at `$0035`. You must either
+faithfully reproduce the BASIC input context (fragile, specific to this image),
+or use a documented Sedoric mechanism to execute a command from ML.
 
-### Approches recommandées (par robustesse décroissante)
+### Recommended approaches (by decreasing robustness)
 
-1. **Mécanisme documenté Sedoric** — récupérer dans la doc « Sedoric à nu » (ou le
-   manuel) l'**entrée officielle d'exécution de commande ML** (Sedoric en expose
-   une : commande en buffer + appel d'un point d'entrée stable, conçu pour ça).
-   C'est la seule voie *version-portable* et *matériel-réel*. À privilégier.
-2. **Injection clavier (type-ahead)** — déposer la commande dans le tampon clavier
-   et rendre la main au prompt Sedoric, qui l'exécute « comme tapée ». Robuste,
-   mais suppose que le terminal puisse revenir proprement au prompt.
-3. **Reproduction du contexte BASIC** — poser `$0035` + toutes les variables
-   zéro-page ci-dessus et entrer dans la chaîne BASIC. **Déconseillé** : fragile,
-   non portable, à revalider à chaque version Sedoric.
+1. **Documented Sedoric mechanism** — find in the "Sedoric à nu" doc (or the
+   manual) the **official ML command-execution entry** (Sedoric exposes one:
+   command in buffer + call to a stable entry point, designed for this). This is
+   the only *version-portable* and *real-hardware* path. To be preferred.
+2. **Keyboard injection (type-ahead)** — deposit the command in the keyboard
+   buffer and return control to the Sedoric prompt, which executes it "as typed".
+   Robust, but assumes the terminal can return cleanly to the prompt.
+3. **Reproduction of the BASIC context** — set `$0035` + all the zero-page
+   variables above and enter the BASIC chain. **Not recommended**: fragile, not
+   portable, to be revalidated at every Sedoric version.
 
-> Recette de trace rapide (save-state au prompt) pour itérer :
+> Quick trace recipe (save-state at the prompt) to iterate:
 > `--load-state sed.state --type-keys '…SAVE…\n' --trace t.log --trace-max 4000000`
-> puis grep des accès `$0035` (lecture buffer) et `$D075` (write FDC).
+> then grep the `$0035` accesses (buffer read) and `$D075` (FDC write).
 
-### Déploiement validé sans repackaging disque
+### Deployment validated without disk repackaging
 
-Le terminal `client/term.s` est une **cassette** ; or `tap2sedoric` (outil
-`oric1-emu`) est un **stub non implémenté** → pas de fabrication directe de `.dsk`.
-Voie de déploiement **réaliste et testable** : booter Sedoric, puis **`CLOAD` le
-terminal depuis la cassette** — Sedoric **reste résident**, le terminal tourne
-avec l'API disque disponible. (Validé conceptuellement : Sedoric résident + tape.)
+The terminal `client/term.s` is a **cassette**; yet `tap2sedoric` (`oric1-emu`
+tool) is an **unimplemented stub** → no direct `.dsk` fabrication. **Realistic and
+testable** deployment path: boot Sedoric, then **`CLOAD` the terminal from the
+cassette** — Sedoric **stays resident**, the terminal runs with the disk API
+available. (Conceptually validated: resident Sedoric + tape.)
 
-## API documentée confirmée + écart V1.0 doc / V3.0 image (24/06/2026)
+## Documented API confirmed + V1.0 doc / V3.0 image gap (24/06/2026)
 
-La doc **« Sedoric à nu »** (`sednb3_0.pdf`) donne l'API officielle. Vérifications
-faites contre l'image **sedoric3.dsk (SEDORIC V3.0)** de l'émulateur.
+The **"Sedoric à nu"** doc (`sednb3_0.pdf`) gives the official API. Checks made
+against the emulator's **sedoric3.dsk (SEDORIC V3.0)** image.
 
-### ✅ Table de vecteurs publique — IDENTIQUE V1.0 et V3.0
+### ✅ Public vector table — IDENTICAL V1.0 and V3.0
 
-En dumpant la **vue CPU `$C000-$FFFF` pendant un SAVE** (overlay mappé), on lit
-sur V3.0 exactement les vecteurs du PDF (qui décrit SEDORIC 1.0) :
+By dumping the **CPU view `$C000-$FFFF` during a SAVE** (overlay mapped), we read
+on V3.0 exactly the PDF vectors (which describes SEDORIC 1.0):
 
-| Vecteur | Contenu (V3.0 mesuré) | = PDF V1.0 |
+| Vector | Content (V3.0 measured) | = PDF V1.0 |
 |---|---|---|
-| `$FF7C` XSAVEB | `4C 9C DE` → JMP `$DE9C` | ✅ identique |
-| `$FF76` XDEFSA | `4C 28 DE` → JMP `$DE28` | ✅ identique |
+| `$FF7C` XSAVEB | `4C 9C DE` → JMP `$DE9C` | ✅ identical |
+| `$FF76` XDEFSA | `4C 28 DE` → JMP `$DE28` | ✅ identical |
 
-→ **La table `$FF43-$FFC6` est l'interface stable** (c'est son rôle). Les
-variables système (`$C04D` VSALO0, `$C051` FTYPE, `$C052` DESALO, `$C054`
-FISALO…) sont aux mêmes adresses. La séquence de `client/sedoric.s` (poser les
-variables + `JSR $FF7C`) est donc **correcte**.
+→ **The table `$FF43-$FFC6` is the stable interface** (that is its role). The
+system variables (`$C04D` VSALO0, `$C051` FTYPE, `$C052` DESALO, `$C054`
+FISALO…) are at the same addresses. The `client/sedoric.s` sequence (set the
+variables + `JSR $FF7C`) is therefore **correct**.
 
-### Bascule overlay — spécifique à la version (V3.0 résolue)
+### Overlay toggle — version-specific (V3.0 resolved)
 
-Pour rendre les routines `$C000-$FFFF` visibles, il faut basculer sur la RAM
-overlay. **L'adresse de la bascule change selon la version** :
+To make the `$C000-$FFFF` routines visible, you must switch to the overlay RAM.
+**The toggle address changes with the version**:
 
-| Version | Bascule overlay (toggle) | Source |
+| Version | Overlay toggle | Source |
 |---|---|---|
-| Sedoric 1.0/2.x | `JSR $0472` | PDF « Sedoric à nu » |
-| **Sedoric 3.0** | **`JSR $04F2`** | manuel désassemblé SEDORIC 3.0, ANNEXE 15 |
+| Sedoric 1.0/2.x | `JSR $0472` | PDF "Sedoric à nu" |
+| **Sedoric 3.0** | **`JSR $04F2`** | disassembled SEDORIC 3.0 manual, ANNEXE 15 |
 
-Sur V3.0, `$0472` n'est pas la bascule (page 4 réorganisée par la gestion de
-**banques** de la 3.0) → `JSR $0472` **plante**. Le manuel 3.0 documente
-explicitement : « en langage machine, faire un `JSR $04F2` pour accéder à la RAM
-overlay, appeler les sous-programmes voulus, et terminer par un autre `JSR $04F2`
-pour revenir ». L'écriture `$0314` brute plante (XSAVEB exige le contexte runtime).
+On V3.0, `$0472` is not the toggle (page 4 reorganized by the 3.0 **bank**
+management) → `JSR $0472` **crashes**. The 3.0 manual documents it explicitly: "in
+machine language, do a `JSR $04F2` to access the overlay RAM, call the desired
+subroutines, and finish with another `JSR $04F2` to return". A raw `$0314` write
+crashes (XSAVEB requires the runtime context).
 
-### ✅ Recette V3.0 VALIDÉE end-to-end (24/06/2026)
+### ✅ V3.0 recipe VALIDATED end-to-end (24/06/2026)
 
-Testée dans l'émulateur sur `sedoric3.dsk` (un fichier `TESTML  BIN` **écrit et
-persisté** dans la `.dsk` — entrée catalogue + write-back, md5 modifié) :
+Tested in the emulator on `sedoric3.dsk` (a file `TESTML  BIN` **written and
+persisted** in the `.dsk` — catalog entry + write-back, md5 modified):
 
 ```asm
         jsr $04F2          ; ROM -> RAM overlay (toggle V3.0)
-        ; poser BUFNOM ($C029), VSALO0 ($C04D=#00), FTYPE ($C051=#40),
-        ;   DESALO ($C052=$4000), FISALO ($C054=fin), LGSALO ($C04F=taille),
+        ; set BUFNOM ($C029), VSALO0 ($C04D=#00), FTYPE ($C051=#40),
+        ;   DESALO ($C052=$4000), FISALO ($C054=end), LGSALO ($C04F=size),
         ;   EXSALO ($C056=0), VSALO1 ($C04E=0)
-        jsr $DE9C          ; XSAVEB (entree directe = cible du vecteur $FF7C)
+        jsr $DE9C          ; XSAVEB (direct entry = target of vector $FF7C)
         jsr $04F2          ; RAM overlay -> ROM
 ```
 
-`client/sedoric.s` implémente cette recette (`OVL_TOGGLE = $04F2`,
-`XSAVEB = $DE9C`, détection « XSAVEB débute par `SEI $78` »). Pour cibler la
-1.x/2.x, mettre `OVL_TOGGLE = $0472`. **L'incertitude est levée** ; l'intégration
-`term.s` → `sed_save` (après un download, taille en `XSIZE`) est déjà câblée.
+`client/sedoric.s` implements this recipe (`OVL_TOGGLE = $04F2`,
+`XSAVEB = $DE9C`, detection "XSAVEB starts with `SEI $78`"). To target 1.x/2.x,
+set `OVL_TOGGLE = $0472`. **The uncertainty is lifted**; the `term.s` →
+`sed_save` integration (after a download, size in `XSIZE`) is already wired.
 
-### Garde de présence Sedoric (sûre sans disque)
+### Sedoric presence guard (safe without disk)
 
-`sed_save` vérifie d'abord, en **RAM page 4 toujours mappée** (avant tout
-`JSR $04F2`), la **table de saut** que Sedoric installe au boot en `$04F2`/`$04F5`
-(`4C xx 04` = `JMP $04xx`). Validé :
+`sed_save` first checks, in **always-mapped page 4 RAM** (before any
+`JSR $04F2`), the **jump table** that Sedoric installs at boot at `$04F2`/`$04F5`
+(`4C xx 04` = `JMP $04xx`). Validated:
 
-- **Sous Sedoric** : `$04F2 = $4C`, `$04F4 = $04` → garde OK, fichier sauvé
-  (`TESTG4 BIN` écrit dans la `.dsk`).
-- **Sans disque** (terminal cassette, Atmos seul) : `$04F2 = $55` (motif RAM) →
-  garde refuse, **aucun** `JSR $04F2`, pas de plantage.
+- **Under Sedoric**: `$04F2 = $4C`, `$04F4 = $04` → guard OK, file saved
+  (`TESTG4 BIN` written to the `.dsk`).
+- **Without disk** (cassette terminal, Atmos alone): `$04F2 = $55` (RAM pattern) →
+  guard refuses, **no** `JSR $04F2`, no crash.
 
-Ainsi le même terminal est sûr en cassette **et** sous Sedoric ; la sauvegarde ne
-s'active que si Sedoric est réellement résident. Reste le **déploiement** du
-terminal sous Sedoric résident (booté disquette ou `CLOAD`).
+Thus the same terminal is safe on cassette **and** under Sedoric; the save
+activates only if Sedoric is actually resident. What remains is the **deployment**
+of the terminal under resident Sedoric (booted from disk or `CLOAD`).
 
-> Détail validation : le harnais `--type-keys` perd parfois le 1er caractère
-> d'une ligne (n° de ligne BASIC, sans incidence sur les valeurs DATA) — prévoir
-> un `\n` de purge en tête. Confirmé d'abord par l'exemple « HELLO ANDRE » de
-> l'ANNEXE 15 (`JSR $04F2`/`JSR $D637`/`JSR $04F2`), puis par XSAVEB.
+> Validation detail: the `--type-keys` harness sometimes loses the 1st character
+> of a line (BASIC line number, with no impact on the DATA values) — provide a
+> purge `\n` at the head. Confirmed first by the "HELLO ANDRE" example of ANNEXE
+> 15 (`JSR $04F2`/`JSR $D637`/`JSR $04F2`), then by XSAVEB.
 
-## ✅ Disquette bootable du terminal (déploiement voie B)
+## ✅ Bootable terminal disk (deployment path B)
 
-`client/build-disk.sh` fabrique une disquette Sedoric contenant le terminal, de
-façon **reproductible** (validé dans l'émulateur) :
+`client/build-disk.sh` builds a Sedoric disk containing the terminal,
+**reproducibly** (validated in the emulator):
 
-1. assemble `term.bin` (`build.sh`) ;
-2. fabrique une cassette **non-autorun** du terminal (octet autorun `$C7` → `$00`) ;
-3. pilote `oric1-emu` : boot Sedoric (master) + **fast-load** de la cassette — le
-   terminal est injecté en RAM `$1000` à ~3M cycles (phase 1 du fast-load, *sans
-   CLOAD*) et **survit au boot Sedoric** ; au prompt, `SAVE"TERM",A#1000,E#1E26`
-   écrit **TERM.COM** sur une copie du master ;
-4. `--disk-writeback` persiste → `client/term-boot.dsk`.
+1. assembles `term.bin` (`build.sh`);
+2. builds a **non-autorun** cassette of the terminal (autorun byte `$C7` → `$00`);
+3. drives `oric1-emu`: boot Sedoric (master) + **fast-load** of the cassette — the
+   terminal is injected into RAM `$1000` at ~3M cycles (phase 1 of the fast-load,
+   *without CLOAD*) and **survives the Sedoric boot**; at the prompt,
+   `SAVE"TERM",A#1000,E#1E26` writes **TERM.COM** onto a copy of the master;
+4. `--disk-writeback` persists → `client/term-boot.dsk`.
 
-**Lancement du terminal** depuis la disquette (validé — le menu modem s'affiche) :
+**Launching the terminal** from the disk (validated — the modem menu appears):
 
 ```
 LOAD"TERM":CALL#1000
 ```
 
-> Au menu « TYPE DE MODEM », choisir **LOCI `$0380`** si un Microdisc est présent :
-> l'ACIA `$031C` chevauche la plage I/O Microdisc `$0310-$031F`. Le terminal gère
-> les deux adresses au runtime (`ACIAPTR`), aucune variante de build n'est requise.
+> At the "TYPE DE MODEM" menu, choose **LOCI `$0380`** if a Microdisc is present:
+> the ACIA `$031C` overlaps the Microdisc I/O range `$0310-$031F`. The terminal
+> handles both addresses at runtime (`ACIAPTR`), no build variant is required.
 
-**Notes de mise au point** :
-- Le terminal **tourne** sous Sedoric (≈2,6 M instructions exécutées, menu affiché) ;
-  le `BREAK ON BYTE #1000` initial venait de l'option Sedoric `,J` (`LOAD"TERM",J`),
-  **pas** d'un conflit runtime → utiliser `LOAD` + `CALL`.
-- Auto-démarrage *hands-free* : mécanisme identifié — au boot, Sedoric cherche
-  **`BOOTUP.COM`** et exécute `!BOOTUP` (manuel SEDORIC 3.0, désassemblage
-  `; found BOOTUPCOM ? executes !BOOTUP`). **Mais** sur `sedoric3.dsk` (master/
-  outils) le menu « WELCOME TO SEDORIC DOS V3.0 » n'est **pas** un fichier
-  directory remplaçable : `DESTROY"BOOTUP.COM"` répond *FILE NOT FOUND* → le menu
-  est **intégré au système** du master (sur le master, `DESTROY"BOOTUP.COM"` =
-  *FILE NOT FOUND* alors que le menu tourne quand même).
-- **Blocage émulateur pour le hands-free** : créer une disquette Sedoric vierge
-  où poser `BOOTUP.COM` exige `INIT` (formatage) → *Write Track* du FDC. Or, dans
-  `oric1-emu`, `FDC_OP_WRITE_TRACK` est positionné (`src/storage/disk.c`) mais
-  **sans handler de données** = **no-op** : le formatage n'écrit rien. `INIT` ne
-  peut donc pas produire de disquette bootable dans l'émulateur.
-- **Conséquence** : l'auto-démarrage hands-free **n'est pas validable dans
-  l'émulateur**. Sur **matériel réel** (où `INIT` formate normalement), la voie
-  est : `INIT` une disquette Sedoric minimale → y copier `TERM.COM` → créer
-  `BOOTUP.COM` = lanceur (`LOAD"TERM":CALL#1000`). En l'état (émulateur **et**
-  master), **une commande** lance le terminal (`LOAD"TERM":CALL#1000`).
+**Fine-tuning notes**:
+- The terminal **runs** under Sedoric (≈2.6 M instructions executed, menu
+  displayed); the initial `BREAK ON BYTE #1000` came from the Sedoric `,J` option
+  (`LOAD"TERM",J`), **not** from a runtime conflict → use `LOAD` + `CALL`.
+- *Hands-free* auto-start: mechanism identified — at boot, Sedoric looks for
+  **`BOOTUP.COM`** and executes `!BOOTUP` (SEDORIC 3.0 manual, disassembly
+  `; found BOOTUPCOM ? executes !BOOTUP`). **But** on `sedoric3.dsk` (master/
+  tools) the "WELCOME TO SEDORIC DOS V3.0" menu is **not** a replaceable directory
+  file: `DESTROY"BOOTUP.COM"` answers *FILE NOT FOUND* → the menu is **built into
+  the master's system** (on the master, `DESTROY"BOOTUP.COM"` = *FILE NOT FOUND*
+  while the menu runs anyway).
+- **Emulator blocker for hands-free**: creating a blank Sedoric disk on which to
+  place `BOOTUP.COM` requires `INIT` (formatting) → FDC *Write Track*. But in
+  `oric1-emu`, `FDC_OP_WRITE_TRACK` is set (`src/storage/disk.c`) but **without a
+  data handler** = **no-op**: formatting writes nothing. `INIT` therefore cannot
+  produce a bootable disk in the emulator.
+- **Consequence**: hands-free auto-start **cannot be validated in the emulator**.
+  On **real hardware** (where `INIT` formats normally), the path is: `INIT` a
+  minimal Sedoric disk → copy `TERM.COM` onto it → create `BOOTUP.COM` = launcher
+  (`LOAD"TERM":CALL#1000`). As it stands (emulator **and** master), **one command**
+  launches the terminal (`LOAD"TERM":CALL#1000`).
 
-## Le mur du déploiement
+## The deployment wall
 
-Le terminal `client/term.s` est aujourd'hui une **cassette autorun** (`$1000`) sur
-une machine **sans disque**. Pour appeler ces vecteurs, il faut que Sedoric soit
-**résident**. Deux options à trancher :
+The terminal `client/term.s` is today an **autorun cassette** (`$1000`) on a
+**diskless** machine. To call these vectors, Sedoric must be **resident**. Two
+options to decide:
 
-1. **Terminal sur disquette Sedoric** : fabriquer une `.dsk` Sedoric contenant le
-   terminal, booter Sedoric, le `LOAD`+`RUN`. Le terminal a alors accès à l'API.
-2. **Terminal chargé après boot Sedoric** (cassette) : booter Sedoric, `CLOAD` le
-   terminal — Sedoric reste résident.
+1. **Terminal on a Sedoric disk**: build a Sedoric `.dsk` containing the terminal,
+   boot Sedoric, `LOAD`+`RUN` it. The terminal then has access to the API.
+2. **Terminal loaded after Sedoric boot** (cassette): boot Sedoric, `CLOAD` the
+   terminal — Sedoric stays resident.
 
-Le **test** complet nécessitera une image `.dsk` Sedoric de travail + un cycle de
-debug dans l'émulateur (`--disk-rom microdis.rom --disk sedoric.dsk`).
+The full **test** will require a working Sedoric `.dsk` image + a debug cycle in
+the emulator (`--disk-rom microdis.rom --disk sedoric.dsk`).
 
-Voir aussi : `docs/transfert.md`, `docs/agile/backlog.md` (G1).
+See also: `docs/transfer.md`, `docs/agile/backlog.md` (G1).

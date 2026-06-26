@@ -1,29 +1,30 @@
 # Communication — BBS Oric
 
-Trace des annonces et publications externes du projet.
+Record of the project's external announcements and publications.
 
-## Annonce alpha — forum Defence Force (2026-06-25)
+## Alpha announcement — Defence Force forum (2026-06-25)
 
-- **Quoi** : annonce publique de la version **alpha** de l'écosystème BBS Oric
-  (serveur Go + terminal Oric 6502 + studio « Forge »).
-- **Où** : forum [Defence Force](https://forum.defence-force.org/) —
-  fil de discussion : <https://forum.defence-force.org/viewtopic.php?t=2897>
-- **Texte source** : `~/bbsoric-announce-defence-force.md` (Markdown) et
-  `~/bbsoric-announce-defence-force.bbcode.txt` (BBCode publié).
-- **Vidéo de démo** : <https://youtu.be/YRFBYkpsKMc>
-  (boot → numérotation → invité → Fichiers → téléchargement d'Astéroric → « FICHIER RECU »).
-- **Dépôt** : rendu **public** le 2026-06-25 —
+- **What**: public announcement of the **alpha** version of the BBS Oric ecosystem
+  (Go server + Oric 6502 terminal + "Forge" studio).
+- **Where**: [Defence Force](https://forum.defence-force.org/) forum —
+  discussion thread: <https://forum.defence-force.org/viewtopic.php?t=2897>
+- **Source text**: `~/bbsoric-announce-defence-force.md` (Markdown) and
+  `~/bbsoric-announce-defence-force.bbcode.txt` (published BBCode).
+- **Demo video**: <https://youtu.be/YRFBYkpsKMc>
+  (boot → dialing → guest → Files → download of Astéroric → "FILE RECEIVED").
+- **Repository**: made **public** on 2026-06-25 —
   <https://github.com/benedictemarty/bbsoric>
-  (historique réécrit au préalable pour purger les IP internes, cf. `deploy/caddy-tls.md`).
+  (history rewritten beforehand to purge internal IPs, cf. `deploy/caddy-tls.md`).
 
-### Appel à contribution (test sur matériel réel)
+### Call for contributions (test on real hardware)
 
-L'annonce sollicite des retours sur trois points non encore validés sur fer :
+The announcement requests feedback on three points not yet validated on metal:
 
-1. Le terminal se connecte-t-il et rend-il correctement sur matériel réel
-   (timing WiFiModem réel, ACIA réelle) ?
-2. Le transfert XMODEM survit-il au timing série réel ?
-3. La sauvegarde Sedoric fonctionne-t-elle sur un lecteur physique
-   (Microdisc/LOCI) ?
+1. Does the terminal connect and render correctly on real hardware
+   (real WiFiModem timing, real ACIA)?
+2. Does the XMODEM transfer survive real serial timing?
+3. Does the Sedoric save work on a physical drive
+   (Microdisc/LOCI)?
 
-> Suivi des retours : à consigner ici au fil des réponses du forum.
+> Feedback tracking: to be recorded here as forum replies come in.
+</content>

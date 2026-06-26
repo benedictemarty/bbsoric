@@ -1,90 +1,90 @@
-# Backlog produit — BBS Oric
+# Product backlog — BBS Oric
 
-> Priorisé. `[ ]` = à faire, `[~]` = en cours, `[x]` = fait. Estimation indicative en points.
+> Prioritised. `[ ]` = to do, `[~]` = in progress, `[x]` = done. Indicative estimate in points.
 
-## Épopée A — Socle & connexion (Sprint 0–1)
+## Epic A — Foundation & connection (Sprint 0–1)
 
-- [x] **A1** (1) En tant qu'équipe, je veux un dépôt versionné et documenté pour tracer le travail.
-- [x] **A2** (1) En tant que dev, je veux **confirmer le langage du serveur** (→ **Go 1.26**).
-- [x] **A3** (3) En tant qu'utilisateur, je veux me connecter en telnet et voir un écran d'accueil
-  (« hello world »), afin de valider la chaîne réseau de bout en bout. *(testé via `nc`)*
-- [x] **A4** (2) En tant que dev, je veux tester la connexion **dans un émulateur** sans matériel.
-  *(terminal `oric-client/term.s` + `scripts/test-emulateur.sh` ; bannière colorée validée à l'écran)*
+- [x] **A1** (1) As a team, I want a versioned and documented repository to track the work.
+- [x] **A2** (1) As a dev, I want to **confirm the server language** (→ **Go 1.26**).
+- [x] **A3** (3) As a user, I want to connect over telnet and see a welcome screen
+  ("hello world"), in order to validate the network chain end-to-end. *(tested via `nc`)*
+- [x] **A4** (2) As a dev, I want to test the connection **in an emulator** without hardware.
+  *(`oric-client/term.s` terminal + `scripts/test-emulateur.sh`; coloured banner validated on screen)*
 
-## Épopée B — Rendu OASCII (Sprint 1)
+## Epic B — OASCII rendering (Sprint 1)
 
-- [x] **B1** (5) En tant qu'utilisateur Oric, je veux des écrans **en couleur** (encre/fond) correctement
-  rendus malgré les attributs sériels. *(bannière colorée validée À L'ÉCRAN dans oric1-emu)*
-- [x] **B2** (3) En tant que dev, je veux une **API d'écran** (`ink/paper/blink/text/newline`) qui masque les
-  codes d'attribut. *(Builder OASCII ; `cls`/curseur gérés côté terminal Oric par écriture VRAM)*
-- [x] **B3** (2) En tant que dev, je veux une **table d'attributs Oric vérifiée** sur émulateur.
-  *(extraite de `oric1-emu` src/video/video.c ; 7 tests unitaires)*
+- [x] **B1** (5) As an Oric user, I want **colour** screens (ink/paper) correctly
+  rendered despite the serial attributes. *(coloured banner validated ON SCREEN in oric1-emu)*
+- [x] **B2** (3) As a dev, I want a **screen API** (`ink/paper/blink/text/newline`) that hides the
+  attribute codes. *(OASCII Builder; `cls`/cursor handled on the Oric terminal side by VRAM writing)*
+- [x] **B3** (2) As a dev, I want a **verified Oric attribute table** on the emulator.
+  *(extracted from `oric1-emu` src/video/video.c; 7 unit tests)*
 
-## Épopée C — Moteur BBS (Sprint 2)
+## Epic C — BBS engine (Sprint 2)
 
-- [x] **C1** (3) En tant qu'utilisateur, je veux **naviguer dans des menus** et revenir en arrière.
-  *(menu principal + 3 écrans, retour via RETURN ; tests Go + validation écran émulateur)*
-- [x] **C2** (3) En tant que serveur, je veux gérer **plusieurs connexions simultanées** sans blocage.
-  *(1 goroutine/connexion, couche `server`)*
-- [x] **C3** (2) En tant qu'utilisateur, je veux être **déconnecté proprement** après inactivité.
-  *(idle timeout couche `server`)*
-- [x] **C5** (3) En tant qu'utilisateur Oric, je veux **taper au clavier** pour naviguer (TX terminal).
-  *(scan matrice complet + écho local + CR ; navigation validée à l'écran via `--type-keys`)*
-- [~] **C4** (3) En tant qu'utilisateur, je veux **m'identifier** et retrouver mon profil.
-  *(ADR-0001/0002 ; incréments 1–3 livrés : store haché `internal/user`, saisie touche
-  unique `ReadKey`, moteur d'applets (type de page `applet`), applets login/register/guest,
-  porte d'auth au CONNECT, câblage `-users` + déploiement. Validé end-to-end (`nc`). Reste
-  côté client : `term.s` en mode caractère + no-echo mot de passe.)*
+- [x] **C1** (3) As a user, I want to **navigate menus** and go back.
+  *(main menu + 3 screens, back via RETURN; Go tests + emulator screen validation)*
+- [x] **C2** (3) As a server, I want to handle **several simultaneous connections** without blocking.
+  *(1 goroutine/connection, `server` layer)*
+- [x] **C3** (2) As a user, I want to be **disconnected cleanly** after inactivity.
+  *(idle timeout, `server` layer)*
+- [x] **C5** (3) As an Oric user, I want to **type on the keyboard** to navigate (terminal TX).
+  *(full matrix scan + local echo + CR; navigation validated on screen via `--type-keys`)*
+- [~] **C4** (3) As a user, I want to **identify myself** and retrieve my profile.
+  *(ADR-0001/0002; increments 1–3 delivered: hashed store `internal/user`, single-key
+  input `ReadKey`, applet engine (`applet` page type), login/register/guest applets,
+  auth gate at CONNECT, `-users` wiring + deployment. Validated end-to-end (`nc`). Remaining
+  on the client side: `term.s` in character mode + password no-echo.)*
 
-## Épopée D — Contenu (Sprint 3)
+## Epic D — Content (Sprint 3)
 
-- [ ] **D1** (5) En tant qu'utilisateur, je veux **lire et poster des messages** (forum).
-- [ ] **D2** (2) En tant qu'utilisateur, je veux voir des **actualités / annonces**.
-- [ ] **D3** (3) En tant qu'utilisateur, je veux jouer à un **mini-jeu** (ex. Puissance 4).
+- [ ] **D1** (5) As a user, I want to **read and post messages** (forum).
+- [ ] **D2** (2) As a user, I want to see **news / announcements**.
+- [ ] **D3** (3) As a user, I want to play a **mini-game** (e.g. Connect Four).
 
-## Épopée E — Réel & déploiement (Sprint 4–5)
+## Epic E — Real hardware & deployment (Sprint 4–5)
 
-- [x] **E1** (3) En tant qu'utilisateur, je veux une **doc de connexion** WiFiModem + LOCI.
-  *(`docs/connexion-materielle.md` : ACIA `$031C`/LOCI `$0380`, AT, 9600 8N1, recette T1–T9)*
-- [~] **E2** (5) En tant qu'utilisateur, je veux me connecter depuis un **Oric réel**.
-  *(terminal validé dans l'émulateur ; test matériel en attente d'un Oric physique)*
-- [x] **E3** (3) En tant qu'admin, je veux **déployer** le serveur (Docker) et le **superviser**.
-  *(prod systemd + image Docker ~18 Mo + `/healthz`,`/metrics` + sonde/timer)*
-- [x] **E4** (3) En tant qu'admin, je veux **sauvegarder et restaurer l'état** (comptes,
-  fichiers, contenu) pour ne rien perdre en cas d'incident.
-  *(`scripts/backup.sh`/`restore.sh`, timer quotidien + rotation, à chaud, test e2e
-  `scripts/test-backup.sh`, doc `docs/backup.md` ; déploiement via `vps-deploy.sh`)*
+- [x] **E1** (3) As a user, I want a **connection doc** for WiFiModem + LOCI.
+  *(`docs/hardware-connection.md`: ACIA `$031C`/LOCI `$0380`, AT, 9600 8N1, recipe T1–T9)*
+- [~] **E2** (5) As a user, I want to connect from a **real Oric**.
+  *(terminal validated in the emulator; hardware test awaiting a physical Oric)*
+- [x] **E3** (3) As an admin, I want to **deploy** the server (Docker) and **supervise** it.
+  *(prod systemd + Docker image ~18 MB + `/healthz`,`/metrics` + probe/timer)*
+- [x] **E4** (3) As an admin, I want to **back up and restore the state** (accounts,
+  files, content) so as not to lose anything in case of incident.
+  *(`scripts/backup.sh`/`restore.sh`, daily timer + rotation, hot, e2e test
+  `scripts/test-backup.sh`, doc `docs/backup.md`; deployment via `vps-deploy.sh`)*
 
-## Épopée F — Studio « Forge » (outillage de contenu)
+## Epic F — "Forge" studio (content tooling)
 
-- [x] **F0** (3) En tant qu'équipe, je veux un dépôt en **3 sous-projets** (server/client/studio)
-  avec les paquets partagés réutilisables. *(restructuration, ADR-0003)*
-- [x] **F1** (5) En tant qu'éditeur, je veux **composer le site.json** (menu/page/applet) avec
-  **aperçu couleur** et validation. *(forge web Go, internal/content réutilisé)*
-- [x] **F2** (5) En tant qu'admin, je veux **déployer le contenu** sur **dev/int/prod** via des
-  **profils** (valide→sauvegarde→écrase→reload, dry-run). *(validé end-to-end)*
-- [ ] **F3** (3) En tant qu'éditeur, je veux **créer/gérer plusieurs sites** et leurs sauvegardes
-  depuis l'UI.
+- [x] **F0** (3) As a team, I want a repository in **3 sub-projects** (server/client/studio)
+  with reusable shared packages. *(restructuring, ADR-0003)*
+- [x] **F1** (5) As an editor, I want to **compose the site.json** (menu/page/applet) with
+  **colour preview** and validation. *(forge web Go, internal/content reused)*
+- [x] **F2** (5) As an admin, I want to **deploy the content** to **dev/int/prod** via
+  **profiles** (validate→backup→overwrite→reload, dry-run). *(validated end-to-end)*
+- [ ] **F3** (3) As an editor, I want to **create/manage several sites** and their backups
+  from the UI.
 
-## Épopée G — Transfert de fichiers (étude, non planifié)
+## Epic G — File transfer (study, not planned)
 
-- [~] **G1** (8) En tant qu'utilisateur, je veux **télécharger/téléverser** des fichiers via le BBS.
-  *Côté **serveur fait** (`internal/xmodem`, `server/internal/files`, applets
-  `download`/`upload`, `Session.Raw()`, flags `-files`/`-max-upload`, studio, doc
-  `docs/transfert.md`). **Download ET upload Oric faits** : récepteur (checksum) +
-  émetteur (CRC-16) XMODEM 6502 (`client/xmodem.s`), déclenchés par `1F FE`/`1F FD`,
-  buffer RAM `$4000` — validés émulateur (`docs/img/xmodem-download.png`,
-  `xmodem-upload.png`). **Reste** : **stockage** carte SD (LOCI)/Microdisc/cassette
-  (buffer en RAM pour l'instant).*
-  - **Voie B (Sedoric) — ✅ sauvegarde ML VALIDÉE sur V3.0 (24/06)** : écriture
-    disquette prouvée (flag `--disk-writeback`) ; recette ML validée end-to-end
-    (`JSR $04F2` overlay → variables → `JSR $DE9C` XSAVEB → `JSR $04F2`), un
-    fichier écrit/persisté dans la `.dsk`. `client/sedoric.s` finalisée. **Reste**
-    l'intégration `term.s` (déclencher après un download) + déploiement du
-    terminal sous Sedoric résident. Voir `docs/sedoric-api.md`.
+- [~] **G1** (8) As a user, I want to **download/upload** files via the BBS.
+  *Server side **done** (`internal/xmodem`, `server/internal/files`, applets
+  `download`/`upload`, `Session.Raw()`, `-files`/`-max-upload` flags, studio, doc
+  `docs/transfer.md`). **Oric download AND upload done**: receiver (checksum) +
+  sender (CRC-16) XMODEM 6502 (`client/xmodem.s`), triggered by `1F FE`/`1F FD`,
+  RAM buffer `$4000` — validated in the emulator (`docs/img/xmodem-download.png`,
+  `xmodem-upload.png`). **Remaining**: SD card (LOCI)/Microdisc/cassette **storage**
+  (RAM buffer for now).*
+  - **Path B (Sedoric) — ✅ ML save VALIDATED on V3.0 (24/06)**: floppy write
+    proven (`--disk-writeback` flag); ML recipe validated end-to-end
+    (`JSR $04F2` overlay → variables → `JSR $DE9C` XSAVEB → `JSR $04F2`), a
+    file written/persisted to the `.dsk`. `client/sedoric.s` finalised. **Remaining**
+    is the `term.s` integration (trigger after a download) + deploying the
+    terminal under resident Sedoric. See `docs/sedoric-api.md`.
 
 ## Definition of Done (DoD)
-- Code versionné, `CHANGELOG.md` et `ROADMAP.md` mis à jour.
-- Tests passants pour la fonctionnalité livrée.
-- Documentation à jour (`docs/`).
-- Validé dans `Oric1/oric1-emu` (Phosphoric) quand applicable.
+- Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.
+- Tests passing for the delivered feature.
+- Documentation up to date (`docs/`).
+- Validated in `Oric1/oric1-emu` (Phosphoric) when applicable.

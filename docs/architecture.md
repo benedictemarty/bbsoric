@@ -1,133 +1,133 @@
-# Architecture technique — BBS Oric
+# Technical architecture — BBS Oric
 
-## 0. Organisation du dépôt (3 sous-projets)
+## 0. Repository organization (3 sub-projects)
 
 ```
 bbsoric/
-  internal/            paquets PARTAGÉS (importables par server/ et studio/)
+  internal/            SHARED packages (importable by server/ and studio/)
     content/  oascii/  render/
-  server/              le serveur BBS Go
-    cmd/bbsd/          binaire du démon
-    internal/          propre au serveur : bbs/ server/ user/
-  client/              le terminal Oric (term.s, build .tap)
-  studio/              le studio « forge » (édition + déploiement du contenu)
+  server/              the Go BBS server
+    cmd/bbsd/          daemon binary
+    internal/          server-specific: bbs/ server/ user/
+  client/              the Oric terminal (term.s, .tap build)
+  studio/              the "forge" studio (content editing + deployment)
   content/  deploy/  docs/  scripts/
 ```
 
-`content` et `oascii` restent dans l'`internal/` racine (visibilité Go) afin que le studio
-réutilise **la même** validation et la même palette que le serveur, sans duplication.
+`content` and `oascii` stay in the root `internal/` (Go visibility) so that the studio
+reuses **the same** validation and the same palette as the server, without duplication.
 
-## 1. Vue d'ensemble
+## 1. Overview
 
 ```
 ┌─────────────┐   telnet/TCP   ┌──────────────────────┐
-│  Oric-1 /   │  (ACIA série)  │   Serveur BBS Oric    │
+│  Oric-1 /   │  (serial ACIA) │   BBS Oric server     │
 │  Atmos      │◀──────────────▶│  (PC / Raspberry Pi)  │
 │             │                │                       │
 │ LOCI +      │                │  ┌─────────────────┐  │
-│ WiFiModem   │   AT / Hayes   │  │ Couche réseau   │  │  TCP, telnet (IAC),
-│ (ACIA série)│                │  │ (1 tâche/conn.) │  │  timeout
+│ WiFiModem   │   AT / Hayes   │  │ Network layer   │  │  TCP, telnet (IAC),
+│ (serial ACIA)│               │  │ (1 task/conn.)  │  │  timeout
 └─────────────┘                │  ├─────────────────┤  │
-       ▲                       │  │ Moteur BBS      │  │  menus, sessions, login
+       ▲                       │  │ BBS engine      │  │  menus, sessions, login
        │ test                  │  ├─────────────────┤  │
-┌─────────────┐                │  │ Couche OASCII   │  │  rendu Téletexte Oric
-│  oric1-emu  │ --serial tcp:  │  │ (rendu écran)   │  │  (attributs sériels)
+┌─────────────┐                │  │ OASCII layer    │  │  Oric Teletext rendering
+│  oric1-emu  │ --serial tcp:  │  │ (screen render) │  │  (serial attributes)
 │  (Oric1)    │◀──────────────▶│  └─────────────────┘  │
 └─────────────┘                └──────────────────────┘
 ```
 
-## 2. Couches
+## 2. Layers
 
-### 2.1 Couche réseau
-- Serveur TCP en Go, **1 connexion = 1 goroutine**.
-- Négociation telnet minimale (IAC) ou « fake telnet » selon décision (cf. ROADMAP §Décisions).
-- Timeout d'inactivité, fermeture propre, journalisation des sessions.
+### 2.1 Network layer
+- TCP server in Go, **1 connection = 1 goroutine**.
+- Minimal telnet negotiation (IAC) or "fake telnet" depending on decision (see ROADMAP §Decisions).
+- Inactivity timeout, clean shutdown, session logging.
 
-### 2.2 Moteur BBS
-- Boucle de session (à la `doLoop()` de petscii-bbs) : afficher écran → lire saisie → router.
-- Pile de menus / navigation, écran d'accueil, login optionnel.
-- Persistance (utilisateurs, messages) — format à définir au Sprint 2.
+### 2.2 BBS engine
+- Session loop (like petscii-bbs's `doLoop()`): display screen → read input → route.
+- Menu stack / navigation, welcome screen, optional login.
+- Persistence (users, messages) — format to be defined in Sprint 2.
 
-### 2.3 Couche OASCII (cœur technique — Sprint 1)
-Encapsule les spécificités d'affichage Oric pour que le moteur BBS reste agnostique.
+### 2.3 OASCII layer (technical core — Sprint 1)
+Encapsulates the Oric display specifics so that the BBS engine stays agnostic.
 
-**Mode TEXT Oric :** 40 colonnes × 28 lignes, type **Téletexte**. Les attributs sont **sériels** :
-un code de contrôle (valeur < 32) posé dans une case écran change le rendu **à partir de cette case
-jusqu'à la fin de la ligne** (ou jusqu'au prochain code). Conséquences :
+**Oric TEXT mode:** 40 columns × 28 lines, **Teletext** type. Attributes are **serial**:
+a control code (value < 32) placed in a screen cell changes the rendering **from that cell
+to the end of the line** (or until the next code). Consequences:
 
-- Poser une couleur **consomme une colonne** → prévoir la place dans la mise en page.
-- Les attributs ne « traversent » pas les fins de ligne (réinitialisés à chaque ligne).
+- Placing a color **consumes a column** → plan for the room in the layout.
+- Attributes do not "cross" line ends (reset on each line).
 
-**Codes d'attribut TEXT (à confirmer/compléter en implémentation) :**
+**TEXT attribute codes (to confirm/complete in implementation):**
 
-| Plage | Effet |
+| Range | Effect |
 |-------|-------|
-| `0`–`7`   | Couleur d'encre (encre 0..7) |
-| `8`–`15`  | Attributs texte (clignotement, double hauteur, jeux de caractères standard/alternatif) |
-| `16`–`23` | Couleur de fond (papier 0..7) |
-| `24`–`31` | Attributs (mode, etc.) |
+| `0`–`7`   | Ink color (ink 0..7) |
+| `8`–`15`  | Text attributes (flashing, double height, standard/alternate character sets) |
+| `16`–`23` | Background color (paper 0..7) |
+| `24`–`31` | Attributes (mode, etc.) |
 
-> ⚠️ Ces plages doivent être **vérifiées sur matériel/émulateur** au Sprint 1 (table d'attributs Oric
-> exacte) avant d'être figées.
+> ⚠️ These ranges must be **verified on hardware/emulator** in Sprint 1 (exact Oric attribute
+> table) before being frozen.
 
-**API cible (langage-agnostique) :**
+**Target API (language-agnostic):**
 ```
-cls()                  efface l'écran
-at(x, y)               positionne le curseur
-ink(c)                 couleur d'encre (0..7)  → émet le code d'attribut
-paper(c)               couleur de fond (0..7)
-print(text)            écrit du texte
-println(text)          écrit + retour ligne
-flush()                envoie le buffer
-read_key() / read_line()  lecture clavier
+cls()                  clears the screen
+at(x, y)               positions the cursor
+ink(c)                 ink color (0..7)  → emits the attribute code
+paper(c)               background color (0..7)
+print(text)            writes text
+println(text)          writes + newline
+flush()                sends the buffer
+read_key() / read_line()  keyboard read
 ```
 
-## 3. Pipeline de test (sans matériel)
+## 3. Test pipeline (without hardware)
 
-Émulateur de référence **unique** : `/home/bmarty/Oric1/oric1-emu` (Phosphoric). Détails et
-commandes dans [`test-emulateurs.md`](test-emulateurs.md).
+**Single** reference emulator: `/home/bmarty/Oric1/oric1-emu` (Phosphoric). Details and
+commands in [`emulator-testing.md`](emulator-testing.md).
 
-1. Lancer le serveur BBS sur `127.0.0.1:6502`.
-2. Connecter l'émulateur : `./oric1-emu --serial tcp:127.0.0.1:6502 --acia-addr 031C`.
-3. Variante : `--serial loopback` pour tester l'ACIA seule ; `nc 127.0.0.1 6502` pour le serveur seul.
+1. Start the BBS server on `127.0.0.1:6502`.
+2. Connect the emulator: `./oric1-emu --serial tcp:127.0.0.1:6502 --acia-addr 031C`.
+3. Variant: `--serial loopback` to test the ACIA alone; `nc 127.0.0.1 6502` for the server alone.
 
-## 4. Matériel réel (Sprint 4)
+## 4. Real hardware (Sprint 4)
 
-- Oric-1/Atmos + **LOCI** + WiFiModem USB. Adressage : MIA LOCI à **`$03A0-$03BF`** (cf. oric1-emu
-  `--loci`) ; ACIA « standard » à **`$031C`** (Telestrat / défaut oric1-emu).
-- Le client Oric devra cibler la bonne base ACIA selon le montage.
-- Pipeline de test local complet via les émulateurs : voir [`test-emulateurs.md`](test-emulateurs.md).
-- Commandes Hayes AT pour établir la connexion telnet vers le serveur.
+- Oric-1/Atmos + **LOCI** + USB WiFiModem. Addressing: LOCI MIA at **`$03A0-$03BF`** (see oric1-emu
+  `--loci`); "standard" ACIA at **`$031C`** (Telestrat / oric1-emu default).
+- The Oric client will have to target the right ACIA base depending on the setup.
+- Full local test pipeline via the emulators: see [`emulator-testing.md`](emulator-testing.md).
+- Hayes AT commands to establish the telnet connection to the server.
 
-## 5. Exposition Internet (contrainte de premier ordre)
+## 5. Internet exposure (first-order constraint)
 
-Le BBS est un **serveur Internet public** : il écoute sur `0.0.0.0:<port>` et est joignable depuis
-n'importe quel Oric connecté via son WiFiModem. Conséquences à intégrer dès le départ :
+The BBS is a **public Internet server**: it listens on `0.0.0.0:<port>` and is reachable from
+any Oric connected via its WiFiModem. Consequences to integrate from the start:
 
-- **Port public** : **`6502`** retenu (clin d'œil au CPU de l'Oric ; évite le port 23 très scanné et
-  souvent bloqué en sortie par les FAI). À configurer côté client dans le `ATD <host>:6502`.
-- **Hébergement** : **VPS cloud avec IP fixe** (service public 24/7, exposition directe sans DNS dynamique).
-- **Pas de chiffrement** : les clients Oric ne font pas de TLS → le flux telnet est **en clair**.
-  Donc : jamais de secret sensible côté utilisateur, mots de passe BBS traités comme non confidentiels,
-  hachage côté serveur quand même.
-- **Surface d'attaque** : un port ouvert sur Internet est scanné en permanence.
-  - Binding maîtrisé, **rate limiting** par IP, **limite de connexions simultanées**.
-  - Lecture défensive des entrées (jamais d'`eval`, tailles bornées, timeouts agressifs).
-  - Journalisation des connexions (IP, horodatage) + rotation des logs.
-  - Isolation du process (utilisateur dédié non privilégié / conteneur).
-- **Disponibilité** : service `systemd` ou conteneur avec redémarrage auto sur le VPS.
+- **Public port**: **`6502`** chosen (a nod to the Oric's CPU; avoids port 23, which is heavily scanned and
+  often blocked outbound by ISPs). To be configured on the client side in `ATD <host>:6502`.
+- **Hosting**: **cloud VPS with fixed IP** (24/7 public service, direct exposure without dynamic DNS).
+- **No encryption**: Oric clients do not do TLS → the telnet stream is **in clear**.
+  Therefore: never any sensitive secret on the user side, BBS passwords treated as non-confidential,
+  server-side hashing nonetheless.
+- **Attack surface**: a port open on the Internet is scanned constantly.
+  - Controlled binding, **rate limiting** per IP, **simultaneous connection limit**.
+  - Defensive reading of inputs (never any `eval`, bounded sizes, aggressive timeouts).
+  - Connection logging (IP, timestamp) + log rotation.
+  - Process isolation (dedicated unprivileged user / container).
+- **Availability**: `systemd` service or container with auto-restart on the VPS.
 
-> Ces points remontent la sécurité et le déploiement comme préoccupations **transverses**, pas comme un
-> sprint final. Voir la ROADMAP mise à jour.
+> These points raise security and deployment as **cross-cutting** concerns, not as a final
+> sprint. See the updated ROADMAP.
 
-## 6. Décisions d'architecture (ADR)
-Les ADR sont versionnés dans `docs/adr/`.
-- **ADR-0001** — Login : porte au CONNECT déclenchée par la page de départ JSON (cible
-  spéciale → composant), persistance hachée PBKDF2 stdlib. (`docs/adr/0001-login-composant-page.md`)
-- **ADR-0002** — Modèle de saisie : terminal Oric en mode caractère, `ReadKey` (menus) +
-  `ReadLine` (champs texte). (`docs/adr/0002-modele-de-saisie.md`)
-- **ADR-0003** — Studio « forge » : app web Go, `internal/` partagé, déploiement par profils
-  (dev/int/prod), studio = source de vérité. (`docs/adr/0003-studio-forge.md`)
+## 6. Architecture decisions (ADR)
+ADRs are versioned in `docs/adr/`.
+- **ADR-0001** — Login: gate at CONNECT triggered by the JSON start page (special
+  target → component), PBKDF2 stdlib hashed persistence. (`docs/adr/0001-login-component-page.md`)
+- **ADR-0002** — Input model: Oric terminal in character mode, `ReadKey` (menus) +
+  `ReadLine` (text fields). (`docs/adr/0002-input-model.md`)
+- **ADR-0003** — "Forge" studio: Go web app, shared `internal/`, deployment by profiles
+  (dev/int/prod), studio = source of truth. (`docs/adr/0003-studio-forge.md`)
 
-Décisions encore ouvertes : voir `ROADMAP.md` §« Décisions ouvertes » (adressage ACIA,
-négociation telnet, table OASCII).
+Decisions still open: see `ROADMAP.md` §"Open decisions" (ACIA addressing,
+telnet negotiation, OASCII table).

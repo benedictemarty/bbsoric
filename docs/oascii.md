@@ -1,58 +1,58 @@
-# Couche OASCII — affichage Oric
+# OASCII layer — Oric display
 
-## Qu'est-ce qu'« OASCII » ?
+## What is "OASCII"?
 
-Nom de marque du projet (clin d'œil à **PETSCII** et **ATASCII**), MAIS attention à
-la différence de fond :
+A project brand name (a nod to **PETSCII** and **ATASCII**), BUT note the
+fundamental difference:
 
-| Machine | « xASCII » | Nature réelle |
+| Machine | "xASCII" | Real nature |
 |---------|-----------|---------------|
-| C64 | PETSCII | jeu de caractères **propriétaire** (codes ≠ ASCII) |
-| Atari | ATASCII | jeu de caractères **propriétaire** (codes ≠ ASCII) |
-| **Oric** | **OASCII** | **ASCII standard** pour les caractères + **attributs Téletexte sériels** |
+| C64 | PETSCII | **proprietary** character set (codes ≠ ASCII) |
+| Atari | ATASCII | **proprietary** character set (codes ≠ ASCII) |
+| **Oric** | **OASCII** | **standard ASCII** for characters + **serial Teletext attributes** |
 
-Sur l'Oric, la lettre `A` est au code `65` comme en ASCII. « OASCII » ne désigne donc
-**pas** un encodage de caractères, mais le **modèle d'affichage** de l'Oric : le mode
-TEXT 40×28 de type Téletexte, où couleurs et attributs sont posés par des **octets de
-contrôle (0–31) qui occupent une case écran** et s'appliquent jusqu'à la fin de la ligne.
+On the Oric, the letter `A` is at code `65` just like in ASCII. "OASCII" therefore
+does **not** designate a character encoding, but the **display model** of the Oric: the
+Teletext-style 40×28 TEXT mode, where colors and attributes are set by **control
+bytes (0–31) that occupy a screen cell** and apply until the end of the line.
 
-## Table d'attributs (source de vérité)
+## Attribute table (source of truth)
 
-Extraite du décodeur ULA de l'émulateur de référence **`Oric1/oric1-emu`**
-(`src/video/video.c`, fonction `decode_attr`). Un octet écran est un attribut sériel
-si ses bits 6 et 5 sont nuls (valeur 0–31) ; effet selon `val & 0x18` :
+Extracted from the ULA decoder of the reference emulator **`Oric1/oric1-emu`**
+(`src/video/video.c`, function `decode_attr`). A screen byte is a serial attribute
+if its bits 6 and 5 are zero (value 0–31); effect according to `val & 0x18`:
 
-| Octet | Groupe | Effet |
+| Byte | Group | Effect |
 |-------|--------|-------|
-| `0–7`   (`0x00`) | **INK** (encre) | encre = `val & 7` |
-| `8–15`  (`0x08`) | **attributs texte** | bit0 = charset alternatif · bit1 = double hauteur · bit2 = clignotement |
-| `16–23` (`0x10`) | **PAPER** (fond) | fond = `val & 7` |
-| `24–31` (`0x18`) | **mode vidéo** | change `vid_mode` ; en plus : `28` = inverse OFF, `29` = inverse ON |
+| `0–7`   (`0x00`) | **INK** | ink = `val & 7` |
+| `8–15`  (`0x08`) | **text attributes** | bit0 = alternate charset · bit1 = double height · bit2 = blink |
+| `16–23` (`0x10`) | **PAPER** (background) | background = `val & 7` |
+| `24–31` (`0x18`) | **video mode** | changes `vid_mode`; in addition: `28` = inverse OFF, `29` = inverse ON |
 
-> L'ULA **réinitialise** les attributs au début de **chaque ligne** : encre = blanc (7),
-> fond = noir (0). Une couleur ne « déborde » donc pas sur la ligne suivante.
+> The ULA **resets** attributes at the start of **each line**: ink = white (7),
+> background = black (0). A color therefore does not "spill over" onto the next line.
 
-## Positionnement du curseur (« plot X,Y »)
+## Cursor positioning ("plot X,Y")
 
-Au-delà du flux séquentiel, une **extension propre au terminal Oric** permet de
-positionner le curseur d'écriture à des coordonnées absolues :
+Beyond the sequential stream, an **Oric-terminal-specific extension** allows
+positioning the write cursor at absolute coordinates:
 
-| Séquence | Effet |
+| Sequence | Effect |
 |----------|-------|
-| `1F` `col` `row` | place le curseur en (`col` 0–39, `row` 0–27) ; les octets suivants s'écrivent à partir de là |
+| `1F` `col` `row` | places the cursor at (`col` 0–39, `row` 0–27); the following bytes are written starting from there |
 
-L'octet `0x1F` (hors des plages d'attributs réellement émises) est suivi de
-**deux octets bruts** (colonne puis ligne). Le terminal (`client/term.s`,
-`handle_rx`/`set_cursor_xy`) intercepte la séquence et repositionne son pointeur
-VRAM. API Go : `oascii.Plot(col, row)` ou `Builder.At(col, row)`. Les terminaux
-génériques (telnet/PC) ne comprennent pas cette commande — c'est une fonction Oric
-(utilisée p. ex. pour positionner les champs d'un formulaire dans un décor).
+The byte `0x1F` (outside the actually emitted attribute ranges) is followed by
+**two raw bytes** (column then row). The terminal (`client/term.s`,
+`handle_rx`/`set_cursor_xy`) intercepts the sequence and repositions its VRAM
+pointer. Go API: `oascii.Plot(col, row)` or `Builder.At(col, row)`. Generic
+terminals (telnet/PC) do not understand this command — it is an Oric feature
+(used e.g. to position the fields of a form within a layout).
 
-## Palette (8 couleurs, bits R/G/B)
+## Palette (8 colors, R/G/B bits)
 
-Depuis `palette[8][3]` de `video.c` :
+From `palette[8][3]` in `video.c`:
 
-| # | Nom | RGB |
+| # | Name | RGB |
 |---|-----|-----|
 | 0 | Black   | `000000` |
 | 1 | Red     | `FF0000` |
@@ -63,41 +63,41 @@ Depuis `palette[8][3]` de `video.c` :
 | 6 | Cyan    | `00FFFF` |
 | 7 | White   | `FFFFFF` |
 
-## API Go (`internal/oascii`)
+## Go API (`internal/oascii`)
 
 ```go
-b := oascii.New()                  // état Oric par défaut : encre blanc, fond noir
-b.Ink(oascii.Yellow)               // émet l'octet 0x03
-b.Paper(oascii.Blue)               // émet l'octet 0x14 (16+4)
-b.Blink(true)                      // émet l'octet 0x0C
-b.Text("BBS ORIC")                 // ASCII imprimable (0–31 → espace de sécurité)
-b.Newline()                        // CR LF (+ ré-émission si Sticky)
-sess.Write(b.String())             // octets 0–31 préservés
+b := oascii.New()                  // default Oric state: ink white, paper black
+b.Ink(oascii.Yellow)               // emits byte 0x03
+b.Paper(oascii.Blue)               // emits byte 0x14 (16+4)
+b.Blink(true)                      // emits byte 0x0C
+b.Text("BBS ORIC")                 // printable ASCII (0–31 → safety space)
+b.Newline()                        // CR LF (+ re-emit if Sticky)
+sess.Write(b.String())             // bytes 0–31 preserved
 ```
 
-Encodeurs bas niveau testés contre l'émulateur : `InkAttr(c)`, `PaperAttr(c)`,
+Low-level encoders tested against the emulator: `InkAttr(c)`, `PaperAttr(c)`,
 `TextAttr(blink, doubleHeight, altCharset)`.
 
-### Mode « sticky »
-`b.Sticky(true)` ré-émet automatiquement les attributs courants (non par défaut)
-après chaque `Newline()`, pour conserver une couleur sur plusieurs lignes malgré la
-réinitialisation par ligne de l'ULA. Coût : chaque ré-émission consomme une case en
-début de ligne.
+### "Sticky" mode
+`b.Sticky(true)` automatically re-emits the current attributes (not by default)
+after each `Newline()`, to keep a color across several lines despite the
+per-line reset by the ULA. Cost: each re-emission consumes a cell at the
+start of the line.
 
-## Pièges de mise en page (40 colonnes)
+## Layout pitfalls (40 columns)
 
-- **Un octet d'attribut occupe une case.** Une ligne « pleine largeur » de 40 caractères
-  **précédée** d'un attribut fait 41 cases → elle déborde sur la ligne suivante. Pour une
-  ligne pleine largeur colorée, n'utiliser que `Cols-1` caractères, ou la laisser en
-  couleur par défaut (aucun octet émis).
-- Le centrage doit tenir compte des octets d'attribut placés avant le texte (décalage
-  d'une colonne par attribut).
+- **An attribute byte occupies a cell.** A "full-width" line of 40 characters
+  **preceded** by an attribute is 41 cells → it spills over onto the next line. For a
+  colored full-width line, use only `Cols-1` characters, or leave it in the
+  default color (no byte emitted).
+- Centering must account for the attribute bytes placed before the text (a one-column
+  offset per attribute).
 
-## Validation sur émulateur
+## Validation on emulator
 
 ```bash
 go run ./cmd/bbsd -addr 127.0.0.1:6502
 cd ~/Oric1 && ./oric1-emu --serial tcp:127.0.0.1:6502 --acia-addr 031C
 ```
-Voir [`test-emulateurs.md`](test-emulateurs.md). Le hexdump du flux serveur permet de
-vérifier les octets d'attribut (ex. `03` = encre jaune avant le titre).
+See [`emulator-testing.md`](emulator-testing.md). The hexdump of the server stream lets you
+verify the attribute bytes (e.g. `03` = yellow ink before the title).

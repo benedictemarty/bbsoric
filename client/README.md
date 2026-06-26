@@ -1,69 +1,69 @@
-# Terminal BBS autonome pour Oric (`term.s`)
+# Standalone BBS terminal for Oric (`term.s`)
 
-Programme 6502 côté Oric qui transforme la machine en **terminal BBS autonome** :
-au démarrage il choisit le modem, affiche un **répertoire**, **compose lui-même**
-la commande de numérotation Hayes (`ATD`), puis bascule en terminal. La réception
-est écrite **directement en mémoire écran** (`$BB80`) pour que les octets de
-contrôle 0–31 deviennent de vrais **attributs Téletexte sériels** (couleurs OASCII).
+6502 program on the Oric side that turns the machine into a **standalone BBS terminal**:
+at startup it chooses the modem, displays a **directory**, **composes the Hayes dialling
+command itself** (`ATD`), then switches to terminal mode. Reception is written
+**directly to screen memory** (`$BB80`) so that control bytes 0–31 become real
+**serial Teletext attributes** (OASCII colours).
 
-## Déroulé
+## Flow
 
-1. **Menu modem** : `1` = ACIA 6551 direct (`$031C`), `2` = LOCI / Pico W (`$03A0`).
-2. **Répertoire** : BBS Oric (prod), ParticlesBBS, Altair, Heatwave, ou `M` = saisie manuelle.
-3. **Saisie manuelle** : hôte, port, protocole (`1`=telnet/raw, `2`=TLS).
-4. Numérotation `ATD<hôte:port>` autonome → **mode terminal**.
+1. **Modem menu**: `1` = direct ACIA 6551 (`$031C`), `2` = LOCI / Pico W (`$03A0`).
+2. **Directory**: BBS Oric (prod), ParticlesBBS, Altair, Heatwave, or `M` = manual entry.
+3. **Manual entry**: host, port, protocol (`1`=telnet/raw, `2`=TLS).
+4. Standalone `ATD<host:port>` dialling → **terminal mode**.
 
-## Caractéristiques techniques
+## Technical characteristics
 
-- **E/S série abstraites** via `ACIAPTR` (pointeur ZP sur la base ACIA) + primitives
-  `ser_tx`/`ser_rx_ready`/`ser_rx` → un seul binaire pour les 2 backends 6551 (adresses
-  `$031C` et `$03A0`, validées end-to-end : `CONNECT to pavi.3617.fr:6502`).
-- ACIA 9600 8N1, DTR on, polling (pas d'IRQ).
-- Réception → écran : `CR`/`LF`/scroll, clamp 40 colonnes.
-- **TX clavier** : scan matrice 8×8 (PSG-via-VIA), anti-rebond, écho local. `input_line`
-  pour la saisie manuelle.
-- Chargé/exécuté en `$1000`. ~1,5 Ko.
+- **Abstract serial I/O** via `ACIAPTR` (ZP pointer to the ACIA base) + primitives
+  `ser_tx`/`ser_rx_ready`/`ser_rx` → a single binary for both 6551 backends (addresses
+  `$031C` and `$03A0`, validated end-to-end: `CONNECT to pavi.3617.fr:6502`).
+- ACIA 9600 8N1, DTR on, polling (no IRQ).
+- Reception → screen: `CR`/`LF`/scroll, 40-column clamp.
+- **Keyboard TX**: 8×8 matrix scan (PSG-via-VIA), debounce, local echo. `input_line`
+  for manual entry.
+- Loaded/executed at `$1000`. ~1.5 KB.
 
-## Modems et protocoles
+## Modems and protocols
 
-- **DTL 2000** non géré : c'est un modem **V23/Minitel** (6850 + PIA, pas de Hayes AT ni
-  de TCP moderne) — il ne sert pas à joindre un BBS telnet Internet.
-- **TLS/SSL** : l'Oric 8 bits **ne fait aucune crypto**. Le TLS est terminé par le **modem
-  WiFi** (Pico W, firmware v0.2.0) qui présente du clair à l'Oric. Côté Oric, « protocole »
-  choisit la commande de numérotation :
-  - telnet/raw → `ATD hôte:port`
-  - **TLS → `ATDT#hôte:port`** (le `#` ouvre un appel TLS-terminé)
-  Validé **de bout en bout dans l'émulateur** (build OpenSSL, backend `--serial picowifi`) :
-  TLSv1.3, bannière BBS rendue à travers le tunnel (`../docs/img/tls-dial.png`).
-  Vérification du certificat : `VERIFY_NONE` par défaut ; `AT$CA` charge **un** CA racine
-  (buffer 8 Ko, conforme au firmware — pas de bundle système entier) et `AT$CV1` impose la
-  vérification. `ATGET https://...` permet aussi un GET HTTPS (port 443).
+- **DTL 2000** not supported: it is a **V23/Minitel** modem (6850 + PIA, no Hayes AT nor
+  modern TCP) — it cannot reach an Internet telnet BBS.
+- **TLS/SSL**: the 8-bit Oric does **no crypto**. TLS is terminated by the **WiFi
+  modem** (Pico W, firmware v0.2.0) which presents cleartext to the Oric. On the Oric side,
+  "protocol" selects the dialling command:
+  - telnet/raw → `ATD host:port`
+  - **TLS → `ATDT#host:port`** (the `#` opens a TLS-terminated call)
+  Validated **end-to-end in the emulator** (OpenSSL build, `--serial picowifi` backend):
+  TLSv1.3, BBS banner rendered through the tunnel (`../docs/img/tls-dial.png`).
+  Certificate verification: `VERIFY_NONE` by default; `AT$CA` loads **one** root CA
+  (8 KB buffer, matching the firmware — not the whole system bundle) and `AT$CV1` enforces
+  verification. `ATGET https://...` also allows an HTTPS GET (port 443).
 
-## Construire
+## Build
 
 ```bash
 ./build.sh        # xa term.s -> term.bin -> bin2tap -> term.tap (autorun)
 ```
-Surcharge : `BIN2TAP=/chemin/bin2tap ./build.sh`.
+Override: `BIN2TAP=/path/bin2tap ./build.sh`.
 
-## Tester dans l'émulateur
+## Test in the emulator
 
-Depuis la racine du dépôt :
+From the repository root:
 ```bash
 oric-client/build.sh
 scripts/test-emulateur.sh /tmp/oric.ppm
 ```
-Le script lance le serveur, démarre `oric1-emu` connecté en série TCP, et capture
-le rendu. Résultat de référence : [`../docs/img/sprint1-banner.png`](../docs/img/sprint1-banner.png).
+The script launches the server, starts `oric1-emu` connected over serial TCP, and captures
+the rendering. Reference result: [`../docs/img/sprint1-banner.png`](../docs/img/sprint1-banner.png).
 
-## Notes techniques
+## Technical notes
 
-- `xa` ne supporte pas l'UTF-8 ni le `:` dans les commentaires → commentaires ASCII.
-- Adresse ACIA choisie au runtime via le menu modem (`ACIAPTR` = `$031C` ou `$03A0`).
-- Octets `$0A`/`$0D` réservés au contrôle de ligne : la couche OASCII évite de les
-  émettre comme attributs (les attributs 0x0A/0x0D — double hauteur seule / blink+alt —
-  sont à éviter dans le protocole actuel).
-- **Test `--type-keys`** : l'outil maintient une touche enfoncée jusqu'à une touche
-  identique ou la fin de chaîne → la navigation multi-écrans s'automatise mal (doubler la
-  touche force un relâchement). Chaque étape a été validée séparément ; en frappe humaine
-  (presser/relâcher) tout s'enchaîne normalement.
+- `xa` does not support UTF-8 nor `:` in comments → ASCII comments.
+- ACIA address chosen at runtime via the modem menu (`ACIAPTR` = `$031C` or `$03A0`).
+- Bytes `$0A`/`$0D` reserved for line control: the OASCII layer avoids emitting them
+  as attributes (the attributes 0x0A/0x0D — double height alone / blink+alt —
+  are to be avoided in the current protocol).
+- **`--type-keys` test**: the tool holds a key down until an identical key or the end of
+  the string → multi-screen navigation automates poorly (doubling the key forces a
+  release). Each step was validated separately; with human typing (press/release)
+  everything chains normally.

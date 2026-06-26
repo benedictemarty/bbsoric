@@ -1,43 +1,43 @@
-# Conteneurisation Docker — BBS Oric
+# Docker containerization — BBS Oric
 
-> **Sprint 5 (optionnel).** Alternative au déploiement systemd (`deploy/`) :
-> exécuter le BBS dans un conteneur. Le déploiement de production reste sur
-> **systemd** (`make deploy`) ; Docker sert aux déploiements portables, aux
-> environnements de test, ou à un hébergeur orienté conteneurs.
+> **Sprint 5 (optional).** An alternative to systemd deployment (`deploy/`):
+> run the BBS in a container. Production deployment remains on
+> **systemd** (`make deploy`); Docker serves portable deployments, test
+> environments, or a container-oriented host.
 
 ## Image
 
-`Dockerfile` multi-stage :
+Multi-stage `Dockerfile`:
 
-1. **build** (`golang:1.26-alpine`) : compile un binaire **statique**
-   (`CGO_ENABLED=0`, `-trimpath -ldflags='-s -w'`). Aucune dépendance externe
-   (stdlib uniquement, pas de `go.sum`).
-2. **runtime** (`alpine:3.20`) : binaire + `site.json` par défaut, utilisateur
-   non-root `bbsoric` (uid 10001), `wget`/`ca-certificates` pour le healthcheck
-   et le TLS optionnel.
+1. **build** (`golang:1.26-alpine`): compiles a **static** binary
+   (`CGO_ENABLED=0`, `-trimpath -ldflags='-s -w'`). No external dependencies
+   (stdlib only, no `go.sum`).
+2. **runtime** (`alpine:3.20`): binary + default `site.json`, non-root user
+   `bbsoric` (uid 10001), `wget`/`ca-certificates` for the healthcheck
+   and optional TLS.
 
-Résultat : image **~18 Mo**.
+Result: **~18 MB** image.
 
 ### Healthcheck
 
-L'image embarque un `HEALTHCHECK` qui interroge l'endpoint local `/healthz`
-(`-metrics-addr 127.0.0.1:6510`, cf. `monitoring.md`). `docker ps` affiche alors
-l'état `healthy`/`unhealthy`.
+The image embeds a `HEALTHCHECK` that queries the local `/healthz` endpoint
+(`-metrics-addr 127.0.0.1:6510`, see `monitoring.md`). `docker ps` then displays
+the `healthy`/`unhealthy` status.
 
-## Démarrage rapide
+## Quick start
 
 ```console
 # build + run (docker compose)
 make docker-up            # = docker compose up -d --build
-docker compose logs -f    # journaux
-make docker-down          # arrêt
+docker compose logs -f    # logs
+make docker-down          # stop
 
-# ou directement
+# or directly
 make docker-build
 docker run -d --name bbsoric -p 6502:6502 -v bbsoric-state:/var/lib/bbsoric bbsoric:latest
 ```
 
-Le BBS écoute alors sur le port **6502** de l'hôte. Test :
+The BBS then listens on port **6502** of the host. Test:
 
 ```console
 nc 127.0.0.1 6502
@@ -45,17 +45,17 @@ nc 127.0.0.1 6502
 
 ## Configuration
 
-| Aspect | Détail |
+| Aspect | Detail |
 |--------|--------|
-| **Port public** | `6502` (telnet). Mappé via `ports:` du compose. |
-| **Comptes** | persistés dans le volume `bbsoric-state` (`/var/lib/bbsoric/users.json`). |
-| **Contenu** | `site.json` par défaut intégré à l'image ; surchargeable en montant un fichier sur `/etc/bbsoric/site.json` (cf. ligne commentée du compose). |
-| **Supervision** | `/healthz` + `/metrics` en **local au conteneur** (`127.0.0.1:6510`) — non publiés (pas dans `EXPOSE`/`ports`). |
-| **Redémarrage** | `restart: unless-stopped`. |
+| **Public port** | `6502` (telnet). Mapped via the compose `ports:`. |
+| **Accounts** | persisted in the `bbsoric-state` volume (`/var/lib/bbsoric/users.json`). |
+| **Content** | default `site.json` embedded in the image; overridable by mounting a file on `/etc/bbsoric/site.json` (see the commented line in the compose). |
+| **Monitoring** | `/healthz` + `/metrics` **local to the container** (`127.0.0.1:6510`) — not published (not in `EXPOSE`/`ports`). |
+| **Restart** | `restart: unless-stopped`. |
 
-### Activer TLS (port 6992)
+### Enabling TLS (port 6992)
 
-Ajouter `-tls-addr 0.0.0.0:6992` à la commande et publier le port :
+Add `-tls-addr 0.0.0.0:6992` to the command and publish the port:
 
 ```yaml
     command: ["-addr","0.0.0.0:6502","-tls-addr","0.0.0.0:6992",
@@ -66,18 +66,18 @@ Ajouter `-tls-addr 0.0.0.0:6992` à la commande et publier le port :
       - "6992:6992"
 ```
 
-Sans `-tls-cert`/`-tls-key`, un certificat auto-signé est généré au démarrage.
+Without `-tls-cert`/`-tls-key`, a self-signed certificate is generated at startup.
 
-## Sécurité
+## Security
 
-- Le conteneur tourne en **non-root** (`USER bbsoric`).
-- Seul le port **6502** (et éventuellement 6992) est exposé ; la supervision
-  reste interne.
-- Les garde-fous Internet du serveur (limite de connexions globale/par IP,
-  timeout d'inactivité) s'appliquent comme en natif.
+- The container runs as **non-root** (`USER bbsoric`).
+- Only port **6502** (and possibly 6992) is exposed; monitoring
+  stays internal.
+- The server's Internet safeguards (global/per-IP connection limit,
+  inactivity timeout) apply just as in native mode.
 
-## Voir aussi
+## See also
 
-- `deploy/` + `vps-deploy.sh` — déploiement systemd de production.
-- `docs/monitoring.md` — endpoint de supervision et sonde.
-- `docs/architecture.md` §5 — exposition Internet.
+- `deploy/` + `vps-deploy.sh` — production systemd deployment.
+- `docs/monitoring.md` — monitoring endpoint and probe.
+- `docs/architecture.md` §5 — Internet exposure.

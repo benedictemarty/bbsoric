@@ -1,68 +1,68 @@
-# Studio Forge — éditeur de contenu du BBS Oric
+# Forge Studio — content editor for the BBS Oric
 
-Outil web **local** pour éditer le(s) `site*.json` du BBS (pages `menu` / `page` /
-`applet`, porte d'auth), avec **aperçu OASCII couleur** et **validation par le même paquet
-que le serveur** (`internal/content`) — donc zéro divergence de format. Plus tard :
-déploiement par profils (dev / int / prod).
+**Local** web tool to edit the BBS `site*.json`(s) (pages `menu` / `page` /
+`applet`, auth gate), with **coloured OASCII preview** and **validation by the same package
+as the server** (`internal/content`) — so zero format divergence. Later:
+deployment by profiles (dev / int / prod).
 
-## Lancer
+## Run
 
 ```bash
 make studio                  # go run ./studio/cmd/forge -addr 127.0.0.1:8080
-# ou
+# or
 go run ./studio/cmd/forge -addr 127.0.0.1:8080 -content-dir content
 ```
 
-Puis ouvrir <http://127.0.0.1:8080>. Outil de **développement** : il écoute sur `127.0.0.1`
-uniquement (non exposé, pas d'authentification).
+Then open <http://127.0.0.1:8080>. **Development** tool: it listens on `127.0.0.1`
+only (not exposed, no authentication).
 
-## Fonctions
+## Features
 
-- Charger un site, lister/ajouter/renommer/supprimer des pages.
-- Éditer par formulaire selon le type : `menu` (entrées touche/libellé/cible),
-  `page` (lignes texte + encre), `applet` (nom d'applet + page `next` + intro).
-  Une entrée de menu « ▶ applet » se câble via une liste déroulante des applets
-  connus (`login`, `register`, `guest`, `download`, `upload`, `who`, `chat`),
-  avec une infobulle décrivant chacun. À garder aligné sur les applets
-  enregistrés côté serveur (`bbs.Register`).
-- **Aperçu « simulateur ULA »** (canvas 240×224) : rend le flux OASCII de la page comme la
-  puce vidéo Oric (police Oric embarquée, attributs, inverse, double hauteur, clignotement ;
-  semi-graphiques approximés). Sans ROM ni émulateur. Le rendu provient de `internal/render`
-  (même flux d'octets que le serveur).
-- **Valider** (refuse un JSON incohérent) et **Enregistrer** (écriture atomique).
-- **Déployer** vers un environnement via un **profil** (Simuler / Déployer).
+- Load a site, list/add/rename/delete pages.
+- Edit by form according to type: `menu` (key/label/target entries),
+  `page` (text lines + ink), `applet` (applet name + `next` page + intro).
+  A "▶ applet" menu entry is wired via a dropdown of known applets
+  (`login`, `register`, `guest`, `download`, `upload`, `who`, `chat`),
+  with a tooltip describing each one. To keep aligned with the applets
+  registered on the server side (`bbs.Register`).
+- **"ULA simulator" preview** (240×224 canvas): renders the page's OASCII stream like the
+  Oric video chip (embedded Oric font, attributes, inverse, double height, blink;
+  approximated semi-graphics). No ROM or emulator. The rendering comes from `internal/render`
+  (same byte stream as the server).
+- **Validate** (rejects inconsistent JSON) and **Save** (atomic write).
+- **Deploy** to an environment via a **profile** (Simulate / Deploy).
 
-## Déploiement par profils (dev / int / prod)
+## Deployment by profiles (dev / int / prod)
 
-Les profils sont **propres à chaque site** : `deploy/profiles/<site>/<env>.conf` où `<site>`
-est le nom du fichier sans `.json`. Chaque site a son trio `dev` / `int` / `prod`.
-Format `KEY=VALUE`. Un `.conf.example` sert de **défaut** ; copier en `.conf` pour l'infra
-réelle (le `.conf` est gitignoré et **prime** sur l'exemple) :
+Profiles are **specific to each site**: `deploy/profiles/<site>/<env>.conf` where `<site>`
+is the file name without `.json`. Each site has its trio `dev` / `int` / `prod`.
+`KEY=VALUE` format. A `.conf.example` serves as a **default**; copy it to `.conf` for real
+infrastructure (the `.conf` is gitignored and **takes precedence** over the example):
 
 ```bash
-# profils du site « site.json »
-cp deploy/profiles/site/prod.conf.example deploy/profiles/site/prod.conf   # puis renseigner
+# profiles for the site "site.json"
+cp deploy/profiles/site/prod.conf.example deploy/profiles/site/prod.conf   # then fill in
 ```
 
-Le studio (source de vérité) **valide → sauvegarde (horodatée) → écrase → reload**. Le
-bouton **Simuler** (dry-run) montre les actions sans rien exécuter ; **Déployer** demande
-confirmation. `dev` = **local** (copie de fichier, le bbsd recharge à chaud) ; `int`/`prod`
-= **ssh/scp**. Champs : `LOCAL HOST USER PORT CONTENT_PATH SERVICE RELOAD`
+The studio (source of truth) **validates → backs up (timestamped) → overwrites → reloads**. The
+**Simulate** button (dry-run) shows the actions without executing anything; **Deploy** asks for
+confirmation. `dev` = **local** (file copy, bbsd hot-reloads); `int`/`prod`
+= **ssh/scp**. Fields: `LOCAL HOST USER PORT CONTENT_PATH SERVICE RELOAD`
 (`RELOAD` = `none|reload|restart`).
 
-API : `GET /api/profiles?site=`, `POST /api/deploy?site=&profile=&dryRun=`.
+API: `GET /api/profiles?site=`, `POST /api/deploy?site=&profile=&dryRun=`.
 
 ## Architecture
 
 ```
 studio/
-  cmd/forge/         serveur web (net/http, assets embarqués) + handlers API
-  internal/store/    liste / charge / enregistre les site*.json (valide avant écriture)
-  internal/preview/  rend une page en HTML coloré (réutilise oascii + content.Ink)
+  cmd/forge/         web server (net/http, embedded assets) + API handlers
+  internal/store/    lists / loads / saves the site*.json (validates before writing)
+  internal/preview/  renders a page as coloured HTML (reuses oascii + content.Ink)
   web/               index.html, app.js, style.css (embed)
 ```
 
-API : `GET /api/sites`, `GET /api/site?name=`, `POST /api/validate`,
+API: `GET /api/sites`, `GET /api/site?name=`, `POST /api/validate`,
 `POST /api/save?name=`, `POST /api/preview?page=`.
 
-Stdlib uniquement, aucune dépendance externe.
+Stdlib only, no external dependency.

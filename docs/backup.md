@@ -1,108 +1,108 @@
-# Sauvegarde & restauration — BBS Oric
+# Backup & restore — BBS Oric
 
-Le BBS conserve, sur le serveur de production, un **état persistant non
-reproductible** depuis le dépôt. Cette page décrit comment il est sauvegardé,
-restauré, et comment vérifier que la chaîne fonctionne.
+The BBS keeps, on the production server, a **persistent state that cannot be
+reproduced** from the repository. This page describes how it is backed up,
+restored, and how to verify that the chain works.
 
-## 1. Ce qui est sauvegardé
+## 1. What is backed up
 
-| Donnée | Emplacement (prod) | Criticité | Reproductible ? |
+| Data | Location (prod) | Criticality | Reproducible? |
 | --- | --- | --- | --- |
-| Comptes utilisateurs (hachés) | `/var/lib/bbsoric/users.json` | **Haute** | Non — perte = comptes perdus |
-| Bibliothèque de fichiers (upload) | `/var/lib/bbsoric/files/` | Moyenne | Non |
-| Contenu des pages | `/etc/bbsoric/site.json` | Moyenne | Oui (studio), mais éditable à chaud |
+| User accounts (hashed) | `/var/lib/bbsoric/users.json` | **High** | No — loss = accounts lost |
+| File library (uploads) | `/var/lib/bbsoric/files/` | Medium | No |
+| Page content | `/etc/bbsoric/site.json` | Medium | Yes (studio), but editable live |
 
-> `users.json` est le seul état **irrécupérable** : les mots de passe sont
-> hachés (PBKDF2), donc non régénérables. C'est la cible n°1 de la sauvegarde.
+> `users.json` is the only **unrecoverable** state: passwords are
+> hashed (PBKDF2), hence not regenerable. It is the #1 backup target.
 
-Le binaire, les unités systemd et le code ne sont **pas** sauvegardés ici :
-ils proviennent du dépôt Git et sont réinstallés par `deploy/vps-deploy.sh`.
+The binary, the systemd units and the code are **not** backed up here:
+they come from the Git repository and are reinstalled by `deploy/vps-deploy.sh`.
 
-## 2. Mécanisme
+## 2. Mechanism
 
-- **`scripts/backup.sh`** — crée une archive `tar.gz` horodatée dans
-  `/var/backups/bbsoric/`, avec **rotation** (14 archives par défaut). La
-  sauvegarde est **« à chaud »** : `users.json` et les fichiers sont écrits de
-  façon atomique (write-temp + `rename`) par le serveur, donc l'archive ne
-  capture jamais d'écriture partielle — inutile d'arrêter le BBS.
-- **`deploy/bbsoric-backup.service` + `.timer`** — exécutent `backup.sh`
-  **chaque jour à 03h30** (avec rattrapage `Persistent=true` si la machine
-  était éteinte).
-- **`scripts/restore.sh`** — restaure une archive (arrêt du service →
-  restauration → redémarrage).
+- **`scripts/backup.sh`** — creates a timestamped `tar.gz` archive in
+  `/var/backups/bbsoric/`, with **rotation** (14 archives by default). The
+  backup is **"hot"**: `users.json` and the files are written
+  atomically (write-temp + `rename`) by the server, so the archive never
+  captures a partial write — no need to stop the BBS.
+- **`deploy/bbsoric-backup.service` + `.timer`** — run `backup.sh`
+  **every day at 03:30** (with `Persistent=true` catch-up if the machine
+  was off).
+- **`scripts/restore.sh`** — restores an archive (stop the service →
+  restore → restart).
 
-Structure d'une archive :
+Structure of an archive:
 
 ```
 bbsoric-backup-AAAAMMJJ-HHMMSS/
-├── state/          # copie de /var/lib/bbsoric (users.json + files/)
-├── site.json       # copie de /etc/bbsoric/site.json
-└── MANIFEST.txt    # horodatage, hôte, nb de comptes / fichiers
+├── state/          # copy of /var/lib/bbsoric (users.json + files/)
+├── site.json       # copy of /etc/bbsoric/site.json
+└── MANIFEST.txt    # timestamp, host, number of accounts / files
 ```
 
-## 3. Déploiement
+## 3. Deployment
 
-Le timer et les scripts sont installés automatiquement par
-`deploy/vps-deploy.sh` (section *Sauvegardes*) :
+The timer and the scripts are installed automatically by
+`deploy/vps-deploy.sh` (*Backups* section):
 
 - `scripts/backup.sh`  → `/usr/local/bin/bbsoric-backup.sh`
 - `scripts/restore.sh` → `/usr/local/bin/bbsoric-restore.sh`
-- `bbsoric-backup.{service,timer}` → `/etc/systemd/system/`, timer activé.
+- `bbsoric-backup.{service,timer}` → `/etc/systemd/system/`, timer enabled.
 
-Vérifier après déploiement :
+Verify after deployment:
 
 ```sh
-systemctl list-timers bbsoric-backup.timer     # prochaine échéance
-systemctl start bbsoric-backup.service          # sauvegarde immédiate
-ls -lt /var/backups/bbsoric/                    # archives présentes
+systemctl list-timers bbsoric-backup.timer     # next due time
+systemctl start bbsoric-backup.service          # immediate backup
+ls -lt /var/backups/bbsoric/                    # archives present
 ```
 
-## 4. Restauration
+## 4. Restore
 
 ```sh
-# Lister les sauvegardes disponibles
+# List available backups
 bbsoric-restore.sh --list
 
-# Restaurer la plus récente (demande confirmation)
+# Restore the most recent (asks for confirmation)
 bbsoric-restore.sh latest
 
-# Restaurer une archive précise, sans confirmation
+# Restore a specific archive, without confirmation
 bbsoric-restore.sh /var/backups/bbsoric/bbsoric-backup-20260624-033000.tar.gz -y
 ```
 
-`restore.sh` écarte l'état courant en `*.pre-restore` (annulable) avant
-d'écrire, puis redémarre le service.
+`restore.sh` sets the current state aside as `*.pre-restore` (undoable) before
+writing, then restarts the service.
 
-### Propriété des fichiers (DynamicUser)
+### File ownership (DynamicUser)
 
-Le service tourne sous **`DynamicUser=yes`** : le `StateDirectory`
-(`/var/lib/bbsoric`) appartient à un UID éphémère. systemd **réapproprie
-récursivement** ce répertoire à l'UID courant **à chaque démarrage** ; les
-fichiers restaurés par `root` redeviennent donc lisibles par le service dès le
-`systemctl start` final. C'est pourquoi `restore.sh` redémarre toujours le
-service en dernier — ne pas restaurer « à chaud » sans redémarrage.
+The service runs under **`DynamicUser=yes`**: the `StateDirectory`
+(`/var/lib/bbsoric`) belongs to an ephemeral UID. systemd **recursively
+reassigns** this directory to the current UID **on every start**; files
+restored by `root` therefore become readable again by the service as of the
+final `systemctl start`. This is why `restore.sh` always restarts the
+service last — do not restore "hot" without a restart.
 
 ## 5. Test
 
-`scripts/test-backup.sh` valide le cycle complet dans un bac à sable
-temporaire (sans systemd ni root) : sauvegarde → vérification du contenu →
-restauration après corruption → `latest` → rotation. À lancer avant tout
-commit touchant la sauvegarde :
+`scripts/test-backup.sh` validates the full cycle in a temporary
+sandbox (without systemd or root): backup → content verification →
+restore after corruption → `latest` → rotation. Run it before any
+commit touching the backup:
 
 ```sh
 bash scripts/test-backup.sh
 ```
 
-## 6. Hors-site (recommandé)
+## 6. Off-site (recommended)
 
-Les archives vivent sur le même hôte que le service : une perte du LXC les
-emporte aussi. Pour une vraie résilience, rapatrier périodiquement
-`/var/backups/bbsoric/` ailleurs, par exemple depuis le poste d'admin :
+The archives live on the same host as the service: a loss of the LXC
+takes them too. For real resilience, periodically pull
+`/var/backups/bbsoric/` elsewhere, for example from the admin workstation:
 
 ```sh
 rsync -avz --delete \
   "$VPS_USER@$VPS_HOST:/var/backups/bbsoric/" ~/sauvegardes/bbsoric/
 ```
 
-> À planifier côté admin (cron local) — non automatisé côté serveur pour ne
-> pas y stocker de secret d'accès distant.
+> To schedule on the admin side (local cron) — not automated on the server
+> side so as not to store a remote-access secret there.

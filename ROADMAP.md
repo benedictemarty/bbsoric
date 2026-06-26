@@ -1,182 +1,182 @@
 # ROADMAP — BBS Oric
 
-Approche **agile**, livraisons incrémentales. Chaque sprint produit un incrément testable.
+**Agile** approach, incremental deliveries. Each sprint produces a testable increment.
 
-> **Contrainte transverse : serveur Internet public.** Le BBS est exposé sur Internet (écoute
-> `0.0.0.0`, joignable par tout Oric via WiFiModem). Sécurité, exposition et hébergement sont des
-> préoccupations de **chaque** sprint, pas seulement du Sprint 5. Voir `docs/architecture.md` §5.
+> **Cross-cutting constraint: public Internet server.** The BBS is exposed on the Internet (listens
+> on `0.0.0.0`, reachable by any Oric via WiFiModem). Security, exposure and hosting are concerns of
+> **every** sprint, not just Sprint 5. See `docs/architecture.md` §5.
 
-## Sprint 0 — Cadrage & socle ⏳ (en cours)
-- [x] État de l'art des serveurs BBS rétro (`docs/etat-de-l-art.md`)
-- [x] Cadrage cibles : Oric-1/Atmos + LOCI + WiFiModem ; émulateur de test = `Oric1/oric1-emu` (Phosphoric)
-- [x] Initialisation dépôt Git, documentation agile, CHANGELOG, ROADMAP
-- [x] **DÉCISION** : langage serveur = **Go** (1.26)
-- [x] **DÉCISION** : hébergement = **VPS cloud (IP fixe)** ; port public = **6502** (clin d'œil au CPU)
-- [x] Serveur telnet « hello world » écoutant sur `0.0.0.0:6502`, testé via `nc` ✅
-- [x] Exposition Internet minimale : limite de connexions globale + par IP, timeout d'inactivité, logs de connexion
-- [x] Pipeline de test émulateur confirmé (oric1-emu/Phosphoric `--serial tcp:`) — voir `docs/test-emulateurs.md`
+## Sprint 0 — Scoping & foundation ⏳ (in progress)
+- [x] State of the art of retro BBS servers (`docs/state-of-the-art.md`)
+- [x] Target scoping: Oric-1/Atmos + LOCI + WiFiModem; test emulator = `Oric1/oric1-emu` (Phosphoric)
+- [x] Git repository initialisation, agile documentation, CHANGELOG, ROADMAP
+- [x] **DECISION**: server language = **Go** (1.26)
+- [x] **DECISION**: hosting = **cloud VPS (fixed IP)**; public port = **6502** (a nod to the CPU)
+- [x] "Hello world" telnet server listening on `0.0.0.0:6502`, tested via `nc` ✅
+- [x] Minimal Internet exposure: global and per-IP connection limit, idle timeout, connection logs
+- [x] Emulator test pipeline confirmed (oric1-emu/Phosphoric `--serial tcp:`) — see `docs/emulator-testing.md`
 
-## Sprint 1 — Couche terminal Oric (« OASCII ») 🎯 cœur du projet — ⏳ en cours
-- [x] Encodage des **attributs sériels Téletexte** : encre (8), fond (8), clignotement, double hauteur, charset alt
-  — table extraite du décodeur ULA de `oric1-emu` (`src/video/video.c`), tests unitaires verts
-- [x] `internal/oascii` : `Builder` (`Ink/Paper/Blink/DoubleHeight/AltCharset/Text/Newline`), mode `Sticky`
-- [x] Bannière d'accueil colorée (handler) — flux d'octets vérifié au hexdump
-- [x] Spec documentée : `docs/oascii.md`
-- [x] **Terminal Oric** (`oric-client/term.s`, 6502/xa) : ACIA `$031C` → écriture directe VRAM `$BB80`
-  (CR/LF/scroll, clamp 40 col), build `.tap` autorun via `bin2tap`
-- [x] **Validation visuelle dans `oric1-emu`** : bannière colorée rendue correctement (jaune/cyan/vert/blanc)
-  — capture `docs/img/sprint1-banner.png`, test automatisé `scripts/test-emulateur.sh`
-- [ ] Positionnement curseur / `cls` direct (optionnel — l'écriture VRAM gère déjà le rendu ; à définir si besoin)
+## Sprint 1 — Oric terminal layer ("OASCII") 🎯 heart of the project — ⏳ in progress
+- [x] Encoding of the **Teletext serial attributes**: ink (8), paper (8), blink, double height, alt charset
+  — table extracted from the ULA decoder of `oric1-emu` (`src/video/video.c`), unit tests green
+- [x] `internal/oascii`: `Builder` (`Ink/Paper/Blink/DoubleHeight/AltCharset/Text/Newline`), `Sticky` mode
+- [x] Coloured welcome banner (handler) — byte stream verified by hexdump
+- [x] Documented spec: `docs/oascii.md`
+- [x] **Oric terminal** (`oric-client/term.s`, 6502/xa): ACIA `$031C` → direct VRAM write `$BB80`
+  (CR/LF/scroll, 40-col clamp), autorun `.tap` build via `bin2tap`
+- [x] **Visual validation in `oric1-emu`**: coloured banner rendered correctly (yellow/cyan/green/white)
+  — capture `docs/img/sprint1-banner.png`, automated test `scripts/test-emulateur.sh`
+- [ ] Cursor positioning / direct `cls` (optional — VRAM writing already handles rendering; to be defined if needed)
 
-## Sprint 2 — Moteur BBS — ⏳ en cours
-- [x] Boucle de session multi-clients (1 connexion = 1 goroutine) — couche `server`
-- [x] Système de menus / navigation (`internal/bbs/menu.go` : menu principal + écrans
-  Informations / À propos / Livre d'or, rendu OASCII couleur) — validé écran (`docs/img/sprint2-menu.png`)
-- [x] Timeout d'inactivité, déconnexion propre — couche `server`
-- [x] **Émission clavier (TX) côté terminal Oric** — scan matrice complet AY-via-VIA
-  (`oric-client/term.s`), écho local, terminaison ligne sur CR. **Navigation interactive
-  validée à l'écran** (`docs/img/sprint2-keyboard-nav.png`, test via `--type-keys`).
-- [~] Login / profils utilisateurs (persistance) — **incréments 1–3 faits** (ADR-0001/0002) :
-  - `internal/user` : modèle + store haché atomique (PBKDF2 stdlib), tests `-race`.
-  - Saisie **touche unique** (menus) + **ligne/RETURN** (champs texte) : `server.ReadKey`.
-  - **Moteur d'applets** : type de page `applet` (JSON) → applet Go enregistré par nom.
-  - Applets **`login`/`register`/`guest`**, porte d'auth au CONNECT, accueil personnalisé.
-  - Câblage `cmd/bbsd -users` + déploiement (`StateDirectory`). Validé end-to-end (`nc`).
-  - **Terminal Oric** : vérifié — `term.s` émet **déjà** chaque frappe immédiatement (mode
-    caractère), aucune modif requise (cf. ADR-0002). L'émulateur confirme le pipeline
-    clavier→dial→CONNECT→RX.
-  - **Reste** : capture émulateur du nouvel écran de login (limite du backend modem émulé
-    qui compose les hôtes réels — prévoir entrée locale picowifi / test matériel) ;
-    no-echo du mot de passe (optionnel).
+## Sprint 2 — BBS engine — ⏳ in progress
+- [x] Multi-client session loop (1 connection = 1 goroutine) — `server` layer
+- [x] Menu / navigation system (`internal/bbs/menu.go`: main menu + Information / About / Guestbook
+  screens, coloured OASCII rendering) — validated on screen (`docs/img/sprint2-menu.png`)
+- [x] Idle timeout, clean disconnect — `server` layer
+- [x] **Keyboard transmission (TX) on the Oric terminal side** — full AY-via-VIA matrix scan
+  (`oric-client/term.s`), local echo, line termination on CR. **Interactive navigation
+  validated on screen** (`docs/img/sprint2-keyboard-nav.png`, test via `--type-keys`).
+- [~] Login / user profiles (persistence) — **increments 1–3 done** (ADR-0001/0002):
+  - `internal/user`: model + atomic hashed store (PBKDF2 stdlib), `-race` tests.
+  - **Single-key** input (menus) + **line/RETURN** (text fields): `server.ReadKey`.
+  - **Applet engine**: `applet` page type (JSON) → Go applet registered by name.
+  - **`login`/`register`/`guest`** applets, auth gate at CONNECT, personalised welcome.
+  - `cmd/bbsd -users` wiring + deployment (`StateDirectory`). Validated end-to-end (`nc`).
+  - **Oric terminal**: verified — `term.s` **already** emits each keystroke immediately (character
+    mode), no change required (cf. ADR-0002). The emulator confirms the
+    keyboard→dial→CONNECT→RX pipeline.
+  - **Remaining**: emulator capture of the new login screen (limitation of the emulated modem backend
+    that dials the real hosts — plan a local picowifi entry / hardware test);
+    password no-echo (optional).
 
-## Sprint 3 — Modules de contenu
-- [ ] Messagerie / forum (lecture, post)
-- [ ] Page d'actualités / annonces
-- [ ] Mini-jeu interactif (ex. Puissance 4 / morpion) pour valider l'interactivité
-- [~] **Transfert de fichiers (XMODEM)** : côté **serveur fait** (`internal/xmodem`,
-  bibliothèque `server/internal/files`, applets `download`/`upload`, flags `-files`/
-  `-max-upload`, studio, doc `docs/transfert.md`) ; **reste le terminal Oric**
-  (XMODEM 6502 + stockage SD/disquette/cassette). Voir backlog G1.
-  - **Écriture disquette Sedoric PROUVÉE** (24/06) dans l'émulateur : `SAVE`
-    persiste sur la `.dsk` avec le flag `--disk-writeback` (cause racine du faux
-    blocage, ce n'était pas les adresses API).
-  - **Reverse du dispatch SAVE complet** (24/06) : carte des routines/variables
-    établie (`docs/sedoric-api.md`).
-  - **✅ Sauvegarde Sedoric VALIDÉE end-to-end sur SEDORIC V3.0** : un fichier est
-    écrit et persisté dans la `.dsk` depuis le langage machine. Recette (manuel
-    désassemblé V3.0) : `JSR $04F2` (bascule overlay V3.0) → variables système →
-    `JSR $DE9C` (XSAVEB) → `JSR $04F2`. Vecteurs publics confirmés identiques
-    V1.0/V3.0. `client/sedoric.s` finalisée (assemble). Déclenchement par `term.s`
-    déjà câblé.
-  - **✅ Disquette bootable du terminal** : `client/build-disk.sh` produit
-    `term-boot.dsk` (Sedoric master + TERM.COM) ; le terminal **tourne** depuis la
-    disquette (`LOAD"TERM":CALL#1000`, menu modem affiché). ACIA `$0380` (modem
-    LOCI) au runtime pour cohabiter avec le Microdisc. **Reste** : auto-démarrage hands-free
-    (remplacer le programme de boot du master) + **test sur Oric réel**.
+## Sprint 3 — Content modules
+- [ ] Messaging / forum (read, post)
+- [ ] News / announcements page
+- [ ] Interactive mini-game (e.g. Connect Four / tic-tac-toe) to validate interactivity
+- [~] **File transfer (XMODEM)**: **server side done** (`internal/xmodem`,
+  `server/internal/files` library, `download`/`upload` applets, `-files`/
+  `-max-upload` flags, studio, doc `docs/transfer.md`); **remaining is the Oric terminal**
+  (6502 XMODEM + SD/floppy/cassette storage). See backlog G1.
+  - **Sedoric floppy write PROVEN** (24/06) in the emulator: `SAVE`
+    persists to the `.dsk` with the `--disk-writeback` flag (root cause of the fake
+    block — it was not the API addresses).
+  - **Full reverse of the SAVE dispatch** (24/06): map of routines/variables
+    established (`docs/sedoric-api.md`).
+  - **✅ Sedoric save VALIDATED end-to-end on SEDORIC V3.0**: a file is
+    written and persisted to the `.dsk` from machine language. Recipe (disassembled
+    V3.0 manual): `JSR $04F2` (V3.0 overlay switch) → system variables →
+    `JSR $DE9C` (XSAVEB) → `JSR $04F2`. Public vectors confirmed identical
+    V1.0/V3.0. `client/sedoric.s` finalised (assembles). Triggering by `term.s`
+    already wired.
+  - **✅ Bootable terminal floppy**: `client/build-disk.sh` produces
+    `term-boot.dsk` (Sedoric master + TERM.COM); the terminal **runs** from the
+    floppy (`LOAD"TERM":CALL#1000`, modem menu displayed). ACIA `$0380` (LOCI
+    modem) at runtime to coexist with the Microdisc. **Remaining**: hands-free
+    auto-start (replace the master's boot program) + **test on a real Oric**.
 
-## Sprint 4 — Connexion matérielle réelle — ⏳ en cours
-- [x] **Doc de connexion WiFiModem + LOCI** (`docs/connexion-materielle.md`) : chaîne
-  Oric→ACIA→modem→TCP, adressage ACIA `$031C` / modem LOCI `$0380` (MIA `$03A0-$03BF`), registres 6551,
-  commandes AT (`ATD`/`ATDT#`/`AT$CA`/`AT$CV1`), réglages 9600 8N1, dépannage.
-- [x] **Programme client/terminal Oric** (`client/term.s`) — terminal autonome
-  6502 (menu modem, répertoire, saisie manuelle, numérotation Hayes, mode terminal
-  RX/TX), validé end-to-end dans l'émulateur. (réalisé Sprints 1–2)
-- [x] **Écran d'accueil ASCII-art Oric** : bannière serveur enrichie d'un art « ORIC »
-  5 lignes (glyphes 5×5), centré et conforme OASCII (≤ 40 colonnes), couleurs jaune/cyan.
-- [ ] **Test sur Oric réel** — *en attente de matériel*. Protocole de recette
-  matérielle (T1–T9) prêt : `docs/connexion-materielle.md` §7.
+## Sprint 4 — Real hardware connection — ⏳ in progress
+- [x] **WiFiModem + LOCI connection doc** (`docs/hardware-connection.md`): chain
+  Oric→ACIA→modem→TCP, ACIA addressing `$031C` / LOCI modem `$0380` (MIA `$03A0-$03BF`), 6551 registers,
+  AT commands (`ATD`/`ATDT#`/`AT$CA`/`AT$CV1`), 9600 8N1 settings, troubleshooting.
+- [x] **Oric client/terminal program** (`client/term.s`) — standalone
+  6502 terminal (modem menu, directory, manual entry, Hayes dialling, RX/TX
+  terminal mode), validated end-to-end in the emulator. (done in Sprints 1–2)
+- [x] **Oric ASCII-art welcome screen**: server banner enriched with an "ORIC"
+  art over 5 lines (5×5 glyphs), centred and OASCII-compliant (≤ 40 columns), yellow/cyan colours.
+- [ ] **Test on a real Oric** — *awaiting hardware*. Hardware acceptance protocol
+  (T1–T9) ready: `docs/hardware-connection.md` §7.
 
-## Sprint 5 — Déploiement — ✅ terminé (EN PRODUCTION ✅)
-- [x] **Déployé en production** sur le LXC pavi3617 (service systemd `bbsoric`, `enabled`+`active`)
-  via `make deploy` (mécanisme repris de telenet). Binaire Go statique linux/amd64, `DynamicUser`.
-- [x] **Exposition publique validée** : `pavi.3617.fr:6502` (telnet) — bannière + navigation OK
-  depuis l'Internet public.
-- [x] **Monitoring / alerting dédié** : endpoint HTTP local `/healthz` + `/metrics`
-  (format Prometheus, drapeau `-metrics-addr`), sonde `scripts/monitor.sh`
-  (healthz/TCP + alerte mail) déclenchée par `bbsoric-monitor.timer` (5 min).
-  Déploiement intégré à `vps-deploy.sh`. Doc : `docs/monitoring.md`.
-- [x] **Conteneurisation (Docker)** : `Dockerfile` multi-stage (binaire statique →
-  image alpine ~18 Mo, non-root, healthcheck `/healthz`), `docker-compose.yml`
-  (volume comptes, restart), cibles `make docker-build/up/down`. Build et exécution
-  validés (BBS sur 6502, healthcheck `ok`). Doc : `docs/docker.md`. (prod = systemd)
-- [x] **Documentation utilisateur** : `docs/guide-utilisateur.md` (connexion depuis
-  un Oric réel et depuis un PC pour tester, navigation, comptes, dépannage).
-- [x] **Sauvegarde & restauration de l'état** : `scripts/backup.sh` (archive
-  `tar.gz` horodatée comptes+fichiers+contenu, rotation, à chaud) +
-  `scripts/restore.sh`, timer systemd quotidien (`bbsoric-backup.{service,timer}`),
-  test e2e `scripts/test-backup.sh` (13 cas verts), doc `docs/backup.md`.
-  Déploiement intégré à `vps-deploy.sh`.
+## Sprint 5 — Deployment — ✅ done (IN PRODUCTION ✅)
+- [x] **Deployed in production** on the pavi3617 LXC (systemd service `bbsoric`, `enabled`+`active`)
+  via `make deploy` (mechanism reused from telenet). Static Go binary linux/amd64, `DynamicUser`.
+- [x] **Public exposure validated**: `pavi.3617.fr:6502` (telnet) — banner + navigation OK
+  from the public Internet.
+- [x] **Dedicated monitoring / alerting**: local HTTP endpoint `/healthz` + `/metrics`
+  (Prometheus format, `-metrics-addr` flag), probe `scripts/monitor.sh`
+  (healthz/TCP + email alert) triggered by `bbsoric-monitor.timer` (5 min).
+  Deployment integrated into `vps-deploy.sh`. Doc: `docs/monitoring.md`.
+- [x] **Containerisation (Docker)**: multi-stage `Dockerfile` (static binary →
+  alpine image ~18 MB, non-root, `/healthz` healthcheck), `docker-compose.yml`
+  (accounts volume, restart), `make docker-build/up/down` targets. Build and run
+  validated (BBS on 6502, healthcheck `ok`). Doc: `docs/docker.md`. (prod = systemd)
+- [x] **User documentation**: `docs/user-guide.md` (connecting from
+  a real Oric and from a PC for testing, navigation, accounts, troubleshooting).
+- [x] **State backup & restore**: `scripts/backup.sh` (timestamped
+  `tar.gz` archive of accounts+files+content, rotation, hot) +
+  `scripts/restore.sh`, daily systemd timer (`bbsoric-backup.{service,timer}`),
+  e2e test `scripts/test-backup.sh` (13 cases green), doc `docs/backup.md`.
+  Deployment integrated into `vps-deploy.sh`.
 
-## Annonce communautaire (alpha) — ✅ publiée (25/06/2026)
-- [x] **Annonce alpha publiée** sur le forum **Defence Force** :
-  <https://forum.defence-force.org/viewtopic.php?t=2897> (serveur + terminal Oric +
-  studio « Forge »). Vidéo : <https://youtu.be/YRFBYkpsKMc>. Trace : `docs/communication.md`.
-- [x] **Dépôt GitHub public** : <https://github.com/benedictemarty/bbsoric>
-  (historique purgé des IP internes via `git filter-repo`).
-- [ ] **Retours de test sur matériel réel** (appel à contribution de l'annonce) :
-  rendu terminal sur fer, timing XMODEM série réel, write Sedoric sur lecteur
-  physique (Microdisc/LOCI). À consigner dans `docs/communication.md`.
+## Community announcement (alpha) — ✅ published (25/06/2026)
+- [x] **Alpha announcement published** on the **Defence Force** forum:
+  <https://forum.defence-force.org/viewtopic.php?t=2897> (server + Oric terminal +
+  "Forge" studio). Video: <https://youtu.be/YRFBYkpsKMc>. Record: `docs/communication.md`.
+- [x] **Public GitHub repository**: <https://github.com/benedictemarty/bbsoric>
+  (history purged of internal IPs via `git filter-repo`).
+- [ ] **Test feedback on real hardware** (call for contributions from the announcement):
+  terminal rendering on iron, real serial XMODEM timing, Sedoric write on a physical
+  drive (Microdisc/LOCI). To be recorded in `docs/communication.md`.
 
-## Studio « Forge » — outillage de contenu ⏳ (en cours)
-Sous-projet `studio/` : app web Go locale pour éditer le(s) `site.json` et déployer par
-profils. Voir `docs/adr/0003-studio-forge.md`.
-- [x] **Restructuration** du dépôt en 3 sous-projets `server/` `client/` `studio/`
-  (`internal/{content,oascii}` partagés à la racine).
-- [x] **Forge** : éditeur web (pages menu/page/applet), aperçu OASCII couleur, validation
-  par `internal/content`, enregistrement atomique.
-- [x] **Parité applets** : la liste « ▶ applet » couvre tous les applets serveur
-  (`login`/`register`/`guest`/`download`/`upload`/`who`/`chat`) avec infobulles —
-  édition/preview du menu **Communauté** (Sprint 7) opérationnelles.
-- [x] **Déploiement par profils** (dev/int/prod) : valide → sauvegarde → écrase → reload,
-  dry-run ; `dev` local (hot-reload), `int`/`prod` ssh/scp. Validé end-to-end.
-- [x] **Menu sur fond d'écran** : une page `raw` (buffer 40×28 composé) se combine
-  avec des `entries` — décor en fond + navigation par touches (page ou applet),
-  éditeur de navigation intégré à l'onglet « Écran ».
-- [x] **Pages de saisie déclaratives** (`content.Form`) : applet générique `form`
-  (login/inscription) piloté par des champs déclarés (clé/libellé/secret) + action ;
-  éditeur de formulaire dans le studio. La logique sensible (hachage) reste serveur.
-  **Réessai sur place** (`Retries`) + **page d'échec** (`Fail`, aussi pour les
-  entrées ▶ applet) en plus du `Next` de succès.
-- [x] **Positionnement curseur (plot X,Y)** : séquence terminal `1F col row`
-  (`oascii.Plot`/`Builder.At`), champs de formulaire positionnables (`Field.At`),
-  colonnes X/Y dans le studio. Décor + invites placées à coordonnées absolues.
-- [x] **Buffer écran différentiel** (`oascii.Screen`) : rendu « dirty cells » —
-  n'émet que les cellules modifiées (segments + plot X,Y). Base des écrans
-  dynamiques (jeux, animations) sur liaison série lente.
-- [ ] Multi-sites avancé (création de nouveaux fichiers depuis l'UI), gestion des sauvegardes.
-- [ ] Authentification si le studio devait être exposé (aujourd'hui local-only).
+## "Forge" studio — content tooling ⏳ (in progress)
+`studio/` sub-project: local Go web app to edit the `site.json`(s) and deploy by
+profiles. See `docs/adr/0003-studio-forge.md`.
+- [x] **Restructured** the repository into 3 sub-projects `server/` `client/` `studio/`
+  (`internal/{content,oascii}` shared at the root).
+- [x] **Forge**: web editor (menu/page/applet pages), coloured OASCII preview, validation
+  by `internal/content`, atomic save.
+- [x] **Applet parity**: the "▶ applet" list covers all server applets
+  (`login`/`register`/`guest`/`download`/`upload`/`who`/`chat`) with tooltips —
+  editing/preview of the **Community** menu (Sprint 7) operational.
+- [x] **Deployment by profiles** (dev/int/prod): validate → backup → overwrite → reload,
+  dry-run; `dev` local (hot-reload), `int`/`prod` ssh/scp. Validated end-to-end.
+- [x] **Menu over a background screen**: a `raw` page (composed 40×28 buffer) combines
+  with `entries` — background décor + key navigation (page or applet),
+  navigation editor integrated into the "Screen" tab.
+- [x] **Declarative input pages** (`content.Form`): generic `form` applet
+  (login/registration) driven by declared fields (key/label/secret) + action;
+  form editor in the studio. Sensitive logic (hashing) stays server-side.
+  **In-place retry** (`Retries`) + **failure page** (`Fail`, also for ▶ applet
+  entries) in addition to the success `Next`.
+- [x] **Cursor positioning (plot X,Y)**: terminal sequence `1F col row`
+  (`oascii.Plot`/`Builder.At`), positionable form fields (`Field.At`),
+  X/Y columns in the studio. Décor + prompts placed at absolute coordinates.
+- [x] **Differential screen buffer** (`oascii.Screen`): "dirty cells" rendering —
+  emits only the modified cells (segments + plot X,Y). Basis for dynamic screens
+  (games, animations) over a slow serial link.
+- [ ] Advanced multi-site (creating new files from the UI), backup management.
+- [ ] Authentication if the studio were to be exposed (today local-only).
 
-## Sprint 7 — Communication entre appelants (parité état-de-l'art) — ⏳ en cours
-> Cœur historique d'un BBS, aujourd'hui absent (le « Livre d'or » est statique).
-> Analyse d'écart : `docs/etat-de-l-art.md` §6. Chaque feature = un applet
-> (`bbs.Register`) + un store persisté calqué sur `internal/user`.
-- [x] **Qui est en ligne + chat / paging** (#3) — registre de présence
-  (`server/internal/presence`) + applets `who` et `chat` (salon temps réel,
-  diffusion non bloquante, menu **Communauté**). Tests unitaires + intégration
-  deux clients, `-race` propre. *(exploite le moteur multi-session)*
-- [ ] **Mur one-liner inscriptible** (#2) — transforme le Livre d'or en mur de
-  messages persisté ; établit le pattern « applet d'écriture persistée ».
-- [ ] **Message base / forums** (#1) — lire + poster en fils, lecture paginée via
-  le buffer différentiel. *La* feature qui fait passer de « menus » à « BBS ».
-- [ ] **Messagerie privée** (#4), **actualités RSS→OASCII** (#5), **door game** (#6).
+## Sprint 7 — Communication between callers (state-of-the-art parity) — ⏳ in progress
+> Historic heart of a BBS, today absent (the "Guestbook" is static).
+> Gap analysis: `docs/state-of-the-art.md` §6. Each feature = one applet
+> (`bbs.Register`) + a persisted store modelled on `internal/user`.
+- [x] **Who's online + chat / paging** (#3) — presence registry
+  (`server/internal/presence`) + `who` and `chat` applets (real-time room,
+  non-blocking broadcast, **Community** menu). Unit tests + two-client integration,
+  `-race` clean. *(leverages the multi-session engine)*
+- [ ] **Writable one-liner wall** (#2) — turns the Guestbook into a persisted message
+  wall; establishes the "persisted-write applet" pattern.
+- [ ] **Message base / forums** (#1) — read + post in threads, paginated reading via
+  the differential buffer. *The* feature that moves from "menus" to "BBS".
+- [ ] **Private messaging** (#4), **RSS→OASCII news** (#5), **door game** (#6).
 
 ---
 
-## Décisions actées
-- **Langage serveur** : Go 1.26 (`cmd/bbsd`, `internal/server`, `internal/bbs`).
-- **Hébergement** : VPS cloud avec IP fixe (exposition Internet publique 24/7).
-- **Port public** : `6502`.
-- **Test** : émulateur **unique** `Oric1/oric1-emu` (Phosphoric) via socket TCP (`--serial tcp:`).
+## Decisions made
+- **Server language**: Go 1.26 (`cmd/bbsd`, `internal/server`, `internal/bbs`).
+- **Hosting**: cloud VPS with fixed IP (public Internet exposure 24/7).
+- **Public port**: `6502`.
+- **Testing**: **single** emulator `Oric1/oric1-emu` (Phosphoric) via TCP socket (`--serial tcp:`).
 
-## Revue client (terminal Oric) — 26/06/2026
-Revue ingénieur du client 6502 (`docs/revue-client.md`). **Corrigés** : base LOCI
-`$03A0`→**`$0380`** (le `$03A0` était l'espace MIA, d'où le clavier figé), clamp
-plot (anti hors-VRAM), borne réception XMODEM (anti débordement), **majuscules**
-(SHIFT) et **backspace** (DEL, client + serveur). **Différés documentés** :
-contrôle de flux RX (#1), codes modem/DCD (#6), telnet IAC (#7), tests client (#12).
+## Client review (Oric terminal) — 26/06/2026
+Engineering review of the 6502 client (`docs/client-review.md`). **Fixed**: LOCI base
+`$03A0`→**`$0380`** (the `$03A0` was the MIA space, hence the frozen keyboard), plot
+clamp (anti out-of-VRAM), XMODEM receive bound (anti overflow), **uppercase**
+(SHIFT) and **backspace** (DEL, client + server). **Documented deferrals**:
+RX flow control (#1), modem/DCD codes (#6), telnet IAC (#7), client tests (#12).
 
-## Décisions ouvertes (ADR à formaliser)
-1. **Adressage ACIA** — ✅ tranché : `$031C` (ACIA standard) et **`$0380`** (modem
-   WiFi LOCI ; `$03A0-$03BF` = espace MIA, pas le modem). À confirmer sur fer réel.
-2. **Protocole telnet** — négociation IAC complète vs filtrage minimal (actuel). À trancher au Sprint 1.
-3. **Rendu OASCII** — table d'attributs Téletexte Oric exacte à valider sur émulateur (Sprint 1).
+## Open decisions (ADRs to formalise)
+1. **ACIA addressing** — ✅ settled: `$031C` (standard ACIA) and **`$0380`** (LOCI
+   WiFi modem; `$03A0-$03BF` = MIA space, not the modem). To confirm on real iron.
+2. **Telnet protocol** — full IAC negotiation vs minimal filtering (current). To settle in Sprint 1.
+3. **OASCII rendering** — exact Oric Teletext attribute table to validate on the emulator (Sprint 1).

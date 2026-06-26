@@ -6,7 +6,7 @@
 //
 //	pbkdf2$sha256$<iterations>$<sel_base64>$<hash_base64>
 //
-// Voir docs/adr/0001-login-composant-page.md.
+// Voir docs/adr/0001-login-component-page.md.
 package user
 
 import (

@@ -1,67 +1,67 @@
-# ADR-0003 — Studio « Forge » : app web Go, internal/ partagé, déploiement par profils
+# ADR-0003 — "Forge" studio: Go web app, shared internal/, deployment by profiles
 
-- **Statut** : Accepté
-- **Date** : 2026-06-22
-- **Décideurs** : bmarty
-- **Lié à** : ADR-0001/0002 (contenu piloté par JSON, type de page `applet`)
+- **Status**: Accepted
+- **Date**: 2026-06-22
+- **Deciders**: bmarty
+- **Related to**: ADR-0001/0002 (JSON-driven content, `applet` page type)
 
-## Contexte
+## Context
 
-Le contenu du BBS (`content/site.json` : pages `menu`/`page`/`applet`, porte d'auth) était
-édité **à la main**. L'utilisateur veut un **3ᵉ sous-projet** dédié — un **studio « forge »**
-— pour générer/éditer le(s) site(s) **et les déployer** sur plusieurs environnements
-(**prod / int / dev**) via des **profils**.
+The BBS content (`content/site.json`: `menu`/`page`/`applet` pages, auth gate) was
+edited **by hand**. The user wants a **3rd sub-project** dedicated to it — a **"forge"
+studio** — to generate/edit the site(s) **and deploy them** to several environments
+(**prod / int / dev**) via **profiles**.
 
-## Décision
+## Decision
 
-1. **Trois sous-projets** : `server/` (serveur Go), `client/` (terminal Oric), `studio/`
-   (le forge). Les paquets **partagés** `content` et `oascii` restent dans l'`internal/`
-   **racine** : la règle de visibilité Go interdirait à `studio/` d'importer
-   `server/internal/...`, donc on place le code réutilisé à la racine pour que le studio
-   utilise **exactement** la même validation et la même palette que le serveur (zéro
-   divergence). Le code propre au serveur (`bbs`, `server`, `user`) est sous `server/internal/`.
+1. **Three sub-projects**: `server/` (Go server), `client/` (Oric terminal), `studio/`
+   (the forge). The **shared** packages `content` and `oascii` stay in the **root**
+   `internal/`: the Go visibility rule would forbid `studio/` from importing
+   `server/internal/...`, so we place the reused code at the root so the studio
+   uses **exactly** the same validation and the same palette as the server (zero
+   divergence). The server-specific code (`bbs`, `server`, `user`) is under `server/internal/`.
 
-2. **Studio = app web Go** (`studio/cmd/forge`), **stdlib uniquement**, assets **embarqués**
-   (`embed`). Outil de **développement local** : bind `127.0.0.1`, **sans authentification**.
-   - `studio/internal/store` : liste/charge/**enregistre après validation** (`content.Parse`),
-     écriture atomique, anti-traversée de chemin.
-   - `studio/internal/preview` : rend une page en **HTML coloré 40 colonnes** fidèle au
-     moteur (réutilise `oascii` + `content.Ink`).
-   - `studio/internal/deploy` : déploiement par **profils**.
+2. **Studio = Go web app** (`studio/cmd/forge`), **stdlib only**, **embedded** assets
+   (`embed`). **Local development** tool: bind `127.0.0.1`, **no authentication**.
+   - `studio/internal/store`: lists/loads/**saves after validation** (`content.Parse`),
+     atomic write, anti path-traversal.
+   - `studio/internal/preview`: renders a page as **40-column coloured HTML** faithful to
+     the engine (reuses `oascii` + `content.Ink`).
+   - `studio/internal/deploy`: deployment by **profiles**.
 
-3. **Studio = source de vérité ; le déploiement ÉCRASE** la cible (abandon de la règle
-   « semer une seule fois »), **après validation** et **sauvegarde horodatée**
-   (`<cible>.bak.<horodatage>`). **Dry-run** par défaut dans l'UI ; **confirmation** avant
-   un déploiement réel.
+3. **Studio = source of truth; deployment OVERWRITES** the target (abandoning the
+   "sow only once" rule), **after validation** and **timestamped backup**
+   (`<target>.bak.<timestamp>`). **Dry-run** by default in the UI; **confirmation** before
+   a real deployment.
 
-4. **Profils PAR SITE** : chaque site a son trio `dev`/`int`/`prod` dans
-   `deploy/profiles/<site>/<env>.conf` (où `<site>` = nom du fichier sans `.json`, ex.
-   `deploy/profiles/site/dev.conf`). Format `KEY=VALUE`. Un `<env>.conf.example` sert de
-   **défaut** ; le `<env>.conf` réel (gitignoré) **prime**. `dev` = **local** (copie de
-   fichier, le bbsd recharge à chaud) ; `int`/`prod` = **ssh/scp** (réutilise le mécanisme de
-   `deploy/vps-deploy.sh`, sans dépendance). Champs : `LOCAL HOST USER PORT CONTENT_PATH
+4. **Profiles PER SITE**: each site has its trio `dev`/`int`/`prod` in
+   `deploy/profiles/<site>/<env>.conf` (where `<site>` = file name without `.json`, e.g.
+   `deploy/profiles/site/dev.conf`). `KEY=VALUE` format. An `<env>.conf.example` serves as
+   **default**; the real `<env>.conf` (gitignored) **takes precedence**. `dev` = **local** (file
+   copy, bbsd hot-reloads); `int`/`prod` = **ssh/scp** (reuses the mechanism of
+   `deploy/vps-deploy.sh`, no dependency). Fields: `LOCAL HOST USER PORT CONTENT_PATH
    SERVICE RELOAD` (`RELOAD` = `none|reload|restart`).
 
-5. **Enregistrement indenté** : le studio ré-indente le JSON à l'écriture (`json.Indent`,
-   2 espaces) — fichiers lisibles, diffs git stables, toutes les clés préservées (`_comment`).
+5. **Indented save**: the studio re-indents the JSON on write (`json.Indent`,
+   2 spaces) — readable files, stable git diffs, all keys preserved (`_comment`).
 
-## Conséquences
+## Consequences
 
-**Positives**
-- Édition assistée + aperçu couleur, **validation identique** au serveur (réutilise `content`).
-- Déploiement multi-environnements **traçable** (validation, sauvegarde, dry-run, journal).
-- Zéro dépendance externe ; trois sous-projets clairs.
+**Positive**
+- Assisted editing + colour preview, **validation identical** to the server (reuses `content`).
+- Multi-environment deployment **traceable** (validation, backup, dry-run, log).
+- Zero external dependency; three clear sub-projects.
 
-**Négatives / à surveiller**
-- Le studio n'a **pas d'authentification** : il doit rester **local** (`127.0.0.1`).
-- Le déploiement **écrase** la cible : les éditions à chaud faites directement sur un serveur
-  ne sont plus la source de vérité (mais sauvegardées avant écrasement).
-- L'aperçu est **fidèle mais approché** (la sémantique exacte des cases-attributs Téletexte
-  pourra être affinée).
+**Negative / to watch**
+- The studio has **no authentication**: it must stay **local** (`127.0.0.1`).
+- Deployment **overwrites** the target: hot edits made directly on a server
+  are no longer the source of truth (but backed up before overwriting).
+- The preview is **faithful but approximate** (the exact semantics of Teletext
+  attribute cells can be refined).
 
-## Alternatives écartées
-- **Studio Python/Flask** (comme les studios telenet) : duplique la validation hors du paquet
-  Go et ajoute une dépendance Python.
-- **Tout sous `server/internal/`** : empêcherait le studio de réutiliser `content`/`oascii`
-  (visibilité Go) → duplication.
-- **Déploiement « semer une seule fois »** : viderait de son sens un studio de déploiement.
+## Rejected alternatives
+- **Python/Flask studio** (like the telenet studios): duplicates the validation outside the
+  Go package and adds a Python dependency.
+- **Everything under `server/internal/`**: would prevent the studio from reusing `content`/`oascii`
+  (Go visibility) → duplication.
+- **"Sow only once" deployment**: would defeat the purpose of a deployment studio.
