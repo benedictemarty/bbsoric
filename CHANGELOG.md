@@ -6,6 +6,30 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (DataWindow — typed data grids with SQLite + CRUD, 27/06/2026)
+- **New « DataWindow » subsystem** (notion ported from the telenet server): typed
+  *data sources* (SQLite tables) presented to the Oric user as a **paginated grid**
+  with full **CRUD**, validation, sort and LIKE filter.
+  - **Engine** `server/internal/datawindow` (port of telenet's `datawindow.go`):
+    `Lister`/`Consulter`/`Creer`/`Modifier`/`Supprimer`/`Valider`, per-DB pool+mutex,
+    seed import + column auto-migration. Backend **`modernc.org/sqlite`** (pure Go,
+    no CGO — the only new dependency). `cellString` normalizes modernc's `[]byte` TEXT.
+  - **Model** in `internal/content` (`SourceDonnees`/`ColonneDef` + page `DataWindow`
+    descriptor); `Site.Validate()` checks source/column names (SQL-injection whitelist),
+    displayed columns, widths and the **40-column budget** at load.
+  - **Grid applet** `datawindow` rendered on the **`oascii.Screen` differential buffer**
+    (moving the selection re-emits only 2 rows); selection/header in per-char **inverse**
+    (bit 7). Keys: `+/-` select, `S/R` pages, `V` detail, `N/E/D` CRUD (if editable +
+    logged in), `F/C` filter, `Q` quit. New `case page.DataWindow` in the engine.
+  - **Wiring**: `-data <dir>` flag (`bbsd`) builds the engine and initializes sources;
+    threaded through `WelcomeHandler`/`SessionState`/`AppContext` (now also carries `Site`).
+- **Tested**: engine unit tests (init/seed idempotent, pagination/filter/sort, CRUD
+  round-trip, validation, **SQL-injection guards**, `cellString`), content validation
+  tests, and TCP-driver integration tests (grid display, filter, create → total grows).
+  Driver smoke-test confirms the rendered grid, inverse selection move and filter.
+  Demo content `docs/examples/datawindow-demo.json`. Docs: `docs/datawindow.md`,
+  `docs/adr/0004-datawindow-sqlite.md`. `go test ./...` + `go vet` + `go mod tidy` green.
+
 ### Added (Sprint 8 — S1: user-editable filename at reception, 27/06/2026)
 - **The received file's name can be edited before saving.** After `xmodem_recv`,
   the terminal prompts `NOM (RET=DEFAUT)` (`client/term.s`, `edit_dlname`): RETURN

@@ -22,6 +22,7 @@ import (
 	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/server/internal/bbs"
 	"github.com/benedictemarty/bbsoric/server/internal/files"
+	"github.com/benedictemarty/bbsoric/server/internal/datawindow"
 	"github.com/benedictemarty/bbsoric/server/internal/presence"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
@@ -44,6 +45,7 @@ func main() {
 	usersPath := flag.String("users", "", "fichier JSON des comptes (vide = comptes en mémoire, non persistés)")
 	filesDir := flag.String("files", "", "répertoire de la bibliothèque de fichiers (download/upload XMODEM ; vide = désactivé)")
 	maxUpload := flag.Int64("max-upload", 64*1024, "taille max d'un téléversement en octets (0 = illimité)")
+	dataDir := flag.String("data", "", "répertoire des bases SQLite DataWindow (vide = désactivé)")
 	metricsAddr := flag.String("metrics-addr", "", "adresse HTTP de supervision (/healthz, /metrics) ; vide = désactivé ; à garder LOCAL (ex. 127.0.0.1:6510)")
 	flag.Parse()
 
@@ -76,8 +78,22 @@ func main() {
 		log.Info("bibliothèque de fichiers", "dir", *filesDir)
 	}
 
+	var dwEngine *datawindow.Engine
+	if *dataDir != "" {
+		dwEngine = datawindow.NewEngine(*dataDir, log)
+		defer dwEngine.Close()
+		// Création/seed des tables des sources déclarées dans le contenu.
+		for nom, src := range store.Site().SourcesDonnees {
+			if err := dwEngine.InitialiserSource(src); err != nil {
+				log.Error("DataWindow : initialisation de source impossible", "source", nom, "err", err)
+				os.Exit(1)
+			}
+		}
+		log.Info("DataWindow", "dir", *dataDir, "sources", len(store.Site().SourcesDonnees))
+	}
+
 	online := presence.New()
-	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users, Files: lib, Presence: online}, log)
+	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users, Files: lib, Presence: online, Data: dwEngine}, log)
 
 	// Arrêt propre sur SIGINT/SIGTERM.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

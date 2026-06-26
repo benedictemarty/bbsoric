@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/benedictemarty/bbsoric/internal/content"
+	"github.com/benedictemarty/bbsoric/server/internal/datawindow"
 	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/presence"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
@@ -19,6 +20,7 @@ type SessionState struct {
 	Guest    bool
 	Files    *files.Library     // bibliothèque de fichiers (peut être nil)
 	Presence *presence.Registry // registre « qui est en ligne » + chat (peut être nil)
+	Data     *datawindow.Engine // moteur DataWindow SQLite (peut être nil)
 	MemberID uint64             // identifiant de la session dans le registre de présence
 	Handle   string             // pseudo affiché (compte ou « Invité-N »)
 }
@@ -43,10 +45,12 @@ type Outcome struct {
 
 // AppContext injecte les dépendances accessibles à un applet.
 type AppContext struct {
-	Users *user.Store    // magasin de comptes (peut être nil)
-	Files *files.Library // bibliothèque de fichiers (peut être nil)
-	State *SessionState  // état de la session courante
-	Page  *content.Page  // page applet courante (titre, intro, Next…)
+	Users *user.Store        // magasin de comptes (peut être nil)
+	Files *files.Library     // bibliothèque de fichiers (peut être nil)
+	Data  *datawindow.Engine // moteur DataWindow (peut être nil)
+	State *SessionState      // état de la session courante
+	Site  *content.Site      // site courant (sources de données, pages)
+	Page  *content.Page      // page applet courante (titre, intro, Next…)
 }
 
 // Applet est une petite unité interactive (login, inscription, jeu…) déclenchée

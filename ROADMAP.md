@@ -49,6 +49,20 @@
     that dials the real hosts — plan a local picowifi entry / hardware test);
     password no-echo (optional).
 
+## Sprint 9 — DataWindow (typed data grids) — ✅ increment 1 (27/06/2026)
+> Notion ported from the telenet server: typed data sources + paginated CRUD grid.
+- [x] **SQLite engine** (`server/internal/datawindow`, `modernc.org/sqlite` pure-Go):
+  CRUD, validation, pagination, sort, LIKE filter, seed + auto-migration. Ported from
+  telenet `datawindow.go`; SQL-injection guards copied verbatim.
+- [x] **Model in `internal/content`** (`SourceDonnees`/`ColonneDef` + page `DataWindow`)
+  with `Site.Validate()` checks (names, columns, 40-col budget).
+- [x] **Grid applet** on the `oascii.Screen` diff buffer (inverse selection, `+/- S/R
+  V N/E/D F/C Q`); `-data` flag; threaded through `AppContext`/`SessionState`.
+- [x] **Tested** (engine + content + TCP-driver integration) + driver smoke. Docs
+  `docs/datawindow.md`, ADR-0004, demo `docs/examples/datawindow-demo.json`.
+- [ ] **Increment 2** (later): studio editor for sources/data, interactive column sort,
+  prefix search, REST API sources (telenet parity).
+
 ## Sprint 8 — Close out file transfer + news — 🎯 in progress (27/06/2026)
 > Wraps up Epic G (transfer) and starts Epic D (content/news).
 - [~] **S1 — User-editable filename at reception** (terminal): before saving, the

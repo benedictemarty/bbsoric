@@ -93,6 +93,18 @@
     is the `term.s` integration (trigger after a download) + deploying the
     terminal under resident Sedoric. See `docs/sedoric-api.md`.
 
+## Epic H — DataWindow (typed data grids, telenet parity)
+
+- [x] **H1** (8) As a user, I want to **browse and edit typed data** (a paginated grid
+  with CRUD), so the BBS can host directories/registries, not just static pages.
+  *(Increment 1, 27/06: SQLite engine `server/internal/datawindow` (port of telenet,
+  `modernc.org/sqlite` pure-Go), model + validation in `internal/content`, `datawindow`
+  grid applet on the `oascii.Screen` diff buffer (inverse selection, `+/- S/R V N/E/D
+  F/C Q`), `-data` flag. Engine/content/integration tests + driver smoke. Docs
+  `docs/datawindow.md`, ADR-0004, demo `docs/examples/datawindow-demo.json`.)*
+- [ ] **H2** (5) As an editor, I want to **manage sources and data from the studio**
+  (Forge), and interactive column sort / prefix search / REST sources (telenet parity).
+
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.
 - Tests passing for the delivered feature.

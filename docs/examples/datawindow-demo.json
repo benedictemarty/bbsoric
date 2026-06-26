@@ -1,0 +1,45 @@
+{
+  "_comment": "Demo DataWindow : une source SQLite 'repertoire' presentee en grille CRUD. Lancer : bbsd -content docs/examples/datawindow-demo.json -data /tmp/dwdata",
+  "start": "accueil",
+  "sources_donnees": {
+    "repertoire": {
+      "table": "repertoire",
+      "tri_defaut": "nom ASC",
+      "lignes_par_page": 15,
+      "colonnes": {
+        "id":    { "type": "INTEGER", "libelle": "ID",    "cle_primaire": true, "auto_increment": true },
+        "nom":   { "type": "TEXT",    "libelle": "Nom",   "requis": true, "longueur_max": 16 },
+        "ville": { "type": "TEXT",    "libelle": "Ville", "longueur_max": 10 },
+        "note":  { "type": "INTEGER", "libelle": "Note" }
+      },
+      "donnees": [
+        { "nom": "Alice Martin", "ville": "Lyon",     "note": 5 },
+        { "nom": "Bob Durand",   "ville": "Paris",    "note": 3 },
+        { "nom": "Charlie Roy",  "ville": "Lyon",     "note": 4 },
+        { "nom": "Diane Petit",  "ville": "Nice",     "note": 5 },
+        { "nom": "Emile Faure",  "ville": "Lille",    "note": 2 },
+        { "nom": "Fanny Leroy",  "ville": "Paris",    "note": 4 }
+      ]
+    }
+  },
+  "pages": {
+    "accueil": {
+      "title": "BIENVENUE",
+      "entries": [
+        { "key": "1", "label": "Repertoire (grille)", "target": "grille" },
+        { "key": "3", "label": "Entrer en invite", "applet": "guest", "next": "accueil" },
+        { "key": "Q", "label": "Quitter", "target": "__quit__" }
+      ]
+    },
+    "grille": {
+      "title": "REPERTOIRE",
+      "datawindow": {
+        "source": "repertoire",
+        "colonnes_affichees": ["nom", "ville", "note"],
+        "largeurs": [16, 10, 3],
+        "couleur_entete": "yellow",
+        "editable": true
+      }
+    }
+  }
+}

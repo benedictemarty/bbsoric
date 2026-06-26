@@ -20,8 +20,9 @@ const (
 
 // Site est l'ensemble du contenu navigable.
 type Site struct {
-	Start string           `json:"start"` // identifiant de la page de départ
-	Pages map[string]*Page `json:"pages"` // pages indexées par identifiant
+	Start          string                   `json:"start"` // identifiant de la page de départ
+	Pages          map[string]*Page         `json:"pages"` // pages indexées par identifiant
+	SourcesDonnees map[string]SourceDonnees `json:"sources_donnees,omitempty"` // tables DataWindow
 }
 
 // Page est un écran du BBS. Type unique : elle affiche optionnellement du texte
@@ -46,9 +47,10 @@ type Page struct {
 	Entries []Entry `json:"entries,omitempty"` // choix (optionnel → menu)
 	Applet  string  `json:"applet,omitempty"`  // applet auto-lancé à l'arrivée (compat)
 	Next    string  `json:"next,omitempty"`    // page après succès de l'applet
-	Raw     bool    `json:"raw,omitempty"`     // écran brut (rendu tel quel)
-	Screen  []byte  `json:"screen,omitempty"`  // écran brut : buffer 40×28 d'octets (base64 JSON)
-	Form    *Form   `json:"form,omitempty"`    // page de saisie déclarative (login/inscription)
+	Raw        bool        `json:"raw,omitempty"`        // écran brut (rendu tel quel)
+	Screen     []byte      `json:"screen,omitempty"`     // écran brut : buffer 40×28 d'octets (base64 JSON)
+	Form       *Form       `json:"form,omitempty"`       // page de saisie déclarative (login/inscription)
+	DataWindow *DataWindow `json:"datawindow,omitempty"` // grille de données (applet « datawindow »)
 }
 
 // Form décrit un écran de saisie déclaratif, exécuté par l'applet générique
@@ -145,6 +147,11 @@ func (s *Site) Validate() error {
 	if _, ok := s.Pages[s.Start]; !ok {
 		return fmt.Errorf("page de départ %q introuvable", s.Start)
 	}
+	for nom, src := range s.SourcesDonnees {
+		if err := src.validate(nom); err != nil {
+			return err
+		}
+	}
 	for id, p := range s.Pages {
 		// Page applet (auto-lancé) : Next, si présent, doit désigner une page.
 		if p.Applet != "" && p.Next != "" {
@@ -179,6 +186,11 @@ func (s *Site) Validate() error {
 		}
 		if p.Form != nil {
 			if err := p.Form.validate(id, s); err != nil {
+				return err
+			}
+		}
+		if p.DataWindow != nil {
+			if err := p.DataWindow.validate(id, s); err != nil {
 				return err
 			}
 		}

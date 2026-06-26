@@ -9,6 +9,7 @@ import (
 
 	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/internal/oascii"
+	"github.com/benedictemarty/bbsoric/server/internal/datawindow"
 	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/presence"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
@@ -24,6 +25,7 @@ type WelcomeHandler struct {
 	Users    *user.Store
 	Files    *files.Library     // bibliothèque de fichiers (download/upload ; peut être nil)
 	Presence *presence.Registry // registre « qui est en ligne » + chat (peut être nil)
+	Data     *datawindow.Engine // moteur DataWindow SQLite (peut être nil)
 }
 
 // largeur utile de l'écran TEXT de l'Oric : 40 colonnes.
@@ -33,7 +35,7 @@ func (h WelcomeHandler) Handle(ctx context.Context, s *server.Session) {
 	if err := h.banner(s); err != nil {
 		return
 	}
-	state := &SessionState{Files: h.Files, Presence: h.Presence}
+	state := &SessionState{Files: h.Files, Presence: h.Presence, Data: h.Data}
 	if h.Presence != nil {
 		// Pseudo provisoire jusqu'à l'identification (login/invité le fixe).
 		state.MemberID = h.Presence.Join("connexion...", s.RemoteIP())
