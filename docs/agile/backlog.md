@@ -80,7 +80,10 @@
     `$4000` buffer to the LOCI SD card via the MIA API (`OPEN`/`WRITE_XSTACK`/
     `CLOSE` at `$03A0`), used as a fallback by `save_received` when Sedoric is
     absent. LOCI presence detected via signature opcodes `$03B3/$03B5/$03B7`.
-    Assembled clean into `term.tap`; emulator validation under `--loci` pending.
+    **Validated at runtime** in `oric1-emu --loci-flash` (standalone harness): a
+    256-byte file is written to the SD sandbox byte-identical to the source,
+    `loci_save` returns `A=1`. MIA opcodes/flags/XSTACK convention audited against
+    the emulator source. Path push made NUL-terminated for real-LOCI conformance.
   - **Path B (Sedoric) — ✅ ML save VALIDATED on V3.0 (24/06)**: floppy write
     proven (`--disk-writeback` flag); ML recipe validated end-to-end
     (`JSR $04F2` overlay → variables → `JSR $DE9C` XSAVEB → `JSR $04F2`), a

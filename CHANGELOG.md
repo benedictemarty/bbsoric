@@ -19,8 +19,20 @@ versioning [SemVer](https://semver.org/lang/en/).
   to Sedoric, `A=0` otherwise (`client/sedoric.s`); on `A=0`, `save_received` falls
   back to `loci_save`. `term.s` (`handle_rx` state 5) calls `save_received` instead
   of `sed_save`. User feedback: `SAUVE SUR CARTE SD` / `ECHEC SAUVEGARDE LOCI`.
-- Terminal `.tap` rebuilt clean (`client/term.bin`/`term.tap`, `$1000`→`$21F8`).
-  Out-of-range forward branches to `ls_fail` reworked as inverse-branch + `jmp`.
+- **Conformance fix**: `loci_save` now pushes a **NUL terminator** before the
+  path (read last → terminates the z-string the LOCI `OPEN` firmware pops). The
+  emulator tolerated its absence (pre-zeroed XSTACK + boundary stop), but the real
+  LOCI firmware would read trailing garbage. Out-of-range forward branches to
+  `ls_fail` reworked as inverse-branch + `jmp`. Terminal `.tap` rebuilt clean
+  (`client/term.bin`/`term.tap`, `$1000`→`$21FD`).
+- **Validated at runtime in `oric1-emu --loci-flash`** with a standalone 6502
+  harness (`loci_save` on a known `$4000` buffer + `dlname`): a 256-byte file
+  `TEST.BIN` is written to the SD sandbox **byte-for-byte identical** to the
+  source (`0..255`), `loci_save` returns `A=1`. Confirms the MIA `OPEN`/
+  `WRITE_XSTACK`/`CLOSE` opcodes (`$14`/`$18`/`$15`), flags (`$32`), the reverse
+  XSTACK push convention, the 128-byte block loop, and `NAME.EXT` path building.
+  Audited against the emulator source (`src/io/loci_fs.c`, `include/io/loci.h`):
+  opcodes, flag bits and the write-count convention all match.
   Remaining tracked stage: user-editable name at reception, and **tape** target.
 
 ### Added (Download — real filename, save under it, 26/06/2026)

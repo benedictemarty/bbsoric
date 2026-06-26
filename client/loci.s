@@ -75,7 +75,12 @@ ls_go:
         bne ls_pathok            ; nom present -> continuer
         jmp ls_fail              ; nom vide (branche trop loin pour beq)
 ls_pathok:
-        ; --- open(path, OPEN_FLAGS) --- pousser le chemin a l'envers
+        ; --- open(path, OPEN_FLAGS) --- pousser le NUL puis le chemin a l'envers.
+        ; Le firmware depile en ordre direct (pop_zstring lit jusqu'au NUL) ; le
+        ; NUL pousse en premier est lu en dernier -> terminateur de chaine. Requis
+        ; par le vrai LOCI (l'emulateur tolere son absence, pas le firmware reel).
+        lda #0
+        sta MIA_XSTACK
 ls_pushpath:
         dex
         lda lcpathbuf,x
