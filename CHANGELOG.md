@@ -21,9 +21,10 @@ versionnage [SemVer](https://semver.org/lang/fr/).
     réinitialisé après transfert (l'alias `XACC` l'écrase).
   - **Validé** dans l'émulateur (download local) : barre à **40%** à mi-transfert,
     **100% + « FICHIER RECU EN 4000 »** à la fin.
-  - ⚠️ La prod doit être redéployée (le serveur courant n'annonce pas encore le
-    total — un terminal v0.1.2 ne pourrait pas télécharger tant que la prod n'a
-    pas le nouveau `xfer.go`).
+  - **Déployé en prod** (`make deploy`) et **vérifié** : `pavi.3617.fr:6502` envoie
+    bien `1F FE AF 00` = **175 blocs** pour Astéroric (22396 o / 128). Protocole live.
+  - **Release [`v0.1.2-alpha`](https://github.com/benedictemarty/bbsoric/releases/tag/v0.1.2-alpha)**
+    avec `term.tap`/`term-boot.dsk` à jour (v0.1.1 marquée obsolète).
 
 ### Déployé (Production — backspace serveur, 26/06/2026)
 - **Prod `pavi.3617.fr` mise à jour** (`make deploy`) avec la gestion backspace
