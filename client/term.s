@@ -65,7 +65,7 @@ XSEG      = $E5          ; segments dessines (alias PROTO - dial)
 ;     verifier les collisions). Libres connus - $F3 utilise ci-dessus pour SHIFTF.
 ;     xmodem.s - XBUF $E0 XBLK $E2 XCRC $E6 XREM $EC XSUM $FD XSIZE $FE XSAVY $FC.
 
-NUM_ENTRIES = 5
+NUM_ENTRIES = 6
 
 * = $1000
 
@@ -862,8 +862,9 @@ pb_text:
         .byt $06," 3  ",$07,"Altair",$0D,$0A
         .byt $06," 4  ",$07,"Heatwave",$0D,$0A
         .byt $06," 5  ",$07,"BBS Oric TLS  pavi.3617.fr:6992",$0D,$0A
+        .byt $06," 6  ",$07,"IDreamIn8Bits  bbs.idi8b.com",$0D,$0A
         .byt $06," M  ",$07,"Saisie manuelle",$0D,$0A,$0D,$0A
-        .byt $02,"Choix (1-5, M) > ",$07,$00
+        .byt $02,"Choix (1-6, M) > ",$07,$00
 
 me_host:
         .byt "========================================",$0D,$0A
@@ -878,12 +879,12 @@ me_tlsnote:
         .byt $0D,$0A,$01,"TLS (ATDT#) termine par le modem.",$0D,$0A,$07,$00
 
 dial_lo:
-        .byt <dial0,<dial1,<dial2,<dial3,<dial4
+        .byt <dial0,<dial1,<dial2,<dial3,<dial4,<dial5
 dial_hi:
-        .byt >dial0,>dial1,>dial2,>dial3,>dial4
+        .byt >dial0,>dial1,>dial2,>dial3,>dial4,>dial5
 ; protocole par entree - 0 = telnet (ATD), 1 = TLS (ATDT#)
 proto_tbl:
-        .byt 0,0,0,0,1
+        .byt 0,0,0,0,1,0
 dial0:
         .byt "pavi.3617.fr:6502",$00
 dial1:
@@ -894,6 +895,8 @@ dial3:
         .byt "heatwave.ddns.net:9640",$00
 dial4:
         .byt "pavi.3617.fr:6992",$00
+dial5:
+        .byt "bbs.idreamtin8bits.com:6500",$00
 
 ; Tampons de saisie
 hostbuf:

@@ -6,6 +6,14 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (Phonebook — IDreamIn8Bits entry, 26/06/2026)
+- **New directory entry 6 `IDreamIn8Bits`** in the Oric terminal phonebook
+  (`client/term.s`): telnet `bbs.idreamtin8bits.com:6500` (ASCII/ANSI mode),
+  protocol 0 (ATD). `NUM_ENTRIES` 5 → 6, prompt updated to `Choix (1-6, M)`.
+  The phonebook dials telnet/TLS `host:port` (not HTTP), so the connection
+  address was used in place of the `https://www.idreamtin8bits.com/bbs` web URL.
+  Build green (`client/build.sh`, `term.tap` 4204 o).
+
 ### Changed (Documentation — translated to English, 26/06/2026)
 - **Entire project documentation translated from French to English**, in place.
   26 Markdown files (`README`, `CHANGELOG`, `ROADMAP`, `docs/`, ADRs, agile backlog,
