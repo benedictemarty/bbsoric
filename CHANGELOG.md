@@ -6,6 +6,18 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (Download — real filename, save under it, 26/06/2026)
+- **The downloaded file is now saved under its real name** instead of the fixed
+  `BBSFILE.BIN`. New **download header v2** (after `1F FE`): the 2 block-count
+  bytes are followed by the **12-byte Sedoric 8.3 name** (`server/internal/bbs/xfer.go`,
+  `sedoricName`, unit-tested). The terminal (`client/term.s`, `handle_rx` state 5)
+  reads the 12 bytes into `dlname` and `sed_save` (`client/sedoric.s`) writes the
+  Sedoric file under that name. Server + terminal must match (the header grew).
+- **Validated end-to-end** in `oric1-emu` (`--loci --serial picowifi`, modem
+  `telnet=1`): the terminal reads `nom=ASTERORICTAP`, the binary transfer completes
+  (gauge `100%`, "FICHIER RECU EN 4000"). Next stages (tracked): user-editable name
+  at reception, and save targets **LOCI SD** (MIA `OPEN/WRITE/CLOSE`) and **tape**.
+
 ### Fixed (XMODEM download stuck at 0% — diagnosis, 26/06/2026)
 - **Root cause of "download frozen at `0%`" identified and proven**: the
   **picowifi modem in TELNET mode (`telnet=1`)** mangles the binary XMODEM stream.

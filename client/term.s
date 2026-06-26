@@ -316,8 +316,10 @@ ks_ret:
 ;  handle_rx - traite un octet recu - commande plot (1F col row) ou affichage.
 ;  A = octet recu.
 ; ---------------------------------------------------------------------------
-; Etats PLOTST - 0 normal, 1 apres 1F, 2 attend ligne (plot), 3/4 attend le
-; total de blocs (lo/hi) annonce par le serveur apres 1F FE (pour la jauge).
+; Etats PLOTST - 0 normal, 1 apres 1F, 2 attend ligne (plot), 3/4 = total de
+; blocs (lo/hi) apres 1F FE (jauge), 5 = 12 octets du nom de fichier Sedoric
+; envoyes par le serveur (sauvegarde sous le vrai nom). INLEN sert d'index du nom
+; pendant l'etat 5 (saisie manuelle inactive en transfert).
 ; NB la jauge alias XACC sur PLOTST/PLOTX -> on REINITIALISE PLOTST apres un
 ; transfert (sinon la machine a etats reste desynchronisee).
 handle_rx:
@@ -329,11 +331,27 @@ handle_rx:
         beq hr_row
         cpx #3
         beq hr_totlo
-        sta XTOTAL+1             ; etat 4 - total blocs (hi) puis reception
+        cpx #4
+        beq hr_tothi
+        ; etat 5 - octets du nom (12) dans dlname, puis reception
+        ldx INLEN
+        sta dlname,x
+        inc INLEN
+        lda INLEN
+        cmp #12
+        bcc hr_ret               ; <12 -> rester en etat 5
         jsr xmodem_recv          ; recoit en RAM ($4000) avec barre de progression
-        jsr sed_save             ; sauve sur disquette si Sedoric resident
+        jsr sed_save             ; sauve sous le nom recu (Sedoric si resident)
         lda #0
         sta PLOTST               ; XACC a ecrase PLOTST -> reinit
+hr_ret:
+        rts
+hr_tothi:
+        sta XTOTAL+1             ; etat 4 - total blocs (hi)
+        lda #0
+        sta INLEN                ; index du nom -> 0
+        lda #5
+        sta PLOTST               ; etat 5 - lire les 12 octets du nom
         rts
 hr_normal:
         cmp #PLOTCMD
@@ -916,3 +934,7 @@ hostbuf:
         .dsb 41,0
 portbuf:
         .dsb 7,0
+; Nom de fichier Sedoric (12 o = 9 nom + 3 ext) recu du serveur avant un
+; download. Defaut si rien recu. Rempli par handle_rx (etat 5), lu par sed_save.
+dlname:
+        .byt "BBSFILE  BIN"

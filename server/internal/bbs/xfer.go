@@ -69,12 +69,18 @@ func downloadApplet(ctx context.Context, s *server.Session, ac *AppContext) Outc
 	_ = s.Write(info.String())
 
 	// Signale au terminal Oric de basculer en réception XMODEM (les autres
-	// clients ignorent cette séquence de contrôle), suivi du nombre total de
-	// blocs de 128 o (octet bas, octet haut) pour la jauge de progression du
-	// terminal. Un terminal plus ancien ignore ces 2 octets (non-SOH).
+	// clients ignorent cette séquence de contrôle). En-tête de download (après
+	// 1F FE), longueur fixe pour une lecture déterministe côté 6502 :
+	//   - nombre total de blocs de 128 o (octet bas, octet haut) -> jauge ;
+	//   - nom de fichier au format Sedoric 8.3 (12 octets, complété d'espaces)
+	//     -> le terminal sauve sous ce nom réel au lieu d'un nom figé.
+	// Un terminal plus ancien (qui ne lisait que 2 octets) n'est PAS compatible
+	// avec cet en-tête : terminal et serveur évoluent ensemble.
 	_ = s.Write(oascii.RecvCmd())
 	totalBlocks := (len(data) + 127) / 128
-	_ = s.Write(string([]byte{byte(totalBlocks & 0xFF), byte((totalBlocks >> 8) & 0xFF)}))
+	hdr := []byte{byte(totalBlocks & 0xFF), byte((totalBlocks >> 8) & 0xFF)}
+	hdr = append(hdr, sedoricName(f.Name)...)
+	_ = s.Write(string(hdr))
 
 	if err := xmodem.Send(s.Raw(), data); err != nil {
 		s.ClearDeadline()
@@ -136,3 +142,34 @@ func uploadApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcom
 
 // itoa convertit un petit entier positif (0..9) en chaîne.
 func itoa(n int) string { return string(rune('0' + n)) }
+
+// sedoricName convertit un nom de fichier en nom Sedoric 8.3 sur 12 octets :
+// 9 octets de nom (justifié à gauche, complété d'espaces) + 3 octets d'extension.
+// Majuscules ; seuls [A-Z0-9] sont conservés (les autres deviennent espace). Le
+// terminal Oric copie ces 12 octets tels quels dans BUFNOM pour la sauvegarde.
+func sedoricName(name string) []byte {
+	base, ext := name, ""
+	if i := strings.LastIndexByte(name, '.'); i >= 0 {
+		base, ext = name[:i], name[i+1:]
+	}
+	out := make([]byte, 12)
+	for i := range out {
+		out[i] = ' '
+	}
+	put := func(src string, off, n int) {
+		j := 0
+		for k := 0; k < len(src) && j < n; k++ {
+			c := src[k]
+			if c >= 'a' && c <= 'z' {
+				c -= 0x20 // majuscule
+			}
+			if (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') {
+				out[off+j] = c
+				j++
+			}
+		}
+	}
+	put(base, 0, 9)
+	put(ext, 9, 3)
+	return out
+}

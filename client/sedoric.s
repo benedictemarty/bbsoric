@@ -73,10 +73,10 @@ sed_save:
 sed_ret:
         rts
 sed_go:
-        ; --- nom de fichier dans BUFNOM ---
+        ; --- nom de fichier dans BUFNOM (dlname = nom recu du serveur) ---
         ldx #11
 sed_nm:
-        lda sed_fname,x
+        lda dlname,x
         sta B_BUFNOM,x
         dex
         bpl sed_nm
@@ -115,7 +115,5 @@ sed_nm:
         sta STRPTR+1
         jmp print_string         ; fait rts
 
-sed_fname:
-        .byt "BBSFILE  BIN"      ; 9 (BBSFILE + 2 esp) + 3 (BIN)
 msg_saved:
         .byt $0D,$0A,$02,"SAUVE SUR DISQUETTE",$0D,$0A,$07,$00

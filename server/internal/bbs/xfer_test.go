@@ -119,3 +119,23 @@ func TestUploadApplet(t *testing.T) {
 		t.Errorf("stocké %q, attendu %q", got, data)
 	}
 }
+
+func TestSedoricName(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"ASTERORIC.TAP", "ASTERORICTAP"},  // nom 9 + ext 3, pile rempli
+		{"jeu.bin", "JEU      BIN"},          // minuscules -> majuscules
+		{"README", "README      "},          // pas d'extension
+		{"a.b.c", "AB       C  "},            // dernier point = séparateur ext
+		{"my file!.t", "MYFILE   T  "},       // espaces/symboles retirés
+		{"LONGFILENAME.DATA", "LONGFILENDAT"}, // nom 9 + ext 3
+	}
+	for _, c := range cases {
+		got := string(sedoricName(c.in))
+		if len(got) != 12 {
+			t.Fatalf("sedoricName(%q) longueur %d, attendu 12", c.in, len(got))
+		}
+		if got != c.want {
+			t.Errorf("sedoricName(%q) = %q, attendu %q", c.in, got, c.want)
+		}
+	}
+}

@@ -61,13 +61,22 @@ menu entries (type "▶ applet", selectable in the studio):
   before sending; `term.s` (`handle_rx`) then switches to `xmodem_recv`, which receives
   the file into **RAM (`$4000`)** and displays "FICHIER RECU EN 4000". Validated in
   the emulator (`docs/img/xmodem-download.png`).
+  - **Download header v2.** After `1F FE` the server sends a fixed-length header
+    for deterministic 6502 parsing: the **2 block-count bytes** (gauge) then the
+    **12-byte Sedoric 8.3 filename** (`sedoricName`). The terminal saves the file
+    under that **real name** (`dlname` → `sed_save`) instead of the fixed
+    `BBSFILE.BIN`. Server and terminal versions must match.
+  - **Raw modem required.** The terminal issues `ATNET0` at init so a telnet WiFi
+    modem (e.g. picowifi) does not mangle the binary stream (`0xFF`/CR). See
+    `docs/hardware-connection.md` §6.
 - **Upload: done.** `xmodem_send` (CRC-16) sends `XSIZE` bytes of the `$4000` buffer.
   The server (`upload` applet) emits **`1F FD`** (`oascii.SendCmd`); `term.s` then switches
   to `xmodem_send`. Validated in emulator (`docs/img/xmodem-upload.png`, 256 bytes).
 - **Remaining to do**:
-  - **Storage**: write/read the `$4000` buffer to SD card (LOCI), Microdisc or
-    cassette (currently a RAM buffer → the user can `CSAVE`/`CLOAD`).
-  - **Binary telnet**: favor a **raw** channel (the server filters `IAC` on
-    input), especially for upload.
+  - **Storage targets**: the `$4000` buffer is saved to **Sedoric** (Microdisc) under
+    the real name when Sedoric is resident. Still to add: **user-editable name** at
+    reception, **LOCI SD** (MIA `OPEN`/`WRITE_XRAM`/`CLOSE`) and **cassette** (`.TAP`)
+    targets, selected by available hardware.
+  - **Binary telnet**: handled — the terminal forces the modem to raw mode (`ATNET0`).
 
 See also: `docs/agile/backlog.md` (G1), `docs/hardware-connection.md`.
