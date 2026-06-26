@@ -49,6 +49,18 @@
     that dials the real hosts — plan a local picowifi entry / hardware test);
     password no-echo (optional).
 
+## Sprint 8 — Close out file transfer + news — 🎯 in progress (27/06/2026)
+> Wraps up Epic G (transfer) and starts Epic D (content/news).
+- [~] **S1 — User-editable filename at reception** (terminal): before saving, the
+  received file's proposed Sedoric name can be edited at the keyboard, then it is
+  saved (Sedoric/LOCI) under the edited name. Reuses `input_line`; validated in
+  `oric1-emu` via `--type-keys`.
+- [ ] **S2 — News / announcements page** (server): dated, persisted news applet
+  (store pattern à la `internal/user`), Go-tested + driver.
+- [ ] **S3 — Cassette (.TAP) save spike**: assess ROM-tape feasibility + emulator
+  validation; deliver if validatable, otherwise a **documented deferral** with
+  rationale (Sedoric/LOCI already cover real storage; tape-of-downloads is niche).
+
 ## Sprint 3 — Content modules
 - [ ] Messaging / forum (read, post)
 - [ ] News / announcements page

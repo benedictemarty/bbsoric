@@ -136,6 +136,75 @@ else
     skip "mkfs.vfat absent — cas --loci-sdimg ignoré"
 fi
 
+# === Cas 3 — nom de fichier editable (user_to_sedoric) =====================
+# Extrait le VRAI user_to_sedoric de term.s, l'assemble avec loci.s dans un
+# harnais qui pose editbuf="myfile.txt", convertit puis sauve -> MYFILE.TXT.
+echo "Cas 3 — nom editable (user_to_sedoric)"
+TERM_S="$ROOT/client/term.s"
+UTS="$(awk 'f&&/^; -----/{exit} /^user_to_sedoric:/{f=1} f{print}' "$TERM_S")"
+if [ -z "$UTS" ]; then
+    ko "user_to_sedoric introuvable dans term.s"
+else
+    cat > "$WORK/harness3.s" <<'ASM'
+; Harnais nom editable - editbuf="myfile.txt" -> user_to_sedoric -> loci_save.
+        * = $1000
+XSIZE  = $FE
+SRC    = $F4
+STRPTR = $EE
+start:
+        ldx #0
+h3_fill:
+        txa
+        sta $4000,x
+        inx
+        bne h3_fill
+        lda #200
+        sta XSIZE
+        lda #0
+        sta XSIZE+1
+        ldx #0
+h3_cp:
+        lda h3_txt,x
+        sta editbuf,x
+        beq h3_go
+        inx
+        bne h3_cp
+h3_go:
+        jsr user_to_sedoric
+        jsr loci_save
+        sta $9000
+h3_done:
+        jmp h3_done
+h3_txt:
+        .byt "myfile.txt",0
+print_string:
+        rts
+sed_save:
+        lda #0
+        rts
+dlname:
+        .dsb 12,0
+editbuf:
+        .dsb 13,0
+ASM
+    printf '%s\n' "$UTS" >> "$WORK/harness3.s"
+    cat "$WORK/harness3.s" "$LOCI_S" > "$WORK/full3.s"
+    if ! xa "$WORK/full3.s" -o "$WORK/t3.bin" 2>"$WORK/xa3.err"; then
+        ko "assemblage harnais nom editable (voir $WORK/xa3.err)"; cat "$WORK/xa3.err"
+    else
+        python3 "$BIN2TAP" "$WORK/t3.bin" 0x1000 TESTNAME "$WORK/t3.tap" >/dev/null
+        FLASH3="$WORK/flash3"; mkdir -p "$FLASH3"
+        SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy timeout 90 \
+          "$EMU" -t "$WORK/t3.tap" -f -r "$ROM" --headless -c "$CYCLES" \
+          --loci-flash "$FLASH3" >"$WORK/emu3.log" 2>&1
+        if [ -f "$FLASH3/MYFILE.TXT" ]; then
+            ok "nom edite applique : fichier sauve sous MYFILE.TXT"
+        else
+            ko "MYFILE.TXT absent (fichiers : $(ls "$FLASH3" 2>/dev/null | tr '\n' ' '))"
+        fi
+    fi
+fi
+
 echo
 echo "Bilan: $PASS ok, $FAIL ko, $SKIP skip"
 [ "$FAIL" -eq 0 ]

@@ -372,7 +372,8 @@ hr_szhi:
         sta XSIZE
         lda dlsize+1
         sta XSIZE+1
-        jsr save_received        ; sauve sous le nom recu (Sedoric, sinon LOCI SD)
+        jsr edit_dlname          ; nom editable avant sauvegarde (RET = defaut)
+        jsr save_received        ; sauve sous le nom (Sedoric, sinon LOCI SD)
         lda #0
         sta PLOTST               ; XACC a ecrase PLOTST -> reinit
         rts
@@ -534,6 +535,81 @@ il_done:
         jsr putbyte
         lda #$0A
         jsr putbyte
+        rts
+
+; ---------------------------------------------------------------------------
+;  edit_dlname - propose d'editer le nom du fichier recu avant sauvegarde.
+;  RETURN seul conserve le nom propose (dlname) ; sinon le nom saisi "NOM.EXT"
+;  est converti au format Sedoric 12 o dans dlname. Appele apres xmodem_recv.
+; ---------------------------------------------------------------------------
+edit_dlname:
+        lda #<msg_editnom
+        sta STRPTR
+        lda #>msg_editnom
+        sta STRPTR+1
+        jsr print_string
+        lda #<editbuf            ; saisie dans editbuf (max 12 + NUL)
+        sta BUFPTR
+        lda #>editbuf
+        sta BUFPTR+1
+        lda #12
+        sta INMAX
+        jsr input_line
+        lda INLEN
+        beq ed_done              ; RETURN seul -> garder le nom propose
+        jsr user_to_sedoric      ; editbuf -> dlname (12 o Sedoric)
+ed_done:
+        rts
+
+; ---------------------------------------------------------------------------
+;  user_to_sedoric - editbuf (NUL-terminee, "NOM.EXT") -> dlname au format Sedoric
+;  12 o (9 nom + 3 ext), completes d'espaces, majuscules, le '.' separe nom/ext.
+; ---------------------------------------------------------------------------
+user_to_sedoric:
+        ldx #11                  ; pre-remplir dlname de 12 espaces
+        lda #$20
+uts_clr:
+        sta dlname,x
+        dex
+        bpl uts_clr
+        ldy #0                   ; index source (editbuf)
+        ldx #0                   ; index nom (0..8)
+uts_name:
+        lda editbuf,y
+        beq uts_fin              ; fin de chaine
+        cmp #$2E                 ; '.' -> extension
+        beq uts_ext
+        jsr uts_upper
+        cpx #9
+        bcs uts_skipn            ; nom plein -> ignorer le surplus
+        sta dlname,x
+        inx
+uts_skipn:
+        iny
+        jmp uts_name
+uts_ext:
+        iny                      ; sauter le '.'
+        ldx #9                   ; index extension (9..11)
+uts_extl:
+        lda editbuf,y
+        beq uts_fin
+        jsr uts_upper
+        cpx #12
+        bcs uts_fin              ; extension pleine
+        sta dlname,x
+        inx
+        iny
+        jmp uts_extl
+uts_fin:
+        rts
+uts_upper:
+        cmp #$61                 ; < 'a' -> inchange
+        bcc uu_ret
+        cmp #$7B                 ; > 'z' -> inchange
+        bcs uu_ret
+        sec
+        sbc #$20                 ; minuscule -> majuscule
+uu_ret:
         rts
 
 ; ---------------------------------------------------------------------------
@@ -965,3 +1041,9 @@ dlname:
 ; nom. Sert a tronquer la sauvegarde au lieu du multiple de 128 padde par XMODEM.
 dlsize:
         .byt 0,0
+; Tampon d'edition du nom de fichier a la reception (12 caracteres + NUL).
+editbuf:
+        .dsb 13,0
+; Invite d'edition du nom (RETURN seul conserve le nom propose).
+msg_editnom:
+        .byt $0D,$0A,$06,"NOM (RET=DEFAUT) ",$00

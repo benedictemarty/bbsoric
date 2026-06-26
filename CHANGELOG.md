@@ -6,6 +6,18 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (Sprint 8 — S1: user-editable filename at reception, 27/06/2026)
+- **The received file's name can be edited before saving.** After `xmodem_recv`,
+  the terminal prompts `NOM (RET=DEFAUT)` (`client/term.s`, `edit_dlname`): RETURN
+  alone keeps the server-proposed name, otherwise the typed `NAME.EXT` is parsed
+  (`user_to_sedoric`) into the 12-byte Sedoric format (uppercased, `.`-split,
+  9+3 padded) and **both Sedoric and LOCI** save under it. Reuses the proven
+  `input_line` keyboard routine.
+- **Runtime-validated** (`scripts/test-loci-emu.sh` case 3): the *real*
+  `user_to_sedoric` extracted from `term.s` is assembled with `loci.s`;
+  `editbuf="myfile.txt"` → the file is saved as **`MYFILE.TXT`** in the LOCI
+  sandbox. Terminal `.tap` rebuilt clean (`$1000`→`$22EB`).
+
 ## [v0.1.3-alpha] — 2026-06-27
 Publiée : https://github.com/benedictemarty/bbsoric/releases/tag/v0.1.3-alpha
 (assets `term.tap`, `term-boot.dsk`). Téléchargement sous le vrai nom et à la

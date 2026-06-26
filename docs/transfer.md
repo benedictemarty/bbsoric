@@ -69,6 +69,10 @@ menu entries (type "▶ applet", selectable in the studio):
     to the real size (`handle_rx` states 6/7 → `dlsize`) so the saved file has its
     **exact length** (no XMODEM 128-byte padding) — `loci_save` writes a partial
     final block accordingly. Server and terminal versions must match.
+  - **User-editable name (S1).** Before saving, the terminal prompts
+    `NOM (RET=DEFAUT)` (`edit_dlname`): RETURN keeps the proposed name, otherwise
+    the typed `NAME.EXT` is parsed (`user_to_sedoric`) into the 12-byte Sedoric
+    format and used for the Sedoric/LOCI save.
   - **Raw modem required.** The terminal issues `ATNET0` at init so a telnet WiFi
     modem (e.g. picowifi) does not mangle the binary stream (`0xFF`/CR). See
     `docs/hardware-connection.md` §6.
