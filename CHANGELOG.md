@@ -6,6 +6,23 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (Download — exact file size + LOCI robustness/tests, 26/06/2026)
+- **Files are now saved at their exact size** (no more XMODEM 128-byte padding).
+  New **download header v3**: after the 12-byte name, the server appends the
+  **real byte size** (lo, hi) (`server/internal/bbs/xfer.go`, `downloadHeader`,
+  unit-tested `TestDownloadHeader`). The terminal reads it (`client/term.s`,
+  `handle_rx` states 6/7 → `dlsize`) and clamps `XSIZE` to it before saving, so
+  **both Sedoric and LOCI** write the precise length. `loci_save` now writes a
+  **partial final block** (`nb = min(128, rem)`) instead of assuming a 128
+  multiple (`client/loci.s`). Server + terminal evolve together (header grew).
+- **LOCI robustness**: `loci_save` closes the file descriptor on a write error
+  (`ls_wfail`) instead of leaking it — the LOCI exposes only 16 fds.
+- **Versioned runtime test** `scripts/test-loci-emu.sh`: assembles a standalone
+  6502 harness and runs it in `oric1-emu`, asserting the saved file byte-for-byte
+  on **both** `--loci-flash` (host passthrough) and `--loci-sdimg` (real FAT16
+  write path). Exercises a 200-byte file (full block + 72-byte partial block).
+- Terminal `.tap` rebuilt clean (`$1000`→`$225A`); `go test ./...` + `go vet` green.
+
 ### Added (Download — LOCI SD save fallback, 26/06/2026)
 - **The received file is now saved to the LOCI SD card when Sedoric is not
   resident.** New module `client/loci.s` (concatenated by `client/build.sh` after

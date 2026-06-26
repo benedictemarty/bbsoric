@@ -139,3 +139,25 @@ func TestSedoricName(t *testing.T) {
 		}
 	}
 }
+
+func TestDownloadHeader(t *testing.T) {
+	// 200 octets -> 2 blocs de 128 (le 2e partiel) ; nom Sedoric ; taille 200.
+	hdr := downloadHeader("jeu.bin", 200)
+	if len(hdr) != 16 {
+		t.Fatalf("longueur en-tête %d, attendu 16 (2 blocs + 12 nom + 2 taille)", len(hdr))
+	}
+	if hdr[0] != 2 || hdr[1] != 0 {
+		t.Errorf("blocs = %d, attendu 2", int(hdr[0])|int(hdr[1])<<8)
+	}
+	if name := string(hdr[2:14]); name != "JEU      BIN" {
+		t.Errorf("nom = %q, attendu %q", name, "JEU      BIN")
+	}
+	if size := int(hdr[14]) | int(hdr[15])<<8; size != 200 {
+		t.Errorf("taille = %d, attendu 200", size)
+	}
+	// Taille > 255 : vérifie l'encodage petit-boutiste sur 2 octets.
+	hdr = downloadHeader("x", 300)
+	if size := int(hdr[14]) | int(hdr[15])<<8; size != 300 {
+		t.Errorf("taille = %d, attendu 300 (encodage 16 bits)", size)
+	}
+}

@@ -61,11 +61,14 @@ menu entries (type "▶ applet", selectable in the studio):
   before sending; `term.s` (`handle_rx`) then switches to `xmodem_recv`, which receives
   the file into **RAM (`$4000`)** and displays "FICHIER RECU EN 4000". Validated in
   the emulator (`docs/img/xmodem-download.png`).
-  - **Download header v2.** After `1F FE` the server sends a fixed-length header
-    for deterministic 6502 parsing: the **2 block-count bytes** (gauge) then the
-    **12-byte Sedoric 8.3 filename** (`sedoricName`). The terminal saves the file
-    under that **real name** (`dlname` → `sed_save`) instead of the fixed
-    `BBSFILE.BIN`. Server and terminal versions must match.
+  - **Download header v3.** After `1F FE` the server sends a fixed-length header
+    (`downloadHeader`) for deterministic 6502 parsing: the **2 block-count bytes**
+    (gauge), the **12-byte Sedoric 8.3 filename** (`sedoricName`), then the **2
+    real-size bytes** (lo, hi). The terminal saves under that **real name**
+    (`dlname` → `sed_save`) instead of the fixed `BBSFILE.BIN`, and clamps `XSIZE`
+    to the real size (`handle_rx` states 6/7 → `dlsize`) so the saved file has its
+    **exact length** (no XMODEM 128-byte padding) — `loci_save` writes a partial
+    final block accordingly. Server and terminal versions must match.
   - **Raw modem required.** The terminal issues `ATNET0` at init so a telnet WiFi
     modem (e.g. picowifi) does not mangle the binary stream (`0xFF`/CR). See
     `docs/hardware-connection.md` §6.

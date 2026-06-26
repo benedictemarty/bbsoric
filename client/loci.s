@@ -114,7 +114,21 @@ ls_wloop:
         lda lcrem
         ora lcrem+1
         beq ls_close             ; plus rien -> fermer
-        ldy #127                 ; pousser 128 octets a l'envers
+        ; nb = min(128, rem) -> dernier bloc eventuellement partiel (taille reelle,
+        ; sans padding XMODEM). WRITE_XSTACK ecrit exactement le nb d'octets pousses.
+        lda lcrem+1
+        bne ls_full              ; rem >= 256 -> bloc plein
+        lda lcrem
+        cmp #128
+        bcs ls_full              ; rem.lo >= 128 -> bloc plein
+        sta lcnb                 ; rem.lo < 128 (et > 0) -> bloc partiel
+        jmp ls_haveb
+ls_full:
+        lda #128
+        sta lcnb
+ls_haveb:
+        ldy lcnb                 ; pousser nb octets a l'envers (index decroissant)
+        dey
 ls_push:
         lda (SRC),y
         sta MIA_XSTACK
@@ -130,18 +144,18 @@ ls_push:
         jsr MIA_SPIN
         txa
         bpl ls_wrok              ; ecriture ok
-        jmp ls_fail              ; ecriture < 0 -> erreur (branche trop loin)
+        jmp ls_wfail             ; ecriture < 0 -> fermer le fd puis abandonner
 ls_wrok:
-        clc                      ; SRC += 128
+        clc                      ; SRC += nb
         lda SRC
-        adc #128
+        adc lcnb
         sta SRC
         bcc ls_noinc
         inc SRC+1
 ls_noinc:
-        sec                      ; rem -= 128
+        sec                      ; rem -= nb
         lda lcrem
-        sbc #128
+        sbc lcnb
         sta lcrem
         bcs ls_wloop
         dec lcrem+1
@@ -162,6 +176,15 @@ ls_close:
         jsr print_string
         lda #1                   ; sauve
         rts
+ls_wfail:
+        lda lcfd+1               ; close(fd) avant d'abandonner (evite la fuite
+        sta MIA_XREG             ; de descripteur - le LOCI n'en a que 16)
+        lda lcfd
+        sta MIA_AREG
+        lda #OP_CLOSE
+        sta MIA_OP
+        clv
+        jsr MIA_SPIN
 ls_fail:
         lda #<msg_loci_ko
         sta STRPTR
@@ -213,6 +236,8 @@ lcfd:
         .byt 0,0
 lcrem:
         .byt 0,0
+lcnb:
+        .byt 0
 lcpathlen:
         .byt 0
 lcpathbuf:

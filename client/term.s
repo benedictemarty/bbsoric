@@ -317,8 +317,9 @@ ks_ret:
 ;  A = octet recu.
 ; ---------------------------------------------------------------------------
 ; Etats PLOTST - 0 normal, 1 apres 1F, 2 attend ligne (plot), 3/4 = total de
-; blocs (lo/hi) apres 1F FE (jauge), 5 = 12 octets du nom de fichier Sedoric
-; envoyes par le serveur (sauvegarde sous le vrai nom). INLEN sert d'index du nom
+; blocs (lo/hi) apres 1F FE (jauge), 5 = 12 octets du nom de fichier Sedoric,
+; 6/7 = taille reelle du fichier (lo/hi) -> header v3, sauvegarde a la taille
+; exacte au lieu du multiple de 128 padde par XMODEM. INLEN sert d'index du nom
 ; pendant l'etat 5 (saisie manuelle inactive en transfert).
 ; NB la jauge alias XACC sur PLOTST/PLOTX -> on REINITIALISE PLOTST apres un
 ; transfert (sinon la machine a etats reste desynchronisee).
@@ -328,22 +329,28 @@ handle_rx:
         cpx #1
         beq hr_state1
         cpx #2
-        beq hr_row
+        bne hr_n2
+        jmp hr_row               ; branche trop loin pour beq
+hr_n2:
         cpx #3
-        beq hr_totlo
+        bne hr_n3
+        jmp hr_totlo             ; branche trop loin pour beq
+hr_n3:
         cpx #4
         beq hr_tothi
-        ; etat 5 - octets du nom (12) dans dlname, puis reception
+        cpx #6
+        beq hr_szlo
+        cpx #7
+        beq hr_szhi
+        ; etat 5 - octets du nom (12) dans dlname
         ldx INLEN
         sta dlname,x
         inc INLEN
         lda INLEN
         cmp #12
         bcc hr_ret               ; <12 -> rester en etat 5
-        jsr xmodem_recv          ; recoit en RAM ($4000) avec barre de progression
-        jsr save_received        ; sauve sous le nom recu (Sedoric, sinon LOCI SD)
-        lda #0
-        sta PLOTST               ; XACC a ecrase PLOTST -> reinit
+        lda #6
+        sta PLOTST               ; nom complet -> lire la taille reelle (lo, hi)
 hr_ret:
         rts
 hr_tothi:
@@ -352,6 +359,22 @@ hr_tothi:
         sta INLEN                ; index du nom -> 0
         lda #5
         sta PLOTST               ; etat 5 - lire les 12 octets du nom
+        rts
+hr_szlo:
+        sta dlsize               ; etat 6 - taille reelle du fichier (lo)
+        lda #7
+        sta PLOTST
+        rts
+hr_szhi:
+        sta dlsize+1             ; etat 7 - taille reelle (hi), puis reception
+        jsr xmodem_recv          ; recoit en RAM ($4000) avec barre de progression
+        lda dlsize               ; clamp XSIZE = taille reelle (sans padding 128)
+        sta XSIZE
+        lda dlsize+1
+        sta XSIZE+1
+        jsr save_received        ; sauve sous le nom recu (Sedoric, sinon LOCI SD)
+        lda #0
+        sta PLOTST               ; XACC a ecrase PLOTST -> reinit
         rts
 hr_normal:
         cmp #PLOTCMD
@@ -938,3 +961,7 @@ portbuf:
 ; download. Defaut si rien recu. Rempli par handle_rx (etat 5), lu par sed_save.
 dlname:
         .byt "BBSFILE  BIN"
+; Taille reelle du fichier (octets), recue dans le header v3 (etats 6/7) apres le
+; nom. Sert a tronquer la sauvegarde au lieu du multiple de 128 padde par XMODEM.
+dlsize:
+        .byt 0,0

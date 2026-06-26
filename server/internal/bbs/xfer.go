@@ -73,14 +73,14 @@ func downloadApplet(ctx context.Context, s *server.Session, ac *AppContext) Outc
 	// 1F FE), longueur fixe pour une lecture déterministe côté 6502 :
 	//   - nombre total de blocs de 128 o (octet bas, octet haut) -> jauge ;
 	//   - nom de fichier au format Sedoric 8.3 (12 octets, complété d'espaces)
-	//     -> le terminal sauve sous ce nom réel au lieu d'un nom figé.
+	//     -> le terminal sauve sous ce nom réel au lieu d'un nom figé ;
+	//   - taille réelle du fichier en octets (octet bas, octet haut) -> header v3,
+	//     le terminal tronque la sauvegarde à cette taille au lieu du multiple de
+	//     128 paddé par XMODEM.
 	// Un terminal plus ancien (qui ne lisait que 2 octets) n'est PAS compatible
 	// avec cet en-tête : terminal et serveur évoluent ensemble.
 	_ = s.Write(oascii.RecvCmd())
-	totalBlocks := (len(data) + 127) / 128
-	hdr := []byte{byte(totalBlocks & 0xFF), byte((totalBlocks >> 8) & 0xFF)}
-	hdr = append(hdr, sedoricName(f.Name)...)
-	_ = s.Write(string(hdr))
+	_ = s.Write(string(downloadHeader(f.Name, len(data))))
 
 	if err := xmodem.Send(s.Raw(), data); err != nil {
 		s.ClearDeadline()
@@ -142,6 +142,20 @@ func uploadApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcom
 
 // itoa convertit un petit entier positif (0..9) en chaîne.
 func itoa(n int) string { return string(rune('0' + n)) }
+
+// downloadHeader construit l'en-tête v3 envoyé (après RecvCmd) avant le flux
+// XMODEM, de longueur fixe pour une lecture déterministe côté 6502 :
+//   - nombre total de blocs de 128 o (octet bas, octet haut) -> jauge ;
+//   - nom de fichier Sedoric 8.3 (12 octets) -> sauvegarde sous le vrai nom ;
+//   - taille réelle en octets (octet bas, octet haut) -> le terminal tronque la
+//     sauvegarde à cette taille au lieu du multiple de 128 paddé par XMODEM.
+func downloadHeader(name string, dataLen int) []byte {
+	totalBlocks := (dataLen + 127) / 128
+	hdr := []byte{byte(totalBlocks & 0xFF), byte((totalBlocks >> 8) & 0xFF)}
+	hdr = append(hdr, sedoricName(name)...)
+	hdr = append(hdr, byte(dataLen&0xFF), byte((dataLen>>8)&0xFF))
+	return hdr
+}
 
 // sedoricName convertit un nom de fichier en nom Sedoric 8.3 sur 12 octets :
 // 9 octets de nom (justifié à gauche, complété d'espaces) + 3 octets d'extension.
