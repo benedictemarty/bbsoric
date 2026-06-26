@@ -6,6 +6,11 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Déployé (Production — backspace serveur, 26/06/2026)
+- **Prod `pavi.3617.fr` mise à jour** (`make deploy`) avec la gestion backspace
+  (`Session.ReadLine` traite `$08`/`$7F`). Vérifié end-to-end : accueil rendu,
+  formulaire login traitant une saisie corrigée par backspace, service `active`.
+
 ### Corrigé (Terminal Oric — revue ingénieur, 26/06/2026)
 Revue complète du client 6502 (`docs/revue-client.md`). Correctifs livrés :
 - **LOCI — mauvaise base ACIA** (`client/term.s`) : l'option « 2 = LOCI » visait
