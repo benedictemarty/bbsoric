@@ -62,8 +62,9 @@
   **oric1-emu visual** (`docs/img/datawindow-grid.png` : 40-col, inverse selection).
   Docs `docs/datawindow.md`, ADR-0004, demo `docs/examples/datawindow-demo.json`.
 - [x] **Interactive column sort** (key `T`, cycles col/dir, footer label) — done 27/06.
-- [ ] **Increment 2** (later): studio editor for sources/data, prefix search,
-  REST API sources (telenet parity).
+- [x] **REST API sources** (`type_source:"api"`, read-only, server-side filter/sort/
+  pagination, TTL cache) — done 27/06 (`server/internal/datawindow/api.go`).
+- [ ] **Increment 2** (later): studio editor for sources/data, prefix search.
 
 ## Sprint 8 — Close out file transfer + news — 🎯 in progress (27/06/2026)
 > Wraps up Epic G (transfer) and starts Epic D (content/news).

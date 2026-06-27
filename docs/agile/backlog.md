@@ -104,8 +104,8 @@
   `docs/datawindow.md`, ADR-0004, demo `docs/examples/datawindow-demo.json`.)*
 - [~] **H2** (5) As an editor, I want to **manage sources and data from the studio**
   (Forge), and interactive column sort / prefix search / REST sources (telenet parity).
-  *(Interactive column sort done 27/06 — key `T`. Remaining: studio editor, prefix
-  search, REST sources.)*
+  *(Interactive column sort (key `T`) + REST API sources (`type_source:"api"`,
+  read-only) done 27/06. Remaining: studio editor, prefix search.)*
 
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.

@@ -39,6 +39,30 @@ Au niveau racine du `site.json` :
 `cle_primaire`, `auto_increment`, `requis`, `longueur_max`, `pattern` (regex),
 `valeur_defaut`, `auto_date`. `donnees` est un seed importé une seule fois.
 
+## Source REST (API) — lecture seule
+
+Une source peut être alimentée par un **endpoint JSON** au lieu de SQLite
+(`type_source: "api"`). La grille est alors **en lecture seule** (pas de CRUD), avec
+filtre/tri/pagination appliqués **côté serveur** sur les données récupérées, et un
+**cache** (TTL configurable, 60 s par défaut). Idéal pour des données vivantes
+(météo, actualités…).
+
+```json
+"meteo": {
+  "type_source": "api",
+  "tri_defaut": "ville ASC",
+  "api": { "url": "https://exemple/meteo.json", "racine": "results", "ttl_sec": 300 },
+  "colonnes": {
+    "ville": { "type": "TEXT",    "libelle": "Ville" },
+    "temp":  { "type": "INTEGER", "libelle": "Temp" }
+  }
+}
+```
+
+L'endpoint renvoie soit un **tableau d'objets**, soit un objet dont la clé `racine`
+contient le tableau. Chaque objet mappe ses champs sur les colonnes **par nom**.
+Pas de table SQLite ; le flag `-data` reste requis (le moteur porte aussi l'API).
+
 ## Présenter en grille (page `datawindow`)
 
 ```json

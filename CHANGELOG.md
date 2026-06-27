@@ -6,6 +6,20 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (DataWindow — REST API sources, 27/06/2026)
+- **A DataWindow source can be backed by a REST endpoint** (`type_source: "api"`)
+  instead of SQLite — **read-only** live data (weather, news, …), enabling the
+  teased *Meteo/Actualites* services. The endpoint returns a JSON array (or an
+  object whose `racine` key holds it); fields map to columns by name. Filter/sort/
+  pagination are applied **server-side** on the fetched rows, with a **TTL cache**
+  (`ttl_sec`, default 60 s). Writes are refused on API sources (`errSourceLectureSeule`).
+  New `server/internal/datawindow/api.go`; `Lister`/`Consulter` dispatch on
+  `EstAPI()`; `InitialiserSource` is a no-op for API sources.
+- **Tested** with an `httptest` server: list/filter/numeric-sort/pagination, the
+  `racine` key, the TTL cache (1 HTTP hit for N reads, refetch after TTL), detail
+  lookup, read-only refusal, HTTP-error propagation; plus content validation
+  (API source needs `api.url`). Docs `docs/datawindow.md`. `go test ./...` green.
+
 ### Added (DataWindow — public « Annuaire BBS » grid, 27/06/2026)
 - **First real DataWindow in the production content** (`content/site.json`): a
   **read-only « Annuaire BBS Oric »** grid (source `annuaire`, seeded with the Oric

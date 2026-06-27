@@ -13,6 +13,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -29,7 +30,7 @@ import (
 // DBName est la clé de base unique (mono-site).
 const DBName = "bbsoric"
 
-// Engine est le moteur DataWindow SQLite.
+// Engine est le moteur DataWindow (sources SQLite + sources API REST).
 type Engine struct {
 	dataDir string
 	log     *slog.Logger
@@ -37,6 +38,11 @@ type Engine struct {
 	mu      sync.Mutex
 	dbPool  map[string]*sql.DB
 	poolMu  sync.RWMutex
+
+	httpClient *http.Client                // pour les sources type_source="api"
+	apiCache   map[string]apiCacheEntry    // URL -> réponse mise en cache
+	apiMu      sync.Mutex
+	now        func() time.Time            // horloge (injectable pour les tests de TTL)
 }
 
 // NewEngine crée le moteur ; les bases sont stockées dans dataDir.
@@ -48,10 +54,13 @@ func NewEngine(dataDir string, log *slog.Logger) *Engine {
 		log.Warn("datawindow: MkdirAll", "dir", dataDir, "err", err)
 	}
 	return &Engine{
-		dataDir: dataDir,
-		log:     log,
-		locks:   make(map[string]*sync.Mutex),
-		dbPool:  make(map[string]*sql.DB),
+		dataDir:    dataDir,
+		log:        log,
+		locks:      make(map[string]*sync.Mutex),
+		dbPool:     make(map[string]*sql.DB),
+		httpClient: &http.Client{Timeout: 8 * time.Second},
+		apiCache:   make(map[string]apiCacheEntry),
+		now:        time.Now,
 	}
 }
 
@@ -208,6 +217,9 @@ func scanRows(rows *sql.Rows) ([]map[string]string, error) {
 // InitialiserSource crée ou met à jour la table d'une source (idempotent), et
 // importe les données initiales si la table est vide.
 func (e *Engine) InitialiserSource(srcDef content.SourceDonnees) error {
+	if srcDef.EstAPI() {
+		return nil // source REST : rien à créer en base
+	}
 	table := srcDef.Table
 	if err := content.ValiderNomSQL(table); err != nil {
 		return err
@@ -379,6 +391,9 @@ func (e *Engine) importerDonnees(tx *sql.Tx, srcDef content.SourceDonnees, donne
 // Lister retourne les enregistrements (map colonne→texte), avec pagination,
 // recherche globale LIKE (sur les colonnes TEXT) et tri, plus le total.
 func (e *Engine) Lister(srcDef content.SourceDonnees, recherche, tri string, page, parPage int) ([]map[string]string, int, error) {
+	if srcDef.EstAPI() {
+		return e.listerAPI(srcDef, recherche, tri, page, parPage)
+	}
 	table := srcDef.Table
 	if err := content.ValiderNomSQL(table); err != nil {
 		return nil, 0, err
@@ -453,6 +468,9 @@ func (e *Engine) Lister(srcDef content.SourceDonnees, recherche, tri string, pag
 
 // Consulter retourne un enregistrement par sa clé primaire (nil si absent).
 func (e *Engine) Consulter(srcDef content.SourceDonnees, cleValeur string) (map[string]string, error) {
+	if srcDef.EstAPI() {
+		return e.consulterAPI(srcDef, cleValeur)
+	}
 	table := srcDef.Table
 	if err := content.ValiderNomSQL(table); err != nil {
 		return nil, err
@@ -486,6 +504,9 @@ func (e *Engine) Consulter(srcDef content.SourceDonnees, cleValeur string) (map[
 
 // Creer insère un enregistrement (après validation) et renvoie son id.
 func (e *Engine) Creer(srcDef content.SourceDonnees, champs map[string]string) (int64, error) {
+	if srcDef.EstAPI() {
+		return 0, errSourceLectureSeule
+	}
 	table := srcDef.Table
 	if err := content.ValiderNomSQL(table); err != nil {
 		return 0, err
@@ -541,6 +562,9 @@ func (e *Engine) Creer(srcDef content.SourceDonnees, champs map[string]string) (
 
 // Modifier met à jour un enregistrement par sa clé primaire.
 func (e *Engine) Modifier(srcDef content.SourceDonnees, cleValeur string, champs map[string]string) (bool, error) {
+	if srcDef.EstAPI() {
+		return false, errSourceLectureSeule
+	}
 	table := srcDef.Table
 	if err := content.ValiderNomSQL(table); err != nil {
 		return false, err
@@ -587,6 +611,9 @@ func (e *Engine) Modifier(srcDef content.SourceDonnees, cleValeur string, champs
 
 // Supprimer supprime un enregistrement par sa clé primaire.
 func (e *Engine) Supprimer(srcDef content.SourceDonnees, cleValeur string) (bool, error) {
+	if srcDef.EstAPI() {
+		return false, errSourceLectureSeule
+	}
 	table := srcDef.Table
 	if err := content.ValiderNomSQL(table); err != nil {
 		return false, err

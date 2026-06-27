@@ -36,6 +36,30 @@ func TestValidateDataWindowOK(t *testing.T) {
 	}
 }
 
+func TestValidateSourceAPI(t *testing.T) {
+	// Source API valide (url présente, pas de table SQL exigée).
+	ok := siteAvecDW(func(s *Site) {
+		src := s.SourcesDonnees["rep"]
+		src.Table = "" // pas de table pour une source API
+		src.TypeSource = "api"
+		src.API = &APIConfig{URL: "http://example/data.json"}
+		s.SourcesDonnees["rep"] = src
+	})
+	if err := ok.Validate(); err != nil {
+		t.Errorf("source API valide refusée : %v", err)
+	}
+	// Source API sans url -> erreur.
+	ko := siteAvecDW(func(s *Site) {
+		src := s.SourcesDonnees["rep"]
+		src.TypeSource = "api"
+		src.API = nil
+		s.SourcesDonnees["rep"] = src
+	})
+	if err := ko.Validate(); err == nil {
+		t.Error("source API sans url aurait dû échouer")
+	}
+}
+
 func TestValidateDataWindowErreurs(t *testing.T) {
 	cas := []struct {
 		nom string

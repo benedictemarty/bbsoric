@@ -29,14 +29,30 @@ type ColonneDef struct {
 	Masque        string `json:"masque,omitempty"`        // masque de saisie (réservé)
 }
 
-// SourceDonnees définit une table SQLite (colonnes + données initiales).
+// SourceDonnees définit une source de données. Par défaut une table SQLite
+// (colonnes + données initiales) ; si TypeSource == "api", une source REST en
+// lecture seule (API) dont les enregistrements proviennent d'un endpoint JSON.
 type SourceDonnees struct {
 	Table         string                `json:"table"`
 	Colonnes      map[string]ColonneDef `json:"colonnes"`
 	TriDefaut     string                `json:"tri_defaut"`
 	LignesParPage int                   `json:"lignes_par_page"`
-	Donnees       []map[string]any      `json:"donnees,omitempty"` // seed (importé si table vide)
+	Donnees       []map[string]any      `json:"donnees,omitempty"`     // seed SQLite (importé si table vide)
+	TypeSource    string                `json:"type_source,omitempty"` // "" = sqlite (défaut), "api" = REST
+	API           *APIConfig            `json:"api,omitempty"`         // config si TypeSource == "api"
 }
+
+// APIConfig décrit une source REST en lecture seule. L'endpoint renvoie un JSON ;
+// Racine (optionnel) est la clé contenant le tableau d'objets (sinon le JSON est
+// lui-même un tableau). Chaque objet mappe ses champs sur les colonnes par nom.
+type APIConfig struct {
+	URL    string `json:"url"`
+	Racine string `json:"racine,omitempty"`    // clé du tableau dans la réponse (ex. "results")
+	TTL    int    `json:"ttl_sec,omitempty"`   // durée de cache en secondes (défaut 60)
+}
+
+// EstAPI indique si la source est une source REST (lecture seule).
+func (src SourceDonnees) EstAPI() bool { return src.TypeSource == "api" }
 
 // DataWindow est le descripteur de page qui présente une source en grille.
 type DataWindow struct {
@@ -86,13 +102,20 @@ func ValiderTypeSQL(typ string) error {
 // GridIndexWidth est la largeur de la colonne d'index ("NN ") en tête de ligne.
 const GridIndexWidth = 3
 
-// validate vérifie une source de données (noms et types sûrs, ≥1 colonne).
+// validate vérifie une source de données. Source SQLite : noms et types sûrs.
+// Source API : URL requise (lecture seule, pas de table SQL).
 func (src SourceDonnees) validate(nomSrc string) error {
-	if err := ValiderNomSQL(src.Table); err != nil {
-		return fmt.Errorf("source %q : table %w", nomSrc, err)
-	}
 	if len(src.Colonnes) == 0 {
 		return fmt.Errorf("source %q : aucune colonne", nomSrc)
+	}
+	if src.EstAPI() {
+		if src.API == nil || src.API.URL == "" {
+			return fmt.Errorf("source %q : type_source=api exige api.url", nomSrc)
+		}
+		return nil
+	}
+	if err := ValiderNomSQL(src.Table); err != nil {
+		return fmt.Errorf("source %q : table %w", nomSrc, err)
 	}
 	for nomCol, col := range src.Colonnes {
 		if err := ValiderNomSQL(nomCol); err != nil {
