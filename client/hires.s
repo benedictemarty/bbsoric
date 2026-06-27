@@ -360,6 +360,42 @@ hon_btm:
         rts
 
 ; ---------------------------------------------------------------------------
+;  hires_off - repasse du mode HIRES au mode TEXT.
+;   1) flip vid_mode -> TEXT en posant l'attribut 0x1A a $A000[0] (decode au
+;      balayage tant qu'on est en HIRES) ;
+;   2) restaure le charset $9800 -> $B400 (efface par l'effacement de la VRAM) ;
+;   3) efface l'ecran texte et rremet le curseur en haut a gauche.
+; ---------------------------------------------------------------------------
+hires_off:
+        lda #$1A
+        sta HVRAM                ; $A000[0] = attribut video TEXT -> bascule au balayage
+        lda hcsaved
+        beq hoff_clear           ; jamais sauve -> rien a restaurer
+        lda #$00
+        sta HPTR
+        lda #$98
+        sta HPTR+1               ; src $9800
+        lda #$00
+        sta HDST
+        lda #$B4
+        sta HDST+1               ; dst $B400
+        ldx #4
+        ldy #0
+hoff_cpy:
+        lda (HPTR),y
+        sta (HDST),y
+        iny
+        bne hoff_cpy
+        inc HPTR+1
+        inc HDST+1
+        dex
+        bne hoff_cpy
+hoff_clear:
+        jsr clear_screen         ; efface l'ecran texte ($BB80)
+        jsr reset_cursor         ; curseur en haut a gauche
+        rts
+
+; ---------------------------------------------------------------------------
 ;  hires_exec_xy - execute l'opcode hop avec (hx1,hy1) cible et le crayon source.
 ; ---------------------------------------------------------------------------
 hires_exec_xy:

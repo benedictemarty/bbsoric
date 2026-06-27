@@ -80,3 +80,45 @@ func TestHiresPageEmitsStream(t *testing.T) {
 		}
 	}
 }
+
+// TestHiresReturnEmitsTextReset : en quittant une page HIRES vers une page texte,
+// le serveur émet d'abord la commande de retour au mode TEXT (1F FB), sinon le
+// terminal resterait bloqué en mode graphique.
+func TestHiresReturnEmitsTextReset(t *testing.T) {
+	addr, stop := startServerWithStore(t, storeFromJSON(t, hiresSiteJSON))
+	defer stop()
+
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+
+	buf := make([]byte, 4096)
+	read := func() []byte {
+		_ = conn.SetReadDeadline(time.Now().Add(time.Second))
+		var out []byte
+		for {
+			n, err := conn.Read(buf)
+			out = append(out, buf[:n]...)
+			if err != nil || n == 0 {
+				return out
+			}
+		}
+	}
+
+	read()                    // accueil
+	conn.Write([]byte("1"))   // -> page HIRES (logo, sans entries)
+	read()                    // flux HIRES
+	conn.Write([]byte(" "))   // une touche -> retour accueil (texte)
+	back := read()
+
+	off := []byte(oascii.HiresOff()) // 1F FB
+	if !bytes.Contains(back, off) {
+		t.Fatalf("retour au mode TEXT (1F FB) absent au retour d'une page HIRES ; reçu %d octets", len(back))
+	}
+	// La commande doit précéder le contenu texte de l'accueil.
+	if i := bytes.Index(back, off); !bytes.Contains(back[i:], []byte("BIENVENUE")) {
+		t.Errorf("le titre texte de l'accueil ne suit pas la commande 1F FB")
+	}
+}

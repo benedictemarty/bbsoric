@@ -10,8 +10,17 @@ package oascii
 // HiEnd. Un terminal texte générique (telnet/PC) ignore la séquence.
 const hiresByte = 0xFC
 
+// hiresOffByte (1F FB) : repasser le terminal du mode HIRES au mode TEXT — restaure
+// le charset, l'attribut vidéo TEXT et efface l'écran texte. 0xFB est libre et hors
+// de la plage des colonnes valides. À émettre par le serveur avant une page texte qui
+// suit une page graphique (sinon l'écran resterait bloqué en HIRES).
+const hiresOffByte = 0xFB
+
 // HiresCmd ouvre un flux de commandes HIRES (1F FC).
 func HiresCmd() string { return string([]byte{PlotByte, hiresByte}) }
+
+// HiresOff renvoie la commande de retour au mode TEXT (1F FB).
+func HiresOff() string { return string([]byte{PlotByte, hiresOffByte}) }
 
 // Opcodes du flux HIRES. Les coordonnées tiennent sur 1 octet (x:0-239, y:0-199).
 // Le terminal maintient un « crayon » (pen) déplacé par Curset/Point/Line.

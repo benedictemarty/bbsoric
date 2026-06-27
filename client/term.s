@@ -396,6 +396,8 @@ hr_state1:
         beq hr_send
         cmp #$FC                 ; 1F FC = "flux de commandes HIRES"
         beq hr_hires
+        cmp #$FB                 ; 1F FB = "retour au mode TEXT"
+        beq hr_hoff
         sta PLOTX                ; sinon 1er octet = colonne (plot)
         lda #2
         sta PLOTST
@@ -405,6 +407,11 @@ hr_hires:
         sta hstate               ; reinitialise le sous-etat du flux HIRES
         lda #8
         sta PLOTST               ; etat 8, octets suivants pour hires_feed
+        rts
+hr_hoff:
+        jsr hires_off            ; restaure charset + mode TEXT + efface l'ecran
+        lda #0
+        sta PLOTST
         rts
 hr_hiresfeed:
         jsr hires_feed           ; A = octet recu, consomme par la machine HIRES

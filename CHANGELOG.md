@@ -6,6 +6,17 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (HIRES pages — clean TEXT-mode return, 27/06/2026)
+- **Leaving a HIRES page back to text now works.** New serial command **`1F FB`**
+  (return to TEXT): the server emits it (tracked by a per-session flag in
+  `engine.go`) before rendering a text page that follows a HIRES one. The terminal
+  restores the text charset (`$9800` → `$B400`, overwritten while drawing), re-asserts
+  the TEXT video attribute (`0x1A` at `$A000[0]`, latched by the ULA) and clears the
+  screen. Without this a HIRES page was a dead-end (screen stuck in graphics mode).
+- **Validated in `oric1-emu`** (`docs/img/hires-text-return-emu.png`: the text menu
+  re-renders cleanly after a HIRES page + keypress) and by an integration test
+  asserting `1F FB` precedes the text content on return. `go test ./...` green.
+
 ### Added (HIRES pages — Forge studio editor, 27/06/2026)
 - **The Forge studio now edits HIRES pages** (« Édition » tab). A **« + page graphique
   (HIRES) »** button converts a page to graphics; a **primitive table** edits the `draw`

@@ -86,8 +86,11 @@
   primitive table (op + X/Y/R/colour/char, reorder/remove), **image import** → bitmap
   background, and a **live 240×200 preview rasterized in JS** (mirror of `hires.s`).
   Page map labels it `graphique` (`◨ hires`). Store round-trip test. Docs updated.
-- [ ] **Later**: HIRES ink/paper colour, clean TEXT-return, flow-controlled bitmap
-  transfer (vs raw blit), differential HIRES buffer for animation.
+- [x] **Clean TEXT-return** (27/06): `1F FB` command — server emits it (session flag)
+  before a text page following a HIRES one; terminal restores charset (`$9800`→`$B400`),
+  TEXT video attribute and clears the screen. Validated in `oric1-emu` + integration test.
+- [ ] **Later**: HIRES ink/paper colour, flow-controlled bitmap transfer (vs raw blit),
+  differential HIRES buffer for animation.
 
 ## Sprint 8 — Close out file transfer + news — 🎯 in progress (27/06/2026)
 > Wraps up Epic G (transfer) and starts Epic D (content/news).

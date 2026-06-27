@@ -109,6 +109,18 @@ Validé visuellement dans `oric1-emu` — terminal Oric réel → modem → BBS 
 *À gauche : cadre + cercle + diagonales + texte `ORIC` (op `char`). À droite : un fond
 bitmap (bandes blanche/noire) posé par `blit`, avec un rectangle tracé par-dessus.*
 
+### Retour au mode TEXT
+
+Quitter une page HIRES vers une page texte est géré : le serveur émet la commande
+**`1F FB`** (retour TEXT) avant la page texte suivante. Le terminal restaure alors le
+charset (`$9800` → `$B400`), repose l'attribut vidéo TEXT (`0x1A` à `$A000[0]`, latché
+au balayage) et efface l'écran texte. Le moteur (`server/internal/bbs/engine.go`) suit
+un drapeau de session et n'émet `1F FB` que si la page précédente était graphique.
+
+![Retour TEXT](img/hires-text-return-emu.png)
+
+*Accueil texte ré-affiché proprement après une page HIRES + une touche.*
+
 ### Limites connues
 
 - **Couleur** : le rendu est monochrome (encre blanche) ; `ink`/`paper` ne posent pas
@@ -117,8 +129,6 @@ bitmap (bandes blanche/noire) posé par `blit`, avec un rectangle tracé par-des
   (même classe que le défaut RX #1 de `docs/client-review.md`) — réservé aux fonds
   bien compressibles ; un transfert XMODEM-flow-controllé est la piste pour les
   bitmaps arbitraires.
-- **Retour au TEXT** : après une page HIRES, repasser proprement en mode TEXT (restaurer
-  `$B400` + attribut `0x1A`) reste à câbler (incrément ultérieur).
 
 ## Édition dans le studio Forge
 

@@ -30,6 +30,7 @@ func runSite(ctx context.Context, s *server.Session, store *content.Store, users
 		state = &SessionState{}
 	}
 	stack := []string{siteOf(store).Start}
+	hiresActive := false // le terminal est en mode HIRES (dernier écran graphique)
 	for {
 		if ctx.Err() != nil || len(stack) == 0 {
 			return
@@ -44,6 +45,15 @@ func runSite(ctx context.Context, s *server.Session, store *content.Store, users
 				continue
 			}
 			return
+		}
+
+		// Repasser le terminal en mode TEXT avant toute page non graphique qui suit
+		// une page HIRES (restaure le charset + l'écran texte côté terminal).
+		if page.Hires == nil && hiresActive {
+			if s.Write(oascii.HiresOff()) != nil {
+				return
+			}
+			hiresActive = false
 		}
 
 		switch {
@@ -64,6 +74,7 @@ func runSite(ctx context.Context, s *server.Session, store *content.Store, users
 			if s.Write(string(render.Hires(page))) != nil {
 				return
 			}
+			hiresActive = true // le terminal est passé en mode HIRES
 			if len(page.Entries) > 0 { // menu (libellés en bas, lignes texte)
 				if !routeMenuChoice(ctx, s, page, &stack, site, users, state) {
 					return
