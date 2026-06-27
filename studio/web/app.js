@@ -38,9 +38,11 @@ async function loadSite(name) {
   if (!site.pages) site.pages = {};
   siteName = name;
   current = site.start && site.pages[site.start] ? site.start : Object.keys(site.pages)[0] || null;
+  srcName = Object.keys(sources())[0] || null;
   renderPageList(); renderForm(); refreshPreview();
   loadProfiles();                 // profils propres à CE site
   refreshScreenPages();           // pages « écran brut » éditables
+  refreshSources();               // sources DataWindow éditables
   setStatus('chargé : ' + name, 'ok');
 }
 
@@ -221,10 +223,18 @@ function renderForm() {
     return;
   }
 
+  // Page grille (datawindow) : présente une source de données ; pas de menu/form.
+  if (p.datawindow) {
+    if (!Object.keys(sources()).length) host.append(el('p', { className: 'hint err', textContent: 'Aucune source définie — crée-en une dans l\'onglet Données.' }));
+    host.append(dataWindowEditor(p));
+    return;
+  }
+
   // Page normale : texte (lines), choix (entries) OU formulaire de saisie (form).
   host.append(linesEditor(p));
   if (!p.form) host.append(entriesEditor(p)); // un form pilote la page (pas de menu simultané)
   host.append(formEditor(p));
+  if (Object.keys(sources()).length && !p.form) host.append(dataWindowAdd(p)); // convertir en grille
 }
 
 // formEditor édite une page de saisie déclarative (content.Form) : action
@@ -760,6 +770,276 @@ async function deploy(dryRun) {
   setStatus(dryRun ? 'simulation effectuée' : (r.ok ? 'déployé ✓ ' + profile : 'échec déploiement'), r.ok ? 'ok' : 'err');
 }
 
+// --- sources de données (onglet Données) : édition de site.sources_donnees ---
+// Le modèle JSON utilise les clés serveur (snake_case) : type_source, tri_defaut,
+// lignes_par_page, cle_primaire, auto_increment, longueur_max, valeur_defaut,
+// auto_date, ttl_sec — on les manipule telles quelles.
+const SQL_TYPES = ['TEXT', 'INTEGER', 'REAL', 'NUMERIC', 'BOOLEAN', 'DATE', 'DATETIME', 'BLOB'];
+let srcName = null;
+
+// sources renvoie (en le créant au besoin) le dictionnaire des sources du site.
+function sources() { return site.sources_donnees || (site.sources_donnees = {}); }
+
+// numberField : champ numérique entier lié à une clé d'un objet (vide = supprime).
+function numberField(obj, key, placeholder, min, max) {
+  const i = el('input', { type: 'number', value: obj[key] != null ? obj[key] : '', placeholder: placeholder || '' });
+  if (min != null) i.min = min; if (max != null) i.max = max; i.style.width = '90px';
+  i.oninput = () => { const v = i.value.trim(); if (v === '') delete obj[key]; else obj[key] = parseInt(v, 10) || 0; };
+  return i;
+}
+
+// coerceCell convertit la saisie d'une cellule seed selon le type de colonne :
+// numérique pour INTEGER/REAL/NUMERIC (sinon texte) ; vide = clé supprimée.
+function coerceCell(col, val) {
+  const v = String(val).trim();
+  if (v === '') return undefined;
+  const t = (col.type || 'TEXT').toUpperCase();
+  if ((t === 'INTEGER' || t === 'REAL' || t === 'NUMERIC') && v !== '' && Number.isFinite(Number(v))) return Number(v);
+  return val;
+}
+
+function refreshSources() {
+  const sel = $('src-select'); if (!sel) return;
+  sel.innerHTML = '';
+  const ids = Object.keys(sources());
+  for (const id of ids) sel.append(el('option', { value: id, textContent: id }));
+  if (!srcName || !sources()[srcName]) srcName = ids[0] || null;
+  if (srcName) sel.value = srcName;
+  renderSourceForm();
+}
+
+// renomme une source et reporte la référence dans les pages grille (datawindow.source).
+function renameSource(oldId, newId) {
+  newId = newId.trim();
+  if (!newId || newId === oldId || sources()[newId]) return;
+  const next = {};
+  for (const [k, v] of Object.entries(sources())) next[k === oldId ? newId : k] = v;
+  site.sources_donnees = next;
+  for (const p of Object.values(site.pages)) if (p.datawindow && p.datawindow.source === oldId) p.datawindow.source = newId;
+  srcName = newId; refreshSources(); renderPageList();
+}
+
+function srcCreate() {
+  const id = ($('src-newid').value || '').trim();
+  if (!id) { setStatus('donne un identifiant de source', 'err'); return; }
+  if (sources()[id]) { setStatus('cette source existe déjà', 'err'); return; }
+  sources()[id] = {
+    table: id, tri_defaut: '', lignes_par_page: 15,
+    colonnes: { id: { type: 'INTEGER', libelle: 'ID', cle_primaire: true, auto_increment: true } },
+    donnees: [],
+  };
+  srcName = id; $('src-newid').value = '';
+  refreshSources(); setStatus('source créée : ' + id, 'ok');
+}
+
+function srcDelete() {
+  if (!srcName || !sources()[srcName]) { setStatus('aucune source sélectionnée', 'err'); return; }
+  const refs = Object.entries(site.pages).filter(([, p]) => p.datawindow && p.datawindow.source === srcName).map(([id]) => id);
+  const warn = refs.length ? '\nPages grille qui la référencent : ' + refs.join(', ') : '';
+  if (!confirm('Supprimer la source « ' + srcName + ' » ?' + warn)) return;
+  delete sources()[srcName];
+  srcName = Object.keys(sources())[0] || null;
+  refreshSources(); renderPageList();
+}
+
+// renomme une colonne en préservant l'ordre d'insertion (la map est reconstruite).
+function renameCol(src, oldK, newK) {
+  newK = newK.trim();
+  if (!newK || newK === oldK || src.colonnes[newK]) return;
+  const next = {};
+  for (const [k, v] of Object.entries(src.colonnes)) next[k === oldK ? newK : k] = v;
+  src.colonnes = next;
+  renderSourceForm();
+}
+
+// colonnesEditor : table des colonnes typées (tous les champs de ColonneDef).
+function colonnesEditor(src) {
+  const wrap = el('div', {});
+  wrap.append(el('span', { className: 'lbl', textContent: 'Colonnes' }));
+  const tbl = el('table', { className: 'rows' });
+  tbl.append(el('tr', {}, ['Clé', 'Type', 'Libellé', 'PK', 'Auto+', 'Requis', 'LongMax', 'Pattern', 'Défaut', 'Date', ''].map(t => el('th', { textContent: t }))));
+  for (const [name, col] of Object.entries(src.colonnes || {})) {
+    const k = el('input', { type: 'text', value: name }); k.style.width = '90px'; k.onchange = () => renameCol(src, name, k.value);
+    const ty = el('select');
+    for (const t of SQL_TYPES) ty.append(el('option', { value: t, textContent: t, selected: (col.type || 'TEXT').toUpperCase() === t }));
+    ty.onchange = () => { col.type = ty.value; };
+    const lb = el('input', { type: 'text', value: col.libelle || '' }); lb.style.width = '90px'; lb.oninput = () => { col.libelle = lb.value; };
+    const tog = (key) => { const cb = el('input', { type: 'checkbox', checked: !!col[key] }); cb.onchange = () => { if (cb.checked) col[key] = true; else delete col[key]; }; return el('label', { className: 'tog' }, [cb]); };
+    const lm = el('input', { type: 'number', value: col.longueur_max || '' }); lm.min = 0; lm.style.width = '64px';
+    lm.oninput = () => { const v = parseInt(lm.value, 10); if (v > 0) col.longueur_max = v; else delete col.longueur_max; };
+    const pat = el('input', { type: 'text', value: col.pattern || '' }); pat.style.width = '90px'; pat.oninput = () => { if (pat.value) col.pattern = pat.value; else delete col.pattern; };
+    const def = el('input', { type: 'text', value: col.valeur_defaut != null ? col.valeur_defaut : '' }); def.style.width = '80px';
+    def.oninput = () => { const v = coerceCell(col, def.value); if (v === undefined) delete col.valeur_defaut; else col.valeur_defaut = v; };
+    const del = el('button', { className: 'del', textContent: '✕' });
+    del.onclick = () => { delete src.colonnes[name]; renderSourceForm(); };
+    tbl.append(el('tr', {}, [td(k), td(ty), td(lb), td(tog('cle_primaire')), td(tog('auto_increment')), td(tog('requis')), td(lm), td(pat), td(def), td(tog('auto_date')), td(del)]));
+  }
+  wrap.append(tbl);
+  const add = el('button', { textContent: '+ colonne' });
+  add.onclick = () => {
+    let i = 1, key = 'col' + i; while (src.colonnes[key]) key = 'col' + (++i);
+    src.colonnes[key] = { type: 'TEXT', libelle: key }; renderSourceForm();
+  };
+  wrap.append(add);
+  return wrap;
+}
+
+// seedEditor : table des données initiales (seed) d'une source SQLite. Une ligne
+// par enregistrement ; les colonnes auto-incrémentées sont omises (générées).
+function seedEditor(src) {
+  const wrap = el('div', {});
+  wrap.append(el('span', { className: 'lbl', textContent: 'Données initiales (seed, importées table vide)' }));
+  const cols = Object.entries(src.colonnes || {}).filter(([, c]) => !c.auto_increment).map(([k]) => k);
+  if (!cols.length) { wrap.append(el('p', { className: 'hint', textContent: 'Ajoute des colonnes pour saisir des données.' })); return wrap; }
+  src.donnees = src.donnees || [];
+  const tbl = el('table', { className: 'rows' });
+  tbl.append(el('tr', {}, [...cols, ''].map(t => el('th', { textContent: t }))));
+  src.donnees.forEach((row, i) => {
+    const cells = cols.map(c => {
+      const inp = el('input', { type: 'text', value: row[c] != null ? row[c] : '' }); inp.style.width = '110px';
+      inp.oninput = () => { const v = coerceCell(src.colonnes[c], inp.value); if (v === undefined) delete row[c]; else row[c] = v; };
+      return td(inp);
+    });
+    const del = el('button', { className: 'del', textContent: '✕' });
+    del.onclick = () => { src.donnees.splice(i, 1); renderSourceForm(); };
+    tbl.append(el('tr', {}, [...cells, td(del)]));
+  });
+  wrap.append(tbl);
+  const add = el('button', { textContent: '+ ligne' });
+  add.onclick = () => { src.donnees.push({}); renderSourceForm(); };
+  wrap.append(add);
+  return wrap;
+}
+
+function renderSourceForm() {
+  const host = $('src-form'); if (!host) return;
+  host.innerHTML = '';
+  if (!srcName || !sources()[srcName]) { host.append(el('p', { className: 'hint', textContent: 'Crée ou charge une source. Elle alimente une page « grille » (onglet Édition).' })); return; }
+  const src = sources()[srcName];
+
+  const idIn = el('input', { type: 'text', value: srcName }); idIn.onchange = () => renameSource(srcName, idIn.value);
+  host.append(field('Identifiant', idIn));
+
+  const typeSel = el('select');
+  typeSel.append(el('option', { value: 'sqlite', textContent: 'SQLite (CRUD)', selected: src.type_source !== 'api' }));
+  typeSel.append(el('option', { value: 'api', textContent: 'API REST (lecture seule)', selected: src.type_source === 'api' }));
+  typeSel.onchange = () => {
+    if (typeSel.value === 'api') { src.type_source = 'api'; src.api = src.api || { url: '', ttl_sec: 60 }; delete src.donnees; }
+    else { delete src.type_source; delete src.api; src.donnees = src.donnees || []; }
+    renderSourceForm();
+  };
+  host.append(field('Type', typeSel));
+
+  if (src.type_source === 'api') {
+    src.api = src.api || { url: '', ttl_sec: 60 };
+    host.append(field('URL', textField(src.api, 'url', 'https://exemple/data.json')));
+    host.append(field('Clé racine', textField(src.api, 'racine', 'ex. results (vide = tableau)')));
+    host.append(field('Cache (s)', numberField(src.api, 'ttl_sec', '60', 0)));
+  } else {
+    host.append(field('Table SQL', textField(src, 'table', 'ex. annuaire')));
+  }
+  host.append(field('Tri par défaut', textField(src, 'tri_defaut', 'ex. nom ASC')));
+  host.append(field('Lignes par page', numberField(src, 'lignes_par_page', '15', 1)));
+
+  host.append(colonnesEditor(src));
+  if (src.type_source !== 'api') host.append(seedEditor(src));
+}
+
+// --- éditeur du descripteur grille (page datawindow), onglet Édition ---
+
+// dataWindowAdd : convertit la page courante en page « grille » (datawindow).
+function dataWindowAdd(p) {
+  const wrap = el('div', { className: 'form-editor' });
+  wrap.append(el('span', { className: 'lbl', textContent: 'Grille de données' }));
+  const sids = Object.keys(sources());
+  const add = el('button', { textContent: '+ grille de données (DataWindow)' });
+  add.onclick = () => {
+    const sid = sids[0];
+    const cols = Object.entries(sources()[sid].colonnes || {}).filter(([, c]) => !c.auto_increment).map(([k]) => k).slice(0, 1);
+    p.datawindow = { source: sid, colonnes_affichees: cols, largeurs: cols.map(() => 8), editable: false };
+    delete p.lines; delete p.entries; delete p.form;
+    renderForm(); refreshPreview(); renderPageList();
+  };
+  wrap.append(add);
+  wrap.append(el('p', { className: 'hint', textContent: 'Présente une source de données (onglet Données) sous forme de grille paginée navigable au clavier.' }));
+  return wrap;
+}
+
+// inkSelect : choix d'encre (couleur) optionnel lié à une clé d'un objet.
+function inkSelect(obj, key) {
+  const sel = el('select');
+  sel.append(el('option', { value: '', textContent: '(défaut)', selected: !obj[key] }));
+  for (const c of INKS) sel.append(el('option', { value: c, textContent: c, selected: obj[key] === c }));
+  sel.onchange = () => { if (sel.value) obj[key] = sel.value; else delete obj[key]; refreshPreview(); };
+  return sel;
+}
+
+// dataWindowEditor édite le descripteur grille d'une page : source, colonnes
+// affichées (ordre + largeurs, budget 40 cases), couleurs et droits d'édition.
+function dataWindowEditor(p) {
+  const dw = p.datawindow;
+  const wrap = el('div', { className: 'form-editor' });
+  wrap.append(el('span', { className: 'lbl', textContent: 'Grille de données (DataWindow)' }));
+
+  const sids = Object.keys(sources());
+  const srcSel = el('select');
+  for (const id of sids) srcSel.append(el('option', { value: id, textContent: id, selected: dw.source === id }));
+  srcSel.onchange = () => { dw.source = srcSel.value; dw.colonnes_affichees = []; dw.largeurs = []; renderForm(); refreshPreview(); renderPageList(); };
+  wrap.append(field('Source', srcSel));
+
+  const src = sources()[dw.source];
+  if (!src) { wrap.append(el('p', { className: 'hint', textContent: 'Source « ' + (dw.source || '?') + ' » introuvable (onglet Données).' })); return wrap; }
+
+  // Colonnes affichées : ordre + largeur. On garde largeurs aligné sur colonnes_affichees.
+  dw.colonnes_affichees = dw.colonnes_affichees || [];
+  if (!dw.largeurs || dw.largeurs.length !== dw.colonnes_affichees.length) {
+    dw.largeurs = dw.colonnes_affichees.map((_, i) => (dw.largeurs && dw.largeurs[i]) || 8);
+  }
+  const tbl = el('table', { className: 'rows' });
+  tbl.append(el('tr', {}, ['Colonne', 'Largeur', 'Ordre', ''].map(t => el('th', { textContent: t }))));
+  dw.colonnes_affichees.forEach((c, i) => {
+    const name = el('span', { textContent: c + (src.colonnes[c] ? '' : ' (absente)') });
+    const wIn = el('input', { type: 'number', value: dw.largeurs[i] }); wIn.min = 1; wIn.max = 40; wIn.style.width = '64px';
+    wIn.oninput = () => { dw.largeurs[i] = parseInt(wIn.value, 10) || 1; refreshPreview(); };
+    const up = el('button', { textContent: '↑' }); up.disabled = i === 0;
+    up.onclick = () => { [dw.colonnes_affichees[i - 1], dw.colonnes_affichees[i]] = [dw.colonnes_affichees[i], dw.colonnes_affichees[i - 1]]; [dw.largeurs[i - 1], dw.largeurs[i]] = [dw.largeurs[i], dw.largeurs[i - 1]]; renderForm(); refreshPreview(); };
+    const down = el('button', { textContent: '↓' }); down.disabled = i === dw.colonnes_affichees.length - 1;
+    down.onclick = () => { [dw.colonnes_affichees[i + 1], dw.colonnes_affichees[i]] = [dw.colonnes_affichees[i], dw.colonnes_affichees[i + 1]]; [dw.largeurs[i + 1], dw.largeurs[i]] = [dw.largeurs[i], dw.largeurs[i + 1]]; renderForm(); refreshPreview(); };
+    const del = el('button', { className: 'del', textContent: '✕' });
+    del.onclick = () => { dw.colonnes_affichees.splice(i, 1); dw.largeurs.splice(i, 1); renderForm(); refreshPreview(); };
+    tbl.append(el('tr', {}, [td(name), td(wIn), td(el('span', {}, [up, down])), td(del)]));
+  });
+  wrap.append(el('span', { className: 'lbl', textContent: 'Colonnes affichées' }));
+  wrap.append(tbl);
+
+  const remaining = Object.keys(src.colonnes || {}).filter(c => !dw.colonnes_affichees.includes(c));
+  if (remaining.length) {
+    const addSel = el('select');
+    addSel.append(el('option', { value: '', textContent: '+ colonne…', selected: true }));
+    for (const c of remaining) addSel.append(el('option', { value: c, textContent: c }));
+    addSel.onchange = () => { if (addSel.value) { dw.colonnes_affichees.push(addSel.value); dw.largeurs.push(8); renderForm(); refreshPreview(); } };
+    wrap.append(addSel);
+  }
+  // Budget de largeur : col attribut + index + Σ(largeur+1) ≤ 40 (cf. content.validate).
+  const total = 1 + 3 + dw.largeurs.reduce((s, w) => s + (w || 0) + 1, 0);
+  wrap.append(el('p', { className: 'hint' + (total > 40 ? ' err' : ''), textContent: 'Largeur grille : ' + total + '/40 cases' + (total > 40 ? ' — trop large !' : '') }));
+
+  wrap.append(field('Couleur entête', inkSelect(dw, 'couleur_entete')));
+  wrap.append(field('Couleur lignes', inkSelect(dw, 'couleur_lignes')));
+  wrap.append(field('Couleur sélection', inkSelect(dw, 'couleur_selection')));
+  wrap.append(field('Lignes par écran', numberField(dw, 'lignes_max', 'défaut', 1)));
+
+  const ed = el('input', { type: 'checkbox', checked: !!dw.editable });
+  ed.onchange = () => { if (ed.checked) dw.editable = true; else delete dw.editable; };
+  wrap.append(field('Éditable (N/E/D)', ed));
+  wrap.append(el('p', { className: 'hint', textContent: 'Éditable = créer/modifier/supprimer si connecté (sources SQLite). Désactivé sur serveur public.' }));
+
+  const rm = el('button', { className: 'del', textContent: 'supprimer la grille' });
+  rm.onclick = () => { delete p.datawindow; p.lines = p.lines || []; p.entries = p.entries || []; renderForm(); refreshPreview(); renderPageList(); };
+  wrap.append(rm);
+  return wrap;
+}
+
 // --- init ---
 $('btn-load').onclick = () => loadSite($('site-select').value);
 $('btn-validate').onclick = validate;
@@ -818,6 +1098,14 @@ $('screen-new').onclick = screenNew;
 $('screen-save').onclick = screenSave;
 $('screen-clear').onclick = () => { initGrid(); drawGrid(); };
 
-for (const t of document.querySelectorAll('.tab')) t.onclick = () => { showTab(t.dataset.tab); if (t.dataset.tab === 'screen') { drawGrid(); renderScreenNav(); } };
+// onglet Données : sources DataWindow
+$('src-load').onclick = () => { srcName = $('src-select').value; renderSourceForm(); };
+$('src-select').onchange = () => { srcName = $('src-select').value; renderSourceForm(); };
+$('src-new').onclick = srcCreate;
+$('src-del').onclick = srcDelete;
+$('btn-validate-data').onclick = validate;
+$('btn-save-data').onclick = save;
+
+for (const t of document.querySelectorAll('.tab')) t.onclick = () => { showTab(t.dataset.tab); if (t.dataset.tab === 'screen') { drawGrid(); renderScreenNav(); } if (t.dataset.tab === 'data') refreshSources(); };
 showTab('nav');
 loadSites(); // charge le 1er site, qui charge ses propres profils

@@ -59,6 +59,77 @@ func TestSaveLoadDataWindowRoundTrip(t *testing.T) {
 	}
 }
 
+// richDwSite : un site DataWindow « complet » tel que produit par l'éditeur du
+// studio (onglet Données + descripteur grille). Tous les champs doivent survivre
+// au round-trip JSON : colonnes typées (pattern/valeur_defaut/auto_date/longueur_max),
+// seed donnees, source API (url/racine/ttl_sec) et couleurs/lignes_max/editable.
+const richDwSite = `{"start":"g","sources_donnees":{
+  "rep":{"table":"rep","tri_defaut":"nom ASC","lignes_par_page":12,"colonnes":{
+    "id":{"type":"INTEGER","libelle":"ID","cle_primaire":true,"auto_increment":true},
+    "nom":{"type":"TEXT","libelle":"Nom","requis":true,"longueur_max":16,"pattern":"^[A-Z]"},
+    "note":{"type":"INTEGER","libelle":"Note","valeur_defaut":0},
+    "cree":{"type":"DATETIME","libelle":"Cree","auto_date":true}},
+    "donnees":[{"nom":"Alice","note":5},{"nom":"Bob","note":3}]},
+  "meteo":{"type_source":"api","tri_defaut":"ville ASC","lignes_par_page":10,
+    "api":{"url":"https://x/meteo.json","racine":"results","ttl_sec":300},
+    "colonnes":{"ville":{"type":"TEXT","libelle":"Ville"},"temp":{"type":"INTEGER","libelle":"Temp"}}}},
+  "pages":{"g":{"title":"GRILLE","datawindow":{"source":"rep",
+    "colonnes_affichees":["nom","note"],"largeurs":[16,4],
+    "couleur_entete":"yellow","couleur_lignes":"cyan","couleur_selection":"green",
+    "lignes_max":15,"editable":true}}}}`
+
+func TestSaveLoadRichDataWindowRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	s := New(dir)
+	if err := s.Save("rich.json", []byte(richDwSite)); err != nil {
+		t.Fatalf("Save site DataWindow complet refusé : %v", err)
+	}
+	data, err := s.Load("rich.json")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	site, err := content.Parse(data)
+	if err != nil {
+		t.Fatalf("le site rechargé doit être valide : %v", err)
+	}
+
+	// Source SQLite : colonnes typées + seed préservés.
+	rep, ok := site.SourcesDonnees["rep"]
+	if !ok {
+		t.Fatal("source 'rep' perdue")
+	}
+	if rep.TriDefaut != "nom ASC" || rep.LignesParPage != 12 {
+		t.Errorf("paramètres source perdus : %+v", rep)
+	}
+	if c := rep.Colonnes["nom"]; c.Pattern != "^[A-Z]" || c.LongueurMax != 16 || !c.Requis {
+		t.Errorf("champs colonne 'nom' perdus : %+v", c)
+	}
+	if c := rep.Colonnes["cree"]; !c.AutoDate {
+		t.Errorf("auto_date de 'cree' perdu : %+v", c)
+	}
+	if len(rep.Donnees) != 2 {
+		t.Errorf("seed perdu : %d lignes (attendu 2)", len(rep.Donnees))
+	}
+
+	// Source API : url/racine/ttl_sec préservés.
+	meteo, ok := site.SourcesDonnees["meteo"]
+	if !ok || !meteo.EstAPI() {
+		t.Fatalf("source API 'meteo' perdue : %+v", meteo)
+	}
+	if meteo.API == nil || meteo.API.URL == "" || meteo.API.Racine != "results" || meteo.API.TTL != 300 {
+		t.Errorf("config API perdue : %+v", meteo.API)
+	}
+
+	// Descripteur grille : couleurs, lignes_max et editable préservés.
+	dw := site.Pages["g"].DataWindow
+	if dw == nil || dw.CouleurEntete != "yellow" || dw.CouleurLignes != "cyan" || dw.CouleurSelection != "green" {
+		t.Errorf("couleurs grille perdues : %+v", dw)
+	}
+	if dw.LignesMax != 15 || !dw.Editable {
+		t.Errorf("lignes_max/editable perdus : %+v", dw)
+	}
+}
+
 func TestSaveValidatesBeforeWrite(t *testing.T) {
 	dir := t.TempDir()
 	s := New(dir)

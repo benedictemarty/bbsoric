@@ -6,6 +6,28 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (DataWindow — full structured editing in the Forge studio, 27/06/2026)
+- **The Forge studio now edits the whole DataWindow model visually**, no more JSON
+  by hand (this closes the increment deferred on 27/06/2026).
+  - **New « Données » tab** to manage `sources_donnees`: create/load/delete a source,
+    pick its **type** (SQLite CRUD or **REST API** read-only), edit **typed columns**
+    (key, type, label, primary key, auto-increment, required, max length, pattern,
+    default value, auto-date), the SQLite **seed rows**, the API config (`url`,
+    `racine`, `ttl_sec`), plus default sort and rows-per-page. Renaming a source or a
+    column carries references over (grid pages follow) and **preserves column order**.
+  - **Grid descriptor editor** in the « Édition » tab: a **« + grille de données »**
+    button converts a page to a grid; the editor sets the **source**, **displayed
+    columns** (add/remove, reorder via ↑/↓, per-column **width** with a live **/40
+    budget** counter), header/rows/selection **colours**, rows-per-screen and the
+    **editable** flag (N/E/D). Page map already labels these pages `grille`.
+  - Save/Validate go through the same `content.Parse` as the server (over-budget grid,
+    unknown column, API source without URL… are refused before writing).
+- **Tested**: a richer studio round-trip test (`studio/internal/store`) covering an
+  API source, all `ColonneDef` fields (pattern/default/auto-date/max-length), seed
+  rows and the grid colours/`lignes_max`/`editable` — none dropped. `node --check`
+  clean on `app.js`; forge smoke-test serves the new tab and JS. `go test ./...` green.
+  Docs `docs/datawindow.md` (« Édition dans le studio Forge »).
+
 ### Added (DataWindow — studio awareness + round-trip guard, 27/06/2026)
 - **The Forge studio now recognizes DataWindow pages**: the page map labels them
   as `grille` and shows the bound source (`▦ <source>`). The studio already

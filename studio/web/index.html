@@ -20,6 +20,7 @@
       <button class="tab" data-tab="nav">Navigation</button>
       <button class="tab" data-tab="edit">Édition</button>
       <button class="tab" data-tab="screen">Écran</button>
+      <button class="tab" data-tab="data">Données</button>
       <button class="tab" data-tab="config">Configuration</button>
     </nav>
   </header>
@@ -86,6 +87,25 @@
           <div id="screen-palette" class="palette palette-side" title="Glyphes BBS — clic = charge le pinceau"></div>
         </div>
         <div id="screen-nav" class="screen-nav"></div>
+      </div>
+    </section>
+
+    <!-- ONGLET DONNÉES : sources DataWindow (tables/colonnes/seed/API) -->
+    <section id="tab-data" class="tabpane">
+      <div class="col editor">
+        <h2>Sources de données (DataWindow)</h2>
+        <div class="screen-bar">
+          <label>Source <select id="src-select"></select></label>
+          <button id="src-load">Charger</button>
+          <input id="src-newid" type="text" placeholder="nouvelle source…">
+          <button id="src-new">Créer</button>
+          <button id="src-del" class="del">Supprimer</button>
+        </div>
+        <div id="src-form"><p class="hint">Crée ou charge une source. Une source SQLite (table + colonnes typées + seed) ou REST (api, lecture seule) alimente une page « grille » (onglet Édition).</p></div>
+        <div class="actions">
+          <button id="btn-validate-data">Valider</button>
+          <button id="btn-save-data" class="primary">Enregistrer</button>
+        </div>
       </div>
     </section>
 

@@ -65,6 +65,7 @@ button.primary { background: var(--primary); border-color: var(--primary); color
 button.del { padding: 4px 8px; color: var(--warn); }
 .actions { margin-top: 12px; display: flex; gap: 8px; }
 .hint { color: #889; }
+.hint.err { color: var(--warn); }
 
 /* canvas du simulateur ULA : rendu 240×224 mis à l'échelle, pixels nets */
 .oric-screen {

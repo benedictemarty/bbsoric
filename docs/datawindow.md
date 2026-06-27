@@ -110,7 +110,33 @@ caractère, propre à l'Oric). Le rendu utilise le **buffer différentiel**
   toujours passées en paramètres `?` (jamais interpolées). Voir `ValiderNomSQL`/`ValiderTypeSQL`.
 - **Sessions** : un verrou par base couvre les écritures concurrentes (1 goroutine/session).
 
+## Édition dans le studio Forge
+
+Tout le modèle DataWindow s'édite désormais visuellement dans le studio (`forge`),
+sans toucher au JSON :
+
+- **Onglet « Données »** — gère les `sources_donnees`. On crée/charge/supprime une
+  source, on choisit son **type** (SQLite CRUD ou **API REST** lecture seule), puis :
+  - *SQLite* : nom de table, **colonnes typées** (clé, type, libellé, clé primaire,
+    auto-incrément, requis, longueur max, pattern, valeur par défaut, auto-date) et
+    une grille de **données initiales** (seed) ;
+  - *API* : `url`, clé `racine`, cache `ttl_sec` + colonnes mappées par nom ;
+  - communs : tri par défaut, lignes par page.
+
+  Le renommage d'une source ou d'une colonne reporte les références (les pages grille
+  suivent) et **préserve l'ordre** des colonnes.
+
+- **Onglet « Édition »** — sur une page, le bouton **« + grille de données »** la
+  convertit en page grille. L'éditeur de descripteur règle la **source**, les
+  **colonnes affichées** (ajout/retrait, **ordre** par ↑/↓, **largeur** par colonne
+  avec un compteur de **budget /40** en direct), les **couleurs** (entête/lignes/
+  sélection), les **lignes par écran** et le drapeau **éditable** (N/E/D).
+
+`Valider` / `Enregistrer` passent par le même `content.Parse` que le serveur : un
+contenu invalide (budget dépassé, colonne inconnue, source API sans URL…) est refusé
+avant écriture.
+
 ## Pour aller plus loin (incréments suivants)
 
-- Édition des sources/données depuis le studio Forge.
-- Tri interactif par colonne, recherche par préfixe, sources API REST (comme telenet).
+- Recherche par préfixe (en plus du filtre LIKE), masques de saisie.
+- Sources API avec en-têtes/authentification, pagination côté endpoint.

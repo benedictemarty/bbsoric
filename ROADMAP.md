@@ -64,7 +64,10 @@
 - [x] **Interactive column sort** (key `T`, cycles col/dir, footer label) — done 27/06.
 - [x] **REST API sources** (`type_source:"api"`, read-only, server-side filter/sort/
   pagination, TTL cache) — done 27/06 (`server/internal/datawindow/api.go`).
-- [ ] **Increment 2** (later): studio editor for sources/data, prefix search.
+- [x] **Studio editor for sources/data** (27/06): « Données » tab (sources: SQLite/API,
+  typed columns, seed) + grid descriptor editor (columns/order/widths/colours/editable,
+  live /40 budget) in « Édition ». Round-trip test extended. Docs updated.
+- [ ] **Increment 2** (later): prefix search, input masks, API auth/headers.
 
 ## Sprint 8 — Close out file transfer + news — 🎯 in progress (27/06/2026)
 > Wraps up Epic G (transfer) and starts Epic D (content/news).
