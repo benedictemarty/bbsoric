@@ -1,6 +1,26 @@
 {
-  "_comment": "Flux de pages du BBS Oric. Modifiable a chaud. Une page a un titre, du texte (lines) et/ou des choix (entries). Avec entries = ecran interactif, sinon ecran de contenu. Une entree navigue (target: page ou __quit__/__back__/__home__) OU lance un applet (applet + next). Une page peut aussi porter un form (action login/register, fields key/label/secret, next, fail, retries) = ecran de saisie declaratif. Applets: login, register, guest, download, upload, who (qui est en ligne), chat (salon temps reel). Couleurs ink: black red green yellow blue magenta cyan white.",
+  "_comment": "Flux de pages du BBS Oric. Modifiable a chaud. Une page a un titre, du texte (lines) et/ou des choix (entries). Avec entries = ecran interactif, sinon ecran de contenu. Une entree navigue (target: page ou __quit__/__back__/__home__) OU lance un applet (applet + next). Une page peut aussi porter un form (action login/register, fields key/label/secret, next, fail, retries) = ecran de saisie declaratif. Applets: login, register, guest, download, upload, who (qui est en ligne), chat (salon temps reel). Une page peut porter un datawindow (grille de donnees, source dans sources_donnees) rendue par l'applet datawindow ; flag serveur -data requis. Couleurs ink: black red green yellow blue magenta cyan white.",
   "start": "accueil",
+  "sources_donnees": {
+    "annuaire": {
+      "table": "annuaire",
+      "tri_defaut": "nom ASC",
+      "lignes_par_page": 15,
+      "colonnes": {
+        "id":      { "type": "INTEGER", "libelle": "ID",      "cle_primaire": true, "auto_increment": true },
+        "nom":     { "type": "TEXT",    "libelle": "Nom",     "requis": true, "longueur_max": 17 },
+        "adresse": { "type": "TEXT",    "libelle": "Adresse", "longueur_max": 24 }
+      },
+      "donnees": [
+        { "nom": "BBS Oric (prod)", "adresse": "pavi.3617.fr:6502" },
+        { "nom": "BBS Oric TLS",    "adresse": "pavi.3617.fr:6992" },
+        { "nom": "ParticlesBBS",    "adresse": "particlesbbs.dyndns.org:6400" },
+        { "nom": "Altair",          "adresse": "altair.virtualaltair.com:4667" },
+        { "nom": "Heatwave",        "adresse": "heatwave.ddns.net:9640" },
+        { "nom": "IDreamIn8Bits",   "adresse": "bbs.idreamtin8bits.com:6500" }
+      ]
+    }
+  },
   "pages": {
     "accueil": {
       "title": "BIENVENUE",
@@ -121,11 +141,26 @@
           "target": "communaute"
         },
         {
+          "key": "7",
+          "label": "Annuaire BBS",
+          "target": "annuaire"
+        },
+        {
           "key": "Q",
           "label": "Quitter",
           "target": "__quit__"
         }
       ]
+    },
+    "annuaire": {
+      "title": "ANNUAIRE BBS ORIC",
+      "datawindow": {
+        "source": "annuaire",
+        "colonnes_affichees": ["nom", "adresse"],
+        "largeurs": [17, 15],
+        "couleur_entete": "yellow",
+        "editable": false
+      }
     },
     "communaute": {
       "title": "COMMUNAUTE",

@@ -6,6 +6,15 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (DataWindow — public « Annuaire BBS » grid, 27/06/2026)
+- **First real DataWindow in the production content** (`content/site.json`): a
+  **read-only « Annuaire BBS Oric »** grid (source `annuaire`, seeded with the Oric
+  BBS directory) reachable from the main menu (entry `7`). `editable:false` → the
+  grid shows no `N/E/D` (safe on a public server); browse/sort/filter only.
+- **Deploy wiring**: the systemd unit passes `-data /var/lib/bbsoric/dwdata` so the
+  engine is available in production (idle until the live content declares a source).
+  Driver smoke-test confirms the rendered directory (6 entries, read-only legend).
+
 ### Added (DataWindow — interactive column sort, 27/06/2026)
 - **Interactive sort** in the grid: key `T` cycles the sort column (default → col 1
   ASC → DESC → col 2 ASC → …), using the engine's `tri` parameter; the current sort
