@@ -517,6 +517,7 @@ il_loop:
         sta (BUFPTR),y
         inc INLEN
         jsr putbyte              ; echo (A preserve)
+        jmp il_skip              ; caractere accepte -> NE PAS tomber dans il_back
 il_back:
         ldx INLEN
         beq il_skip              ; rien tape -> ignore

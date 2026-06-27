@@ -6,6 +6,23 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Fixed (Oric terminal — manual entry / `input_line` regression, 27/06/2026)
+- **`input_line` ate every typed character** (regression introduced with the
+  backspace support): the normal-character path **fell through** into the backspace
+  handler `il_back`, which stored + echoed the char then immediately decremented
+  `INLEN` and erased it. Net effect: **manual host/port entry was completely broken**
+  (the field stayed empty; only phonebook dialing worked, masking the bug). Fix: a
+  missing `jmp il_skip` after the echo in `client/term.s`. `.tap` rebuilt; **validated
+  visually in `oric1-emu`**: manual entry `127.0.0.1`/`6502` now reaches the protocol
+  prompt, dials the **local** BBS and renders the grid.
+- **New driver `scripts/test-emulateur-grille.sh`**: end-to-end capture of a DataWindow
+  grid in `oric1-emu` (modem menu → manual entry → `modem:` dial → BBS session →
+  grid → selection). Records the `--type-keys` timing trick the terminal needs:
+  `input_line` does one `get_key` + `wait_release` per char and `--type-keys` *holds*
+  a key until the next event, so each character — and the Enter especially — needs a
+  `\p` pause to release. Capture archived as `docs/img/datawindow-grid-emu.png`. Docs
+  `docs/client-review.md` updated (resolved #5c, deferred #12 partly addressed).
+
 ### Added (DataWindow — full structured editing in the Forge studio, 27/06/2026)
 - **The Forge studio now edits the whole DataWindow model visually**, no more JSON
   by hand (this closes the increment deferred on 27/06/2026).
