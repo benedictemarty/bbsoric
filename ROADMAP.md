@@ -77,11 +77,14 @@
   unified wire stream `render.Hires` over sub-command `1F FC` (opcodes + RLE bitmap
   blit, `internal/oascii/hires.go`); engine wiring (menu/one-key); unit + TCP-driver
   tests. Docs `docs/hires.md`, ADR-0005.
-- [ ] **Terminal firmware** (`client/term.s`): HIRES interpreter — `1F FC` handler,
-  mode switch (`$A000` + 3 text lines), self-contained primitives (setpixel/Bresenham/
-  rect/fill/circle), RLE blit decoder; visual validation in `oric1-emu`.
+- [x] **Terminal firmware** (`client/hires.s`, 27/06): HIRES interpreter — `1F FC`
+  handler, mode switch (attr `0x1E` → `$A000` + 3 text lines), self-contained 6502
+  primitives (setpixel, Bresenham x/y-major, box/fillbox, midpoint circle, `char` via
+  charset saved to `$9800`), RLE blit decoder. **Validated in `oric1-emu`** — both
+  models render (`docs/img/hires-demo-emu.png` primitives + `…-bitmap-emu.png` blit).
 - [ ] **Studio Forge**: HIRES editor (240×200 ULA preview, primitive editor / image import).
-- [ ] **Later**: differential HIRES buffer for animation; `char` font in HIRES.
+- [ ] **Later**: HIRES ink/paper colour, clean TEXT-return, flow-controlled bitmap
+  transfer (vs raw blit), differential HIRES buffer for animation.
 
 ## Sprint 8 — Close out file transfer + news — 🎯 in progress (27/06/2026)
 > Wraps up Epic G (transfer) and starts Epic D (content/news).

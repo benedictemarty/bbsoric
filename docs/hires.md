@@ -84,8 +84,45 @@ Le **fond bitmap** est émis par `HiBlit` : `off`/`len` (octets décodés) puis 
 `$A000+off`. Compact pour les grandes plages uniformes (un écran vide ≈ 32 paires au
 lieu de 8000 octets).
 
+## Firmware terminal (oric1-emu)
+
+L'interpréteur HIRES vit dans `client/hires.s` (concaténé par `client/build.sh`).
+À la réception de `1F FC`, `handle_rx` passe en état flux HIRES et alimente
+`hires_feed`, qui exécute les opcodes :
+
+- **bascule mode** : attribut vidéo `0x1E` posé à `$BB80` (latché par l'ULA → HIRES
+  persistant), effacement de la VRAM `$A000` (8000 octets à `$40`) et des 3 lignes
+  texte du bas ;
+- **primitives** en 6502 *autonome* (sans ROM BASIC) : `setpixel` (`$A000 + y*40 +
+  x/6`, bit `5 - x%6`), Bresenham x/y-major (16 bits), box/fillbox, cercle midpoint,
+  `char` (glyphe 6×8 lu dans le charset, sauvegardé en `$9800` car `$A000` recouvre
+  `$B400`) ;
+- **blit bitmap** : décodeur RLE écrivant les octets décodés en `$A000+offset`.
+
+Validé visuellement dans `oric1-emu` — terminal Oric réel → modem → BBS local
+(`scripts/test-emulateur-grille.sh` adapté) :
+
+| Primitives (démo `ORIC`) | Bitmap RLE + box |
+|---|---|
+| ![Démo HIRES](img/hires-demo-emu.png) | ![Bitmap HIRES](img/hires-bitmap-emu.png) |
+
+*À gauche : cadre + cercle + diagonales + texte `ORIC` (op `char`). À droite : un fond
+bitmap (bandes blanche/noire) posé par `blit`, avec un rectangle tracé par-dessus.*
+
+### Limites connues
+
+- **Couleur** : le rendu est monochrome (encre blanche) ; `ink`/`paper` ne posent pas
+  encore d'attributs sériels dans le bitmap (incrément ultérieur).
+- **Contrôle de flux** : un `blit` volumineux peut saturer le FIFO série du terminal
+  (même classe que le défaut RX #1 de `docs/client-review.md`) — réservé aux fonds
+  bien compressibles ; un transfert XMODEM-flow-controllé est la piste pour les
+  bitmaps arbitraires.
+- **Retour au TEXT** : après une page HIRES, repasser proprement en mode TEXT (restaurer
+  `$B400` + attribut `0x1A`) reste à câbler (incrément ultérieur).
+
 ## État d'avancement
 
 - **Serveur** (modèle, validation, encodeur `render.Hires`, RLE, câblage moteur, tests) : **fait**.
-- **Firmware terminal** (interpréteur HIRES `term.s`, primitives 6502, blit RLE, validation `oric1-emu`) : à venir.
+- **Firmware terminal** (interpréteur HIRES `term.s`/`hires.s`, primitives 6502, blit
+  RLE, **validation oric1-emu**) : **fait** (slice 2).
 - **Studio Forge** (aperçu 240×200, éditeur de primitives / import d'image) : à venir.

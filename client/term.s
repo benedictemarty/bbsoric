@@ -326,6 +326,10 @@ ks_ret:
 handle_rx:
         ldx PLOTST
         beq hr_normal
+        cpx #8                   ; 8 = flux de commandes HIRES en cours
+        bne hr_not8
+        jmp hr_hiresfeed
+hr_not8:
         cpx #1
         beq hr_state1
         cpx #2
@@ -390,9 +394,20 @@ hr_state1:
         beq hr_recv
         cmp #$FD                 ; 1F FD = "envoyer un fichier"
         beq hr_send
+        cmp #$FC                 ; 1F FC = "flux de commandes HIRES"
+        beq hr_hires
         sta PLOTX                ; sinon 1er octet = colonne (plot)
         lda #2
         sta PLOTST
+        rts
+hr_hires:
+        lda #0
+        sta hstate               ; reinitialise le sous-etat du flux HIRES
+        lda #8
+        sta PLOTST               ; etat 8, octets suivants pour hires_feed
+        rts
+hr_hiresfeed:
+        jsr hires_feed           ; A = octet recu, consomme par la machine HIRES
         rts
 hr_recv:
         lda #3                   ; 1F FE -> attendre le total de blocs (lo, hi)

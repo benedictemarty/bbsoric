@@ -6,6 +6,28 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (HIRES pages — terminal firmware + oric1-emu validation, 27/06/2026)
+- **The Oric terminal now renders HIRES pages** (`client/hires.s`, concatenated by
+  `client/build.sh`). On `1F FC`, `handle_rx` enters a HIRES-stream state feeding
+  `hires_feed`, a state machine executing the opcodes:
+  - **mode switch**: video attribute `0x1E` written to `$BB80` (latched by the ULA →
+    persistent HIRES, verified against `oric1-emu` `video.c`), VRAM `$A000` cleared
+    (8000 bytes to `$40`) and the 3 bottom text lines blanked;
+  - **self-contained 6502 primitives** (no BASIC ROM dependency): `setpixel`
+    (`$A000+y*40+x/6`, bit `5-x%6`), Bresenham line (x/y-major, 16-bit error),
+    box/fillbox, midpoint circle, and `char` (6×8 glyph from the charset, backed up to
+    `$9800` since clearing `$A000` overwrites the `$B400` text charset);
+  - **bitmap blit**: RLE decoder writing decoded bytes to `$A000+offset`.
+- **Validated visually in `oric1-emu`** (real Oric terminal → modem → local BBS):
+  **both models** render — primitives (demo frame + circle + diagonals + `ORIC` text,
+  `docs/img/hires-demo-emu.png`) and a bitmap background via blit with a rectangle on
+  top (`docs/img/hires-bitmap-emu.png`). Debugging milestones: fixed `setpixel`'s
+  `Y*40`, the Bresenham overflow, box corner bookkeeping, the charset overwrite, and an
+  RLE-decoder bug where `lda hrun` clobbered the just-received count byte.
+- **Known limits** (next increments): monochrome only (no HIRES `ink`/`paper` yet),
+  large blits can saturate the serial FIFO (flow-control, cf. client-review #1), and a
+  clean TEXT-mode return after a HIRES page is not wired yet. Docs `docs/hires.md`.
+
 ### Added (HIRES pages — server foundation, 27/06/2026)
 - **New `hires` page type** for Oric high-resolution graphics (240×200), carrying
   **both** models the owner asked for: a **bitmap** background (`background`, full
