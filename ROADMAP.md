@@ -58,8 +58,9 @@
   with `Site.Validate()` checks (names, columns, 40-col budget).
 - [x] **Grid applet** on the `oascii.Screen` diff buffer (inverse selection, `+/- S/R
   V N/E/D F/C Q`); `-data` flag; threaded through `AppContext`/`SessionState`.
-- [x] **Tested** (engine + content + TCP-driver integration) + driver smoke. Docs
-  `docs/datawindow.md`, ADR-0004, demo `docs/examples/datawindow-demo.json`.
+- [x] **Tested** (engine + content + TCP-driver integration) + driver smoke +
+  **oric1-emu visual** (`docs/img/datawindow-grid.png` : 40-col, inverse selection).
+  Docs `docs/datawindow.md`, ADR-0004, demo `docs/examples/datawindow-demo.json`.
 - [ ] **Increment 2** (later): studio editor for sources/data, interactive column sort,
   prefix search, REST API sources (telenet parity).
 

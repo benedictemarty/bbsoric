@@ -56,6 +56,12 @@ Au niveau racine du `site.json` :
 
 La page est atteinte par une entrée `{ "target": "grille" }` ou en page de départ.
 
+![Grille DataWindow dans oric1-emu](img/datawindow-grid.png)
+
+*Grille « repertoire » rendue dans `oric1-emu` (terminal Oric réel) : entête jaune,
+6 enregistrements, la ligne sélectionnée (« Bob Durand ») en vidéo inverse, pied de
+pagination et légende des touches.*
+
 ## Navigation (clavier Oric, sans flèches)
 
 | Touche | Action |

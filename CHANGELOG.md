@@ -27,6 +27,9 @@ versioning [SemVer](https://semver.org/lang/en/).
   round-trip, validation, **SQL-injection guards**, `cellString`), content validation
   tests, and TCP-driver integration tests (grid display, filter, create → total grows).
   Driver smoke-test confirms the rendered grid, inverse selection move and filter.
+  **Validated visually in `oric1-emu`** (real Oric terminal → modem → local BBS): the
+  grid renders in 40 columns without wrapping, header coloured, the selected row in
+  per-char inverse video (`docs/img/datawindow-grid.png`).
   Demo content `docs/examples/datawindow-demo.json`. Docs: `docs/datawindow.md`,
   `docs/adr/0004-datawindow-sqlite.md`. `go test ./...` + `go vet` + `go mod tidy` green.
 
