@@ -69,6 +69,20 @@
   live /40 budget) in « Édition ». Round-trip test extended. Docs updated.
 - [ ] **Increment 2** (later): prefix search, input masks, API auth/headers.
 
+## Sprint 10 — HIRES pages (240×200 graphics) — ⏳ slice 1 (27/06/2026)
+> Graphics pages over the serial link: **both** a bitmap model (logo/splash) and a
+> primitives model (line/box/circle/…). Design: `docs/adr/0005-hires-pages.md`.
+- [x] **Server foundation** (27/06): content model (`Hires`/`HiresOp`, page field
+  `hires`) + `Site.Validate()` (bitmap 8000 B, bounds 240×200, colours, known ops);
+  unified wire stream `render.Hires` over sub-command `1F FC` (opcodes + RLE bitmap
+  blit, `internal/oascii/hires.go`); engine wiring (menu/one-key); unit + TCP-driver
+  tests. Docs `docs/hires.md`, ADR-0005.
+- [ ] **Terminal firmware** (`client/term.s`): HIRES interpreter — `1F FC` handler,
+  mode switch (`$A000` + 3 text lines), self-contained primitives (setpixel/Bresenham/
+  rect/fill/circle), RLE blit decoder; visual validation in `oric1-emu`.
+- [ ] **Studio Forge**: HIRES editor (240×200 ULA preview, primitive editor / image import).
+- [ ] **Later**: differential HIRES buffer for animation; `char` font in HIRES.
+
 ## Sprint 8 — Close out file transfer + news — 🎯 in progress (27/06/2026)
 > Wraps up Epic G (transfer) and starts Epic D (content/news).
 - [~] **S1 — User-editable filename at reception** (terminal): before saving, the

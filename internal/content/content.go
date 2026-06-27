@@ -51,6 +51,7 @@ type Page struct {
 	Screen     []byte      `json:"screen,omitempty"`     // écran brut : buffer 40×28 d'octets (base64 JSON)
 	Form       *Form       `json:"form,omitempty"`       // page de saisie déclarative (login/inscription)
 	DataWindow *DataWindow `json:"datawindow,omitempty"` // grille de données (applet « datawindow »)
+	Hires      *Hires      `json:"hires,omitempty"`      // page graphique haute résolution (240×200)
 }
 
 // Form décrit un écran de saisie déclaratif, exécuté par l'applet générique
@@ -191,6 +192,11 @@ func (s *Site) Validate() error {
 		}
 		if p.DataWindow != nil {
 			if err := p.DataWindow.validate(id, s); err != nil {
+				return err
+			}
+		}
+		if p.Hires != nil {
+			if err := p.Hires.validate(id); err != nil {
 				return err
 			}
 		}

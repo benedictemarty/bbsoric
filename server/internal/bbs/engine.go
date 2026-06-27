@@ -60,6 +60,20 @@ func runSite(ctx context.Context, s *server.Session, store *content.Store, users
 				return
 			}
 			popOrHome(&stack, site)
+		case page.Hires != nil: // page graphique haute résolution (240×200)
+			if s.Write(string(render.Hires(page))) != nil {
+				return
+			}
+			if len(page.Entries) > 0 { // menu (libellés en bas, lignes texte)
+				if !routeMenuChoice(ctx, s, page, &stack, site, users, state) {
+					return
+				}
+			} else { // décor seul : une touche pour revenir
+				if _, err := s.ReadKey(); err != nil {
+					return
+				}
+				popOrHome(&stack, site)
+			}
 		case len(page.Entries) > 0: // écran interactif (menu)
 			// Décor : une page « écran brut » sert de fond composé case par case
 			// (titre, libellés et invite sont déjà dessinés dedans) ; une page

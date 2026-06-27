@@ -1,0 +1,36 @@
+{
+  "_comment": "Demo HIRES : accueil -> page graphique (primitives). Lancer avec bbsd -content docs/examples/hires-demo.json. Le rendu graphique necessite le firmware terminal HIRES (slice 2).",
+  "start": "accueil",
+  "pages": {
+    "accueil": {
+      "title": "DEMO HIRES",
+      "entries": [
+        { "key": "1", "label": "Logo graphique", "target": "logo" },
+        { "key": "Q", "label": "Quitter", "target": "__quit__" }
+      ]
+    },
+    "logo": {
+      "title": "LOGO",
+      "hires": {
+        "draw": [
+          { "op": "ink",    "c": 6 },
+          { "op": "curset", "x": 4,   "y": 4 },
+          { "op": "box",    "x": 235, "y": 160 },
+          { "op": "ink",    "c": 3 },
+          { "op": "curset", "x": 120, "y": 82 },
+          { "op": "circle", "r": 50 },
+          { "op": "ink",    "c": 1 },
+          { "op": "curset", "x": 30,  "y": 30 },
+          { "op": "line",   "x": 210, "y": 130 },
+          { "op": "curset", "x": 210, "y": 30 },
+          { "op": "line",   "x": 30,  "y": 130 },
+          { "op": "ink",    "c": 7 },
+          { "op": "char",   "x": 96,  "y": 78, "ch": "O" },
+          { "op": "char",   "x": 112, "y": 78, "ch": "R" },
+          { "op": "char",   "x": 128, "y": 78, "ch": "I" },
+          { "op": "char",   "x": 144, "y": 78, "ch": "C" }
+        ]
+      }
+    }
+  }
+}

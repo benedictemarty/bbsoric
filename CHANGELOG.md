@@ -6,6 +6,28 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (HIRES pages — server foundation, 27/06/2026)
+- **New `hires` page type** for Oric high-resolution graphics (240×200), carrying
+  **both** models the owner asked for: a **bitmap** background (`background`, full
+  8000-byte VRAM, posted in one block) **and** **primitives** (`draw`: `ink`/`paper`/
+  `curset`/`point`/`line`/`box`/`fillbox`/`circle`/`char`) drawn on top — combinable.
+  Model in `internal/content` (`Hires`/`HiresOp`), validated by `Site.Validate()`
+  (bitmap size, 240×200 bounds, colours 0-7, known ops).
+- **Unified wire protocol** (`render.Hires`, single source server+studio): one HIRES
+  **command stream** opened by the free serial sub-command **`1F FC`** (ignored by
+  generic telnet clients), then 1-byte opcodes + fixed args until `HiEnd`
+  (`internal/oascii/hires.go`). The bitmap is sent via `HiBlit` as an **RLE** stream
+  (count/value pairs) — a blank screen ≈ 32 pairs instead of 8000 bytes. Coordinates
+  fit one byte; the terminal keeps a drawing **pen**. Mixed mode (HIRES top + 3 text
+  lines) reuses the « menu over background » pattern: a HIRES page with `entries`
+  routes keys, otherwise one key returns.
+- **Engine wiring**: `case page.Hires` emits the stream then navigates (menu) or waits.
+- **Tested**: content validation (valid bitmap/primitives + 8 error cases), RLE
+  round-trip + compression, `render.Hires` byte-stream (primitives + bitmap blit
+  decodes back to source), and a TCP-driver integration test asserting the `1F FC …
+  HiEnd` stream reaches the session. `go test ./...` green. Design `docs/adr/0005`,
+  spec `docs/hires.md`. *Next slices: terminal firmware (6502) + studio editor.*
+
 ### Fixed (Oric terminal — manual entry / `input_line` regression, 27/06/2026)
 - **`input_line` ate every typed character** (regression introduced with the
   backspace support): the normal-character path **fell through** into the backspace
