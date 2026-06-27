@@ -120,9 +120,25 @@ bitmap (bandes blanche/noire) posé par `blit`, avec un rectangle tracé par-des
 - **Retour au TEXT** : après une page HIRES, repasser proprement en mode TEXT (restaurer
   `$B400` + attribut `0x1A`) reste à câbler (incrément ultérieur).
 
+## Édition dans le studio Forge
+
+Une page HIRES s'édite visuellement dans le studio (onglet **Édition**) :
+
+- le bouton **« + page graphique (HIRES) »** convertit une page normale en page graphique ;
+- un **tableau de primitives** (`draw`) : choix de l'op (`curset`/`point`/`line`/`box`/
+  `fillbox`/`circle`/`char`/`ink`/`paper`) avec les champs pertinents (X/Y, R, couleur
+  Oric 0-7, caractère), réordonnables (↑/↓) et supprimables ;
+- un **fond bitmap** par **import d'image** : l'image est réduite en 240×200 et seuillée
+  en 1 bit (luminance) pour produire le buffer VRAM (`background`) ;
+- un **aperçu 240×200 en direct** : le rendu est **rastérisé en JS** (miroir exact du
+  firmware `client/hires.s`), monochrome (encre blanche). La page apparaît `graphique`
+  (marqueur `◨ hires`) dans le graphe de navigation.
+
+`Valider`/`Enregistrer` passent par le même `content.Parse` que le serveur.
+
 ## État d'avancement
 
 - **Serveur** (modèle, validation, encodeur `render.Hires`, RLE, câblage moteur, tests) : **fait**.
 - **Firmware terminal** (interpréteur HIRES `term.s`/`hires.s`, primitives 6502, blit
   RLE, **validation oric1-emu**) : **fait** (slice 2).
-- **Studio Forge** (aperçu 240×200, éditeur de primitives / import d'image) : à venir.
+- **Studio Forge** (éditeur de primitives + import d'image, aperçu 240×200 JS) : **fait** (slice 3).

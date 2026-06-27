@@ -82,7 +82,10 @@
   primitives (setpixel, Bresenham x/y-major, box/fillbox, midpoint circle, `char` via
   charset saved to `$9800`), RLE blit decoder. **Validated in `oric1-emu`** — both
   models render (`docs/img/hires-demo-emu.png` primitives + `…-bitmap-emu.png` blit).
-- [ ] **Studio Forge**: HIRES editor (240×200 ULA preview, primitive editor / image import).
+- [x] **Studio Forge** (27/06): « Édition » tab HIRES editor — `+ page graphique`,
+  primitive table (op + X/Y/R/colour/char, reorder/remove), **image import** → bitmap
+  background, and a **live 240×200 preview rasterized in JS** (mirror of `hires.s`).
+  Page map labels it `graphique` (`◨ hires`). Store round-trip test. Docs updated.
 - [ ] **Later**: HIRES ink/paper colour, clean TEXT-return, flow-controlled bitmap
   transfer (vs raw blit), differential HIRES buffer for animation.
 

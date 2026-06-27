@@ -6,6 +6,21 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (HIRES pages — Forge studio editor, 27/06/2026)
+- **The Forge studio now edits HIRES pages** (« Édition » tab). A **« + page graphique
+  (HIRES) »** button converts a page to graphics; a **primitive table** edits the `draw`
+  list (op `curset`/`point`/`line`/`box`/`fillbox`/`circle`/`char`/`ink`/`paper` with the
+  relevant X/Y/R/colour/char fields, reorder/remove); an **image import** reduces a
+  picture to 240×200 and 1-bit-thresholds it into the `background` VRAM buffer.
+- **Live 240×200 preview rasterized in JS** — a faithful mirror of the firmware
+  (`client/hires.s`): setpixel/Bresenham/box/fillbox/midpoint-circle/char (via the
+  shipped `ORIC_CHARSET`) + bitmap decode, painted on the ULA preview canvas (monochrome,
+  white ink; per-attribute colour is rendered on the terminal, not yet in the preview).
+- The page map labels HIRES pages **`graphique`** (`◨ hires`). Save/Validate go through
+  the same `content.Parse` as the server. **Store round-trip test** (primitives + 8000-byte
+  bitmap background preserved). `node --check` clean; forge serves the editor + JS. Docs
+  `docs/hires.md`. *Completes the HIRES feature: server + terminal + studio.*
+
 ### Added (HIRES pages — terminal firmware + oric1-emu validation, 27/06/2026)
 - **The Oric terminal now renders HIRES pages** (`client/hires.s`, concatenated by
   `client/build.sh`). On `1F FC`, `handle_rx` enters a HIRES-stream state feeding

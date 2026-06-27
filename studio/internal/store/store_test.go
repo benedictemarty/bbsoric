@@ -1,6 +1,7 @@
 package store
 
 import (
+	"encoding/base64"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,6 +37,52 @@ func TestListLoadSave(t *testing.T) {
 // dwSite : un site DataWindow (source + page grille) doit passer la validation
 // du studio et round-tripper sans perte (régression : ne pas droper sources/datawindow).
 const dwSite = `{"start":"g","sources_donnees":{"rep":{"table":"rep","colonnes":{"id":{"type":"INTEGER","cle_primaire":true,"auto_increment":true},"nom":{"type":"TEXT","requis":true}}}},"pages":{"g":{"title":"GRILLE","datawindow":{"source":"rep","colonnes_affichees":["nom"],"largeurs":[20]}}}}`
+
+// hiresSite : une page HIRES (primitives + fond bitmap) doit round-tripper sans
+// perte par le studio (le fond est un base64 de 8000 octets VRAM).
+func hiresSiteJSON(t *testing.T) string {
+	t.Helper()
+	bg := make([]byte, content.HiresBitmapSize)
+	for i := range bg {
+		bg[i] = 0x40
+	}
+	b64 := base64.StdEncoding.EncodeToString(bg)
+	return `{"start":"g","pages":{"g":{"title":"LOGO","hires":{` +
+		`"background":"` + b64 + `",` +
+		`"draw":[{"op":"ink","c":3},{"op":"curset","x":10,"y":20},{"op":"line","x":230,"y":190},{"op":"circle","r":40},{"op":"char","x":5,"y":6,"ch":"O"}]}}}}`
+}
+
+func TestSaveLoadHiresRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	s := New(dir)
+	if err := s.Save("h.json", []byte(hiresSiteJSON(t))); err != nil {
+		t.Fatalf("Save site HIRES refusé : %v", err)
+	}
+	data, err := s.Load("h.json")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	site, err := content.Parse(data)
+	if err != nil {
+		t.Fatalf("le site HIRES rechargé doit être valide : %v", err)
+	}
+	h := site.Pages["g"].Hires
+	if h == nil {
+		t.Fatal("le descripteur hires a été perdu")
+	}
+	if len(h.Background) != content.HiresBitmapSize {
+		t.Errorf("fond bitmap perdu/altéré : %d octets (attendu %d)", len(h.Background), content.HiresBitmapSize)
+	}
+	if len(h.Draw) != 5 {
+		t.Fatalf("primitives perdues : %d (attendu 5)", len(h.Draw))
+	}
+	if h.Draw[4].Op != "char" || h.Draw[4].Ch != "O" {
+		t.Errorf("primitive char altérée : %+v", h.Draw[4])
+	}
+	if h.Draw[3].Op != "circle" || h.Draw[3].R != 40 {
+		t.Errorf("primitive circle altérée : %+v", h.Draw[3])
+	}
+}
 
 func TestSaveLoadDataWindowRoundTrip(t *testing.T) {
 	dir := t.TempDir()

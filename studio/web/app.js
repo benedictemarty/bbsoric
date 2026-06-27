@@ -135,10 +135,12 @@ function renderPageList() {
     const apps = (p.entries || []).filter(entryIsApplet).map(e => '▶' + (e.applet || '?'));
     if (p.applet !== undefined) apps.push('▶' + (p.applet || '?'));
     const dw = p.datawindow ? ['▦ ' + (p.datawindow.source || '?')] : [];
-    const kind = (p.datawindow !== undefined) ? 'grille'
+    const hi = p.hires ? ['◨ hires'] : [];
+    const kind = (p.hires !== undefined) ? 'graphique'
+      : (p.datawindow !== undefined) ? 'grille'
       : (p.applet !== undefined) ? 'applet'
       : (p.raw ? 'écran' : ((p.entries && p.entries.length) ? 'menu' : 'page'));
-    const extra = [...apps, ...dw, ...specs].join('  ');
+    const extra = [...apps, ...dw, ...hi, ...specs].join('  ');
     const sub = kind + (extra ? '   ' + extra : '');
     const cls = 'node' + (id === current ? ' sel' : '') + (id === start ? ' start' : '');
     nodes += `<g class="${cls}" data-id="${esc(id)}" transform="translate(${a.x},${a.y})">`
@@ -230,11 +232,18 @@ function renderForm() {
     return;
   }
 
+  // Page graphique HIRES : primitives de tracé et/ou fond bitmap (240×200).
+  if (p.hires) {
+    host.append(hiresEditor(p));
+    return;
+  }
+
   // Page normale : texte (lines), choix (entries) OU formulaire de saisie (form).
   host.append(linesEditor(p));
   if (!p.form) host.append(entriesEditor(p)); // un form pilote la page (pas de menu simultané)
   host.append(formEditor(p));
   if (Object.keys(sources()).length && !p.form) host.append(dataWindowAdd(p)); // convertir en grille
+  if (!p.form) host.append(hiresAdd(p)); // convertir en page graphique HIRES
 }
 
 // formEditor édite une page de saisie déclarative (content.Form) : action
@@ -678,6 +687,8 @@ function refreshPreview() {
 }
 async function doPreview() {
   if (!current) return;
+  const p = site.pages[current];
+  if (p && p.hires) { lastScreen = null; renderHiresPreview(p); return; } // aperçu graphique local
   const r = await fetch('/api/screen?page=' + encodeURIComponent(current), { method: 'POST', body: JSON.stringify(site) });
   if (!r.ok) return;
   lastScreen = layoutScreen(new Uint8Array(await r.arrayBuffer()));
@@ -1038,6 +1049,201 @@ function dataWindowEditor(p) {
   rm.onclick = () => { delete p.datawindow; p.lines = p.lines || []; p.entries = p.entries || []; renderForm(); refreshPreview(); renderPageList(); };
   wrap.append(rm);
   return wrap;
+}
+
+// --- éditeur de page graphique HIRES (240×200) ---
+// Le JSON porte `hires` = { background?: base64(8000 octets VRAM), draw?: [HiresOp] }.
+// Primitives : curset/point/line/box/fillbox (X,Y), circle (R), char (X,Y,ch),
+// ink/paper (couleur Oric 0-7). L'aperçu est rastérisé EN JS (miroir du firmware),
+// monochrome (encre blanche) — la couleur per-attribut n'est pas encore rendue.
+const HIRES_OPS = ['curset', 'point', 'line', 'box', 'fillbox', 'circle', 'char', 'ink', 'paper'];
+const ORIC_COLORS = ['noir', 'rouge', 'vert', 'jaune', 'bleu', 'magenta', 'cyan', 'blanc']; // index = n° Oric
+const HIW = 240, HIH = 200;
+
+const b64ToBytes = (b64) => { const s = atob(b64), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
+const bytesToB64 = (u) => { let s = ''; for (const b of u) s += String.fromCharCode(b); return btoa(s); };
+
+// hiresOpNeeds : quels champs une primitive utilise (pilote les colonnes affichées).
+function hiresOpNeeds(op) {
+  return {
+    coord: ['curset', 'point', 'line', 'box', 'fillbox', 'char'].includes(op),
+    r: op === 'circle',
+    c: op === 'ink' || op === 'paper',
+    ch: op === 'char',
+  };
+}
+
+// hiresAdd : convertit la page courante en page graphique HIRES.
+function hiresAdd(p) {
+  const wrap = el('div', { className: 'form-editor' });
+  wrap.append(el('span', { className: 'lbl', textContent: 'Page graphique HIRES' }));
+  const add = el('button', { textContent: '+ page graphique (HIRES 240×200)' });
+  add.onclick = () => {
+    p.hires = { draw: [{ op: 'curset', x: 8, y: 8 }, { op: 'box', x: 231, y: 191 }] };
+    delete p.lines; delete p.entries; delete p.form; delete p.datawindow;
+    renderForm(); refreshPreview(); renderPageList();
+  };
+  wrap.append(add);
+  wrap.append(el('p', { className: 'hint', textContent: 'Dessin vectoriel (primitives) et/ou fond bitmap, rendu en haute résolution sur le terminal Oric.' }));
+  return wrap;
+}
+
+// hiresEditor : édite la liste de primitives + le fond bitmap d'une page HIRES.
+function hiresEditor(p) {
+  const h = p.hires; h.draw = h.draw || [];
+  const wrap = el('div', { className: 'form-editor' });
+  wrap.append(el('span', { className: 'lbl', textContent: 'Primitives de tracé (crayon : curset → line/box/circle…)' }));
+
+  const tbl = el('table', { className: 'rows' });
+  tbl.append(el('tr', {}, ['Op', 'X', 'Y', 'R', 'Couleur', 'Car.', ''].map(t => el('th', { textContent: t }))));
+  h.draw.forEach((op, i) => {
+    const need = hiresOpNeeds(op.op);
+    const sel = el('select');
+    for (const o of HIRES_OPS) sel.append(el('option', { value: o, textContent: o, selected: op.op === o }));
+    sel.onchange = () => { op.op = sel.value; renderForm(); refreshPreview(); };
+
+    const num = (key, max) => {
+      if (!need.coord && (key === 'x' || key === 'y')) return el('span');
+      if (!need.r && key === 'r') return el('span');
+      const inp = el('input', { type: 'number', value: op[key] != null ? op[key] : '' });
+      inp.min = 0; inp.max = max; inp.style.width = '54px';
+      inp.oninput = () => { const v = inp.value.trim(); if (v === '') delete op[key]; else op[key] = parseInt(v, 10) || 0; refreshPreview(); };
+      return inp;
+    };
+    let coul = el('span');
+    if (need.c) {
+      coul = el('select');
+      ORIC_COLORS.forEach((nm, n) => coul.append(el('option', { value: n, textContent: n + ' ' + nm, selected: (op.c || 0) === n })));
+      coul.onchange = () => { op.c = parseInt(coul.value, 10); refreshPreview(); };
+    }
+    let car = el('span');
+    if (need.ch) {
+      car = el('input', { type: 'text', value: op.ch || '', maxLength: 1 }); car.style.width = '36px';
+      car.oninput = () => { op.ch = car.value; refreshPreview(); };
+    }
+    const ctrl = el('span', {}, [
+      mkBtn('↑', i === 0, () => { [h.draw[i - 1], h.draw[i]] = [h.draw[i], h.draw[i - 1]]; renderForm(); refreshPreview(); }),
+      mkBtn('↓', i === h.draw.length - 1, () => { [h.draw[i + 1], h.draw[i]] = [h.draw[i], h.draw[i + 1]]; renderForm(); refreshPreview(); }),
+      mkBtn('✕', false, () => { h.draw.splice(i, 1); renderForm(); refreshPreview(); }, 'del'),
+    ]);
+    tbl.append(el('tr', {}, [td(sel), td(num('x', 239)), td(num('y', 199)), td(num('r', 239)), td(coul), td(car), td(ctrl)]));
+  });
+  wrap.append(tbl);
+  const add = el('button', { textContent: '+ primitive' });
+  add.onclick = () => { h.draw.push({ op: 'line', x: 120, y: 100 }); renderForm(); refreshPreview(); };
+  wrap.append(add);
+
+  // Fond bitmap (modèle « bitmap ») : import d'image → 240×200 monochrome.
+  wrap.append(el('span', { className: 'lbl', textContent: 'Fond bitmap (optionnel)' }));
+  const imp = el('input', { type: 'file', accept: 'image/*' });
+  imp.onchange = () => importHiresImage(imp.files[0], h);
+  const bgRow = el('div', { className: 'seg-row' }, [imp]);
+  if (h.background) {
+    bgRow.append(el('span', { className: 'hint', textContent: 'fond présent (' + b64ToBytes(h.background).length + ' o)' }));
+    const rmbg = el('button', { className: 'del', textContent: 'supprimer le fond' });
+    rmbg.onclick = () => { delete h.background; renderForm(); refreshPreview(); };
+    bgRow.append(rmbg);
+  }
+  wrap.append(bgRow);
+  wrap.append(el('p', { className: 'hint', textContent: 'Aperçu monochrome (encre blanche) ; les couleurs ink/paper sont rendues sur le terminal, pas encore dans l\'aperçu.' }));
+
+  const rm = el('button', { className: 'del', textContent: 'supprimer la page graphique' });
+  rm.onclick = () => { delete p.hires; p.lines = p.lines || []; p.entries = p.entries || []; renderForm(); refreshPreview(); renderPageList(); };
+  wrap.append(rm);
+  return wrap;
+}
+
+// mkBtn : petit bouton optionnellement désactivé (utilitaire pour les contrôles).
+function mkBtn(label, disabled, onclick, cls) {
+  const b = el('button', { textContent: label, disabled: !!disabled });
+  if (cls) b.className = cls;
+  b.onclick = onclick;
+  return b;
+}
+
+// importHiresImage : charge une image, la réduit en 240×200 et la seuille en 1 bit
+// (luminance) pour produire le buffer VRAM HIRES (octets bit6 + 6 pixels).
+function importHiresImage(file, h) {
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas'); c.width = HIW; c.height = HIH;
+    const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, HIW, HIH);
+    x.drawImage(img, 0, 0, HIW, HIH);
+    const d = x.getImageData(0, 0, HIW, HIH).data;
+    const bytes = new Uint8Array(40 * HIH);
+    for (let y = 0; y < HIH; y++) for (let bx = 0; bx < 40; bx++) {
+      let b = 0x40; // bit6 = octet pixel
+      for (let bit = 0; bit < 6; bit++) {
+        const px = bx * 6 + bit, o = (y * HIW + px) * 4;
+        if ((d[o] + d[o + 1] + d[o + 2]) / 3 >= 128) b |= (1 << (5 - bit));
+      }
+      bytes[y * 40 + bx] = b;
+    }
+    h.background = bytesToB64(bytes);
+    URL.revokeObjectURL(img.src);
+    renderForm(); refreshPreview();
+    setStatus('image importée en fond HIRES', 'ok');
+  };
+  img.src = URL.createObjectURL(file);
+}
+
+// --- aperçu HIRES : rastériseur JS (miroir du firmware client/hires.s) ---
+function hiSet(px, x, y) { x |= 0; y |= 0; if (x >= 0 && x < HIW && y >= 0 && y < HIH) px[y * HIW + x] = 1; }
+function hiLine(px, x0, y0, x1, y1) {
+  x0 |= 0; y0 |= 0; x1 |= 0; y1 |= 0;
+  const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+  for (;;) { hiSet(px, x0, y0); if (x0 === x1 && y0 === y1) break; const e2 = 2 * err; if (e2 > -dy) { err -= dy; x0 += sx; } if (e2 < dx) { err += dx; y0 += sy; } }
+}
+function hiBox(px, x0, y0, x1, y1) { hiLine(px, x0, y0, x1, y0); hiLine(px, x1, y0, x1, y1); hiLine(px, x1, y1, x0, y1); hiLine(px, x0, y1, x0, y0); }
+function hiFillBox(px, x0, y0, x1, y1) { const a = Math.min(y0, y1), b = Math.max(y0, y1); for (let y = a; y <= b; y++) hiLine(px, x0, y, x1, y); }
+function hiCircle(px, cx, cy, r) {
+  if (r <= 0) return;
+  let x = r, y = 0, err = 1 - r;
+  while (x >= y) {
+    for (const o of [[x, y], [-x, y], [x, -y], [-x, -y], [y, x], [-y, x], [y, -x], [-y, -x]]) hiSet(px, cx + o[0], cy + o[1]);
+    y++; if (err <= 0) err += 2 * y + 1; else { x--; err += 2 * (y - x) + 1; }
+  }
+}
+function hiChar(px, x, y, code) {
+  const f = window.ORIC_CHARSET; if (!f) return;
+  const idx = code & 0x7F; if (idx < 0x20 || idx > 0x7F) return;
+  const base = (idx - 0x20) * 8;
+  for (let row = 0; row < 8; row++) { const g = f[base + row] || 0; for (let bit = 0; bit < 6; bit++) if (g & (1 << (5 - bit))) hiSet(px, x + bit, y + row); }
+}
+
+// renderHiresPreview : exécute fond bitmap + primitives dans un buffer 240×200 puis
+// le peint sur le canvas d'aperçu (240×224, les 24 px du bas restent noirs).
+function renderHiresPreview(p) {
+  const cv = $('oric-screen'); if (!cv || !cv.getContext) return;
+  const px = new Uint8Array(HIW * HIH);
+  const h = p.hires || {};
+  if (h.background) {
+    const by = b64ToBytes(h.background);
+    for (let y = 0; y < HIH; y++) for (let bx = 0; bx < 40; bx++) {
+      const b = by[y * 40 + bx] || 0; if ((b & 0x60) === 0) continue; // attribut → ignoré (mono)
+      for (let bit = 0; bit < 6; bit++) if (b & (1 << (5 - bit))) px[y * HIW + bx * 6 + bit] = 1;
+    }
+  }
+  let penx = 0, peny = 0;
+  for (const op of h.draw || []) {
+    const x = op.x | 0, y = op.y | 0;
+    switch (op.op) {
+      case 'curset': penx = x; peny = y; break;
+      case 'point': penx = x; peny = y; hiSet(px, x, y); break;
+      case 'line': hiLine(px, penx, peny, x, y); penx = x; peny = y; break;
+      case 'box': hiBox(px, penx, peny, x, y); penx = x; peny = y; break;
+      case 'fillbox': hiFillBox(px, penx, peny, x, y); penx = x; peny = y; break;
+      case 'circle': hiCircle(px, penx, peny, op.r | 0); break;
+      case 'char': hiChar(px, x, y, (op.ch || ' ').charCodeAt(0)); break;
+      default: break; // ink/paper : monochrome
+    }
+  }
+  const ctx = cv.getContext('2d');
+  const img = ctx.createImageData(HIW, 224);
+  for (let i = 0; i < HIW * 224; i++) { const on = i < HIW * HIH ? px[i] : 0; const o = i * 4; img.data[o] = img.data[o + 1] = img.data[o + 2] = on ? 0xee : 0; img.data[o + 3] = 255; }
+  ctx.putImageData(img, 0, 0);
 }
 
 // --- init ---
