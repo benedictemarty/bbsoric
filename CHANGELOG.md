@@ -6,6 +6,19 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (HIRES pages — ink colour, 27/06/2026)
+- **HIRES drawing is now in colour.** The `ink` primitive sets the colour of the
+  following shapes; the terminal renders it the Oric way — a **per-line ink serial
+  attribute** placed at **column 0** of each drawn row. This carries the authentic
+  hardware behaviour: the colour spans the whole row (two inks on one row *clash*,
+  last wins) and the first cell (x 0–5) of a coloured row is spent on the attribute.
+  With **no `ink` op** the rendering stays **monochrome** (white, column 0 free) — no
+  regression to existing pages. `paper` is not rendered yet (black background).
+- **Studio preview colourised** (per-pixel approximation of the per-line Oric attribute).
+- **Validated in `oric1-emu`**: the demo now renders the cyan frame, red diagonals,
+  yellow/red circle (visible clash) and white `ORIC` text
+  (`docs/img/hires-demo-emu.png`). `go test ./...` green. Docs `docs/hires.md`.
+
 ### Added (HIRES pages — clean TEXT-mode return, 27/06/2026)
 - **Leaving a HIRES page back to text now works.** New serial command **`1F FB`**
   (return to TEXT): the server emits it (tracked by a per-session flag in

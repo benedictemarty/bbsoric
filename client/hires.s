@@ -56,6 +56,7 @@ hcharrow: .byt 0           ; ligne (0-7) du glyphe en cours
 hcharcol: .byt 0           ; colonne (0-5) du glyphe en cours
 hcharbits: .byt 0          ; octet de police de la ligne courante
 hcsaved:  .byt 0           ; 1 = charset deja sauvegarde en $9800
+hcolor:   .byt 0           ; 1 = mode couleur actif (attribut d'encre par ligne)
 
 ; ---------------------------------------------------------------------------
 ;  hires_feed - consomme un octet (A) du flux HIRES selon hstate.
@@ -162,6 +163,8 @@ hf_ignore:
 hf_ink:
         and #7
         sta hink
+        lda #1
+        sta hcolor               ; passe en mode couleur (attribut d'encre par ligne)
         jmp hf_reset_state
 hf_paper:
         ; PAPER non gere finement (HIRES monochrome pour l'instant)  - ignore
@@ -351,12 +354,13 @@ hon_btm:
         ; amorce la bascule  - attribut video HIRES (0x1E) en haut de l'ecran texte
         lda #$1E
         sta SCREEN               ; $BB80  - decode au balayage  vers  vid_mode HIRES
-        ; crayon a l'origine
+        ; crayon a l'origine + reinitialise le mode couleur (monochrome par defaut)
         lda #0
         sta hpenx
         sta hpeny
+        sta hcolor               ; pas de couleur tant qu'aucun op ink
         lda #7
-        sta hink                 ; encre par defaut = blanc (non utilise encore)
+        sta hink                 ; encre par defaut = blanc
         rts
 
 ; ---------------------------------------------------------------------------
@@ -474,6 +478,17 @@ setpixel_xy:
         clc
         adc #>HVRAM
         sta HPTR+1
+        ; Mode couleur. Pose l'attribut d'encre (hink, 0 a 7) en col 0 de la ligne
+        ; (HPTR = debut de ligne). La cellule col 0 (x 0 a 5) devient l'attribut, donc
+        ; les pixels x inf 6 sont perdus ; toute la ligne s'affiche dans l'encre.
+        lda hcolor
+        beq sp_nocolor
+        lda hink
+        ldy #0
+        sta (HPTR),y
+        cpx #6
+        bcc sp_ret               ; pixel dans la cellule attribut col 0, ignore
+sp_nocolor:
         ; + X/6 (octet dans la ligne) ; reste = X mod 6 dans htmp
         txa
         jsr div6                 ; A = X/6, htmp = X mod 6

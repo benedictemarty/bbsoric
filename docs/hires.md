@@ -121,10 +121,22 @@ un drapeau de session et n'émet `1F FB` que si la page précédente était grap
 
 *Accueil texte ré-affiché proprement après une page HIRES + une touche.*
 
+### Couleur
+
+L'op **`ink`** colore les primitives suivantes. Sur Oric, la couleur HIRES vient d'un
+**attribut sériel par ligne** : le terminal pose l'octet d'encre en **colonne 0** de
+chaque ligne dessinée. Conséquences (propres au matériel) :
+
+- la couleur **déborde sur toute la ligne** (deux primitives de couleurs différentes
+  sur une même ligne « clashent » — la dernière gagne) ;
+- la **1re cellule** (x 0 à 5) de chaque ligne colorée est **sacrifiée** à l'attribut.
+
+Sans aucun op `ink`, le rendu reste **monochrome** (encre blanche, colonne 0 libre).
+`paper` n'est pas encore rendu (fond noir). L'aperçu studio reproduit la couleur
+(approximation per-pixel, plus fine que le per-ligne réel de l'Oric).
+
 ### Limites connues
 
-- **Couleur** : le rendu est monochrome (encre blanche) ; `ink`/`paper` ne posent pas
-  encore d'attributs sériels dans le bitmap (incrément ultérieur).
 - **Contrôle de flux** : un `blit` volumineux peut saturer le FIFO série du terminal
   (même classe que le défaut RX #1 de `docs/client-review.md`) — réservé aux fonds
   bien compressibles ; un transfert XMODEM-flow-controllé est la piste pour les

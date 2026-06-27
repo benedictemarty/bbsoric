@@ -89,7 +89,10 @@
 - [x] **Clean TEXT-return** (27/06): `1F FB` command — server emits it (session flag)
   before a text page following a HIRES one; terminal restores charset (`$9800`→`$B400`),
   TEXT video attribute and clears the screen. Validated in `oric1-emu` + integration test.
-- [ ] **Later**: HIRES ink/paper colour, flow-controlled bitmap transfer (vs raw blit),
+- [x] **HIRES ink colour** (27/06): `ink` op now coloured — the terminal places a
+  per-line ink attribute at column 0 (authentic Oric attribute clash); monochrome
+  unchanged when no `ink` op. Studio preview colourised. Validated in `oric1-emu`.
+- [ ] **Later**: HIRES `paper` colour, flow-controlled bitmap transfer (vs raw blit),
   differential HIRES buffer for animation.
 
 ## Sprint 8 — Close out file transfer + news — 🎯 in progress (27/06/2026)

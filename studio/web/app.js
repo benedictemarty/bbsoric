@@ -1145,7 +1145,7 @@ function hiresEditor(p) {
     bgRow.append(rmbg);
   }
   wrap.append(bgRow);
-  wrap.append(el('p', { className: 'hint', textContent: 'Aperçu monochrome (encre blanche) ; les couleurs ink/paper sont rendues sur le terminal, pas encore dans l\'aperçu.' }));
+  wrap.append(el('p', { className: 'hint', textContent: 'L\'op « ink » colore les primitives suivantes (sur Oric : un attribut par ligne, donc la couleur déborde sur toute la ligne et sacrifie la 1re cellule).' }));
 
   const rm = el('button', { className: 'del', textContent: 'supprimer la page graphique' });
   rm.onclick = () => { delete p.hires; p.lines = p.lines || []; p.entries = p.entries || []; renderForm(); refreshPreview(); renderPageList(); };
@@ -1189,7 +1189,9 @@ function importHiresImage(file, h) {
 }
 
 // --- aperçu HIRES : rastériseur JS (miroir du firmware client/hires.s) ---
-function hiSet(px, x, y) { x |= 0; y |= 0; if (x >= 0 && x < HIW && y >= 0 && y < HIH) px[y * HIW + x] = 1; }
+// hiInk : encre courante (0-7) ; un pixel allumé stocke (encre+1), 0 = éteint.
+let hiInk = 7;
+function hiSet(px, x, y) { x |= 0; y |= 0; if (x >= 0 && x < HIW && y >= 0 && y < HIH) px[y * HIW + x] = hiInk + 1; }
 function hiLine(px, x0, y0, x1, y1) {
   x0 |= 0; y0 |= 0; x1 |= 0; y1 |= 0;
   const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
@@ -1219,17 +1221,19 @@ function renderHiresPreview(p) {
   const cv = $('oric-screen'); if (!cv || !cv.getContext) return;
   const px = new Uint8Array(HIW * HIH);
   const h = p.hires || {};
+  hiInk = 7; // encre par défaut = blanc
   if (h.background) {
     const by = b64ToBytes(h.background);
     for (let y = 0; y < HIH; y++) for (let bx = 0; bx < 40; bx++) {
-      const b = by[y * 40 + bx] || 0; if ((b & 0x60) === 0) continue; // attribut → ignoré (mono)
-      for (let bit = 0; bit < 6; bit++) if (b & (1 << (5 - bit))) px[y * HIW + bx * 6 + bit] = 1;
+      const b = by[y * 40 + bx] || 0; if ((b & 0x60) === 0) continue; // attribut → ignoré
+      for (let bit = 0; bit < 6; bit++) if (b & (1 << (5 - bit))) px[y * HIW + bx * 6 + bit] = 8; // blanc
     }
   }
   let penx = 0, peny = 0;
   for (const op of h.draw || []) {
     const x = op.x | 0, y = op.y | 0;
     switch (op.op) {
+      case 'ink': hiInk = (op.c | 0) & 7; break;
       case 'curset': penx = x; peny = y; break;
       case 'point': penx = x; peny = y; hiSet(px, x, y); break;
       case 'line': hiLine(px, penx, peny, x, y); penx = x; peny = y; break;
@@ -1237,12 +1241,16 @@ function renderHiresPreview(p) {
       case 'fillbox': hiFillBox(px, penx, peny, x, y); penx = x; peny = y; break;
       case 'circle': hiCircle(px, penx, peny, op.r | 0); break;
       case 'char': hiChar(px, x, y, (op.ch || ' ').charCodeAt(0)); break;
-      default: break; // ink/paper : monochrome
+      default: break; // paper : non rendu dans l'aperçu
     }
   }
   const ctx = cv.getContext('2d');
   const img = ctx.createImageData(HIW, 224);
-  for (let i = 0; i < HIW * 224; i++) { const on = i < HIW * HIH ? px[i] : 0; const o = i * 4; img.data[o] = img.data[o + 1] = img.data[o + 2] = on ? 0xee : 0; img.data[o + 3] = 255; }
+  for (let i = 0; i < HIW * 224; i++) {
+    const v = i < HIW * HIH ? px[i] : 0;            // 0 = éteint, sinon encre+1
+    const c = v ? PAL[(v - 1) & 7] : [0, 0, 0];
+    const o = i * 4; img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255;
+  }
   ctx.putImageData(img, 0, 0);
 }
 
