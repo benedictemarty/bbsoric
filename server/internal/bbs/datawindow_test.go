@@ -91,7 +91,7 @@ func TestDataWindowGrille(t *testing.T) {
 	if !contains(out, "2 enreg") {
 		t.Errorf("total attendu 2 ; vu : %q", out)
 	}
-	if !contains(out, "F=filtre") {
+	if !contains(out, "V=fiche") {
 		t.Errorf("légende absente ; vu : %q", out)
 	}
 }
@@ -142,6 +142,31 @@ func TestDataWindowCreer(t *testing.T) {
 	out, ok = readFor(t, r, conn, "3 enreg", time.Second)
 	if !ok {
 		t.Fatalf("total attendu 3 après création ; vu : %q", out)
+	}
+}
+
+func TestDataWindowTri(t *testing.T) {
+	addr, stop := startBBSData(t, dwSiteJSON)
+	defer stop()
+	conn, r := enterAsGuest(t, addr)
+	defer conn.Close()
+
+	conn.Write([]byte("2"))
+	readFor(t, r, conn, "Page 1/1", time.Second)
+	// 1er T : Nom ASC -> libellé "tri Nom+".
+	conn.Write([]byte("T"))
+	if out, ok := readFor(t, r, conn, "tri Nom+", time.Second); !ok {
+		t.Fatalf("tri ASC non affiché ; vu : %q", out)
+	}
+	// 2e T : Nom DESC -> "tri Nom-" et Bob (Paris) passe avant Alice.
+	conn.Write([]byte("T"))
+	out, ok := readFor(t, r, conn, "tri Nom-", time.Second)
+	if !ok {
+		t.Fatalf("tri DESC non affiché ; vu : %q", out)
+	}
+	// En DESC, Bob est sélectionné (inverse) et Alice redevient lisible.
+	if !contains(out, "Alice") {
+		t.Errorf("Alice devrait être lisible en tri DESC ; vu : %q", out)
 	}
 }
 

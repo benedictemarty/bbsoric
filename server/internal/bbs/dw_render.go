@@ -82,7 +82,7 @@ func putLigne(scr *oascii.Screen, row int, ink oascii.Color, inverse bool, texte
 //   - page,total: pagination ; parPage = taille de page
 //   - filtre    : filtre LIKE courant (affiché s'il est posé)
 func renderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDonnees,
-	rows []map[string]string, sel, page, parPage, total int, filtre string) {
+	rows []map[string]string, sel, page, parPage, total int, filtre, triLabel string) {
 
 	scr.Clear()
 	inkEntete := content.Ink(dw.CouleurEntete)
@@ -127,6 +127,9 @@ func renderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 		nbPages = 1
 	}
 	pied := fmt.Sprintf(" Page %d/%d  %d enreg.", page, nbPages, total)
+	if triLabel != "" {
+		pied += "  " + triLabel
+	}
 	putLigne(scr, gridFooterRow, oascii.Green, false, cell(pied, oascii.Cols-gridContentX))
 
 	// Légende des touches.
@@ -134,6 +137,6 @@ func renderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 	if dw.Editable {
 		legende += " N/E/D"
 	}
-	legende += " F=filtre Q"
+	legende += " F/T Q"
 	putLigne(scr, gridLegendRow, oascii.Cyan, false, cell(legende, oascii.Cols-gridContentX))
 }

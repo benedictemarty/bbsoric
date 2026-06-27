@@ -102,8 +102,10 @@
   grid applet on the `oascii.Screen` diff buffer (inverse selection, `+/- S/R V N/E/D
   F/C Q`), `-data` flag. Engine/content/integration tests + driver smoke. Docs
   `docs/datawindow.md`, ADR-0004, demo `docs/examples/datawindow-demo.json`.)*
-- [ ] **H2** (5) As an editor, I want to **manage sources and data from the studio**
+- [~] **H2** (5) As an editor, I want to **manage sources and data from the studio**
   (Forge), and interactive column sort / prefix search / REST sources (telenet parity).
+  *(Interactive column sort done 27/06 — key `T`. Remaining: studio editor, prefix
+  search, REST sources.)*
 
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.

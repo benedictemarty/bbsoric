@@ -6,6 +6,12 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (DataWindow — interactive column sort, 27/06/2026)
+- **Interactive sort** in the grid: key `T` cycles the sort column (default → col 1
+  ASC → DESC → col 2 ASC → …), using the engine's `tri` parameter; the current sort
+  is shown in the footer (`tri <col>+/-`). A sort triggers a full redraw (it reorders
+  most rows). Legend updated to `F/T`. Integration test covers it. Docs updated.
+
 ### Added (DataWindow — typed data grids with SQLite + CRUD, 27/06/2026)
 - **New « DataWindow » subsystem** (notion ported from the telenet server): typed
   *data sources* (SQLite tables) presented to the Oric user as a **paginated grid**

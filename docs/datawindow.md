@@ -70,6 +70,7 @@ pagination et légende des touches.*
 | `S` / `R` | page suivante / précédente |
 | `V` | fiche détail de la ligne sélectionnée |
 | `F` / `C` | poser un filtre LIKE / l'effacer |
+| `T` | cycler le tri : défaut → colonne 1 ASC → DESC → colonne 2 ASC → … (libellé au pied) |
 | `N` / `E` / `D` | créer / éditer / supprimer (si `editable` **et** session identifiée) |
 | `Q` ou ESC | quitter la grille |
 

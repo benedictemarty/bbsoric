@@ -42,15 +42,17 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 	parPage := gridLignesMax(dw)
 	page, sel := 1, 0
 	filtre := ""
+	triEtat := 0 // 0 = tri par défaut ; sinon paires (colonne, ASC/DESC) cyclées par T
 	var rows []map[string]string
 	var total int
 
 	load := func() {
+		tri := triString(dw, triEtat)
 		var err error
-		rows, total, err = eng.Lister(src, filtre, "", page, parPage)
+		rows, total, err = eng.Lister(src, filtre, tri, page, parPage)
 		if err == nil && len(rows) == 0 && total > 0 && page > 1 {
 			page = 1
-			rows, total, err = eng.Lister(src, filtre, "", page, parPage)
+			rows, total, err = eng.Lister(src, filtre, tri, page, parPage)
 		}
 		if err != nil {
 			rows, total = nil, 0
@@ -70,7 +72,7 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 	}
 	scr := oascii.NewScreen()
 	draw := func() bool {
-		renderGrid(scr, dw, src, rows, sel, page, parPage, total, filtre)
+		renderGrid(scr, dw, src, rows, sel, page, parPage, total, filtre, triLabel(src, dw, triEtat))
 		return s.Write(string(scr.Render())) == nil
 	}
 	// Recharge complète de l'écran (après une saisie plein écran qui a brouillé
@@ -149,6 +151,13 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 				if !redrawAll() {
 					return Outcome{Quit: true}
 				}
+			}
+		case 'T', 't': // cycler le tri : défaut → col0 ASC → col0 DESC → col1 ASC …
+			triEtat = (triEtat + 1) % (2*len(dw.ColonnesAffichees) + 1)
+			page, sel = 1, 0
+			load()
+			if !redrawAll() { // un tri réordonne la plupart des lignes
+				return Outcome{Quit: true}
 			}
 		case 'V', 'v': // fiche détail
 			if len(rows) > 0 {
@@ -328,6 +337,47 @@ func dwSupprimer(s *server.Session, eng *datawindow.Engine, src content.SourceDo
 		writeErr(s, err.Error())
 		anyKey(s)
 	}
+}
+
+// triEtatColDir décode l'état de tri en (index de colonne, descendant). Renvoie
+// ok=false pour l'état 0 (tri par défaut de la source).
+func triEtatColDir(dw *content.DataWindow, etat int) (idx int, desc, ok bool) {
+	if etat <= 0 || len(dw.ColonnesAffichees) == 0 {
+		return 0, false, false
+	}
+	idx = (etat - 1) / 2
+	desc = (etat-1)%2 == 1
+	return idx, desc, true
+}
+
+// triString construit la clause de tri (« colonne ASC|DESC ») pour le moteur.
+func triString(dw *content.DataWindow, etat int) string {
+	idx, desc, ok := triEtatColDir(dw, etat)
+	if !ok {
+		return "" // le moteur applique TriDefaut
+	}
+	dir := "ASC"
+	if desc {
+		dir = "DESC"
+	}
+	return dw.ColonnesAffichees[idx] + " " + dir
+}
+
+// triLabel renvoie un libellé court du tri courant pour le pied de grille.
+func triLabel(src content.SourceDonnees, dw *content.DataWindow, etat int) string {
+	idx, desc, ok := triEtatColDir(dw, etat)
+	if !ok {
+		return ""
+	}
+	col := dw.ColonnesAffichees[idx]
+	if cd, okc := src.Colonnes[col]; okc && cd.Libelle != "" {
+		col = cd.Libelle
+	}
+	fleche := "+"
+	if desc {
+		fleche = "-"
+	}
+	return "tri " + col + fleche
 }
 
 // dwClePrimaire renvoie le nom de la colonne clé primaire (ou "id").
