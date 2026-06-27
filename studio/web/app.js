@@ -132,8 +132,11 @@ function renderPageList() {
     const specs = (p.entries || []).filter(e => SPEC_LABEL[e.target]).map(e => SPEC_LABEL[e.target]);
     const apps = (p.entries || []).filter(entryIsApplet).map(e => '▶' + (e.applet || '?'));
     if (p.applet !== undefined) apps.push('▶' + (p.applet || '?'));
-    const kind = (p.applet !== undefined) ? 'applet' : (p.raw ? 'écran' : ((p.entries && p.entries.length) ? 'menu' : 'page'));
-    const extra = [...apps, ...specs].join('  ');
+    const dw = p.datawindow ? ['▦ ' + (p.datawindow.source || '?')] : [];
+    const kind = (p.datawindow !== undefined) ? 'grille'
+      : (p.applet !== undefined) ? 'applet'
+      : (p.raw ? 'écran' : ((p.entries && p.entries.length) ? 'menu' : 'page'));
+    const extra = [...apps, ...dw, ...specs].join('  ');
     const sub = kind + (extra ? '   ' + extra : '');
     const cls = 'node' + (id === current ? ' sel' : '') + (id === start ? ' start' : '');
     nodes += `<g class="${cls}" data-id="${esc(id)}" transform="translate(${a.x},${a.y})">`

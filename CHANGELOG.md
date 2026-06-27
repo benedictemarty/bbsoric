@@ -6,6 +6,14 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (DataWindow — studio awareness + round-trip guard, 27/06/2026)
+- **The Forge studio now recognizes DataWindow pages**: the page map labels them
+  as `grille` and shows the bound source (`▦ <source>`). The studio already
+  **round-trips** `sources_donnees` and per-page `datawindow` losslessly (it edits
+  the full JSON object), and `content.Parse` validates them — covered now by a
+  **regression test** (`studio/internal/store`: save → load → fields preserved).
+  Full structured source/data editing in the studio remains a later increment.
+
 ### Added (DataWindow — REST API sources, 27/06/2026)
 - **A DataWindow source can be backed by a REST endpoint** (`type_source: "api"`)
   instead of SQLite — **read-only** live data (weather, news, …), enabling the

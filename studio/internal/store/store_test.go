@@ -33,6 +33,32 @@ func TestListLoadSave(t *testing.T) {
 	}
 }
 
+// dwSite : un site DataWindow (source + page grille) doit passer la validation
+// du studio et round-tripper sans perte (régression : ne pas droper sources/datawindow).
+const dwSite = `{"start":"g","sources_donnees":{"rep":{"table":"rep","colonnes":{"id":{"type":"INTEGER","cle_primaire":true,"auto_increment":true},"nom":{"type":"TEXT","requis":true}}}},"pages":{"g":{"title":"GRILLE","datawindow":{"source":"rep","colonnes_affichees":["nom"],"largeurs":[20]}}}}`
+
+func TestSaveLoadDataWindowRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	s := New(dir)
+	if err := s.Save("dw.json", []byte(dwSite)); err != nil {
+		t.Fatalf("Save site DataWindow refusé : %v", err)
+	}
+	data, err := s.Load("dw.json")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	site, err := content.Parse(data)
+	if err != nil {
+		t.Fatalf("le site DataWindow rechargé doit être valide : %v", err)
+	}
+	if _, ok := site.SourcesDonnees["rep"]; !ok {
+		t.Error("la source 'rep' a été perdue au round-trip")
+	}
+	if p := site.Pages["g"]; p == nil || p.DataWindow == nil || p.DataWindow.Source != "rep" {
+		t.Errorf("le descripteur datawindow de la page 'g' a été perdu : %+v", site.Pages["g"])
+	}
+}
+
 func TestSaveValidatesBeforeWrite(t *testing.T) {
 	dir := t.TempDir()
 	s := New(dir)
