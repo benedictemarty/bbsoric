@@ -86,6 +86,17 @@ La page est atteinte par une entrée `{ "target": "grille" }` ou en page de dép
 6 enregistrements, la ligne sélectionnée (« Bob Durand ») en vidéo inverse, pied de
 pagination et légende des touches.*
 
+Interactions pilotées de bout en bout dans l'émulateur (saisie manuelle `127.0.0.1`
+→ modem émulé → BBS local, via `scripts/test-emulateur-grille.sh`) :
+
+| Tri par colonne (`T`) | Fiche détail (`V`) |
+|---|---|
+| ![Tri](img/datawindow-grid-emu-tri.png) | ![Fiche](img/datawindow-grid-emu-fiche.png) |
+
+*À gauche : après `T`, le pied indique `tri Nom+` et les lignes sont triées par Nom.
+À droite : après `V`, la carte `FICHE` affiche l'enregistrement sélectionné (le rendu
+différentiel laisse apparaître le pied de la grille au-dessus).*
+
 ## Navigation (clavier Oric, sans flèches)
 
 | Touche | Action |

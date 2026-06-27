@@ -20,8 +20,10 @@ versioning [SemVer](https://semver.org/lang/en/).
   grid → selection). Records the `--type-keys` timing trick the terminal needs:
   `input_line` does one `get_key` + `wait_release` per char and `--type-keys` *holds*
   a key until the next event, so each character — and the Enter especially — needs a
-  `\p` pause to release. Capture archived as `docs/img/datawindow-grid-emu.png`. Docs
-  `docs/client-review.md` updated (resolved #5c, deferred #12 partly addressed).
+  `\p` pause to release. Captures archived: `docs/img/datawindow-grid-emu.png` (grid),
+  plus `…-tri.png` (sort `T` → footer `tri Nom+`) and `…-fiche.png` (detail `V` card),
+  driven end-to-end through the emulator. Docs `docs/client-review.md` updated (resolved
+  #5c, deferred #12 partly addressed) and `docs/datawindow.md` (interaction captures).
 
 ### Added (DataWindow — full structured editing in the Forge studio, 27/06/2026)
 - **The Forge studio now edits the whole DataWindow model visually**, no more JSON
