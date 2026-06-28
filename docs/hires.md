@@ -96,7 +96,10 @@ L'interpréteur HIRES vit dans `client/hires.s` (concaténé par `client/build.s
 - **primitives** en 6502 *autonome* (sans ROM BASIC) : `setpixel` (`$A000 + y*40 +
   x/6`, bit `5 - x%6`), Bresenham x/y-major (16 bits), box/fillbox, cercle midpoint,
   `char` (glyphe 6×8 lu dans le charset, sauvegardé en `$9800` car `$A000` recouvre
-  `$B400`) ;
+  `$B400`) ; `fillbox` ordonne ses bornes dans des copies (`fbx`/`fbxe`) sans muter la
+  cible `hx1` réutilisée à chaque ligne, et `circle` clampe les symétriques qui
+  débordent l'octet hors champ (helpers `cp_x*`/`cp_y*`) pour éviter les points
+  parasites par repli 8 bits ;
 - **blit bitmap** : décodeur RLE écrivant les octets décodés en `$A000+offset`.
 
 Validé visuellement dans `oric1-emu` — terminal Oric réel → modem → BBS local

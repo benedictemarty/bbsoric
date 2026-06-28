@@ -780,26 +780,31 @@ fb_done:
 
 fbcur:    .byt 0
 
-; fb_hline  - ligne horizontale (hx0,hy0) vers (hx1,hy0)
+; fb_hline  - ligne horizontale (hx0,hy0) vers (hx1,hy0). N'ECRASE PAS hx0/hx1 :
+; hires_fillbox reutilise hx1 (x cible) a chaque ligne, donc on copie les bornes
+; dans fbx (debut) / fbxe (fin) au lieu d'echanger hx0/hx1 en place.
 fb_hline:
-        ; x de min(hx0,hx1) a max
+        ; fbx = min(hx0,hx1) ; fbxe = max(hx0,hx1)
         lda hx0
         cmp hx1
-        bcc fbh_ok
-        ; swap
-        ldx hx1
+        bcc fbh_asc              ; hx0  inf  hx1  vers  deja croissant
+        ; hx0 >= hx1 : debut = hx1, fin = hx0
+        lda hx1
+        sta fbx
         lda hx0
-        sta hx1
-        stx hx0
-fbh_ok:
+        sta fbxe
+        jmp fbh_loop
+fbh_asc:
         lda hx0
         sta fbx
+        lda hx1
+        sta fbxe
 fbh_loop:
         ldx fbx
         ldy hy0
         jsr setpixel_xy
         lda fbx
-        cmp hx1
+        cmp fbxe
         beq fbh_end
         inc fbx
         jmp fbh_loop
@@ -807,6 +812,7 @@ fbh_end:
         rts
 
 fbx:      .byt 0
+fbxe:     .byt 0
 
 ; ---------------------------------------------------------------------------
 ;  hires_circle - cercle de rayon har autour du crayon (midpoint, 8 octants).
@@ -865,90 +871,120 @@ hc_ret:
 hcx:      .byt 0
 hcy:      .byt 0
 
-; circ_points  - trace les 8 points symetriques (centre hpenx,hpeny ; off hcx,hcy)
+; circ_points  - trace les 8 points symetriques (centre hpenx,hpeny ; off hcx,hcy).
+; Les coordonnees cx+-x et cy+-y passent par cp_xp/cp_xm/cp_yp/cp_ym qui CLAMPENT
+; tout depassement 8 bits (cx-x negatif ou cx+x sup 255) vers une valeur hors
+; champ (240 ou 200) ; sinon le repli 8 bits ramene le point dans la zone visible
+; et echappe au clamp de setpixel_xy, dessinant un pixel parasite (et, en mode
+; couleur, un attribut d'encre) sur le bord oppose.
 circ_points:
         ; (cx+x, cy+y)
-        lda hpenx
-        clc
-        adc hcx
-        tax
-        lda hpeny
-        clc
-        adc hcy
+        lda hcx
+        jsr cp_xp
+        sta cptx
+        lda hcy
+        jsr cp_yp
         tay
+        ldx cptx
         jsr setpixel_xy
         ; (cx-x, cy+y)
-        lda hpenx
-        sec
-        sbc hcx
-        tax
-        lda hpeny
-        clc
-        adc hcy
+        lda hcx
+        jsr cp_xm
+        sta cptx
+        lda hcy
+        jsr cp_yp
         tay
+        ldx cptx
         jsr setpixel_xy
         ; (cx+x, cy-y)
-        lda hpenx
-        clc
-        adc hcx
-        tax
-        lda hpeny
-        sec
-        sbc hcy
+        lda hcx
+        jsr cp_xp
+        sta cptx
+        lda hcy
+        jsr cp_ym
         tay
+        ldx cptx
         jsr setpixel_xy
         ; (cx-x, cy-y)
-        lda hpenx
-        sec
-        sbc hcx
-        tax
-        lda hpeny
-        sec
-        sbc hcy
+        lda hcx
+        jsr cp_xm
+        sta cptx
+        lda hcy
+        jsr cp_ym
         tay
+        ldx cptx
         jsr setpixel_xy
         ; (cx+y, cy+x)
-        lda hpenx
-        clc
-        adc hcy
-        tax
-        lda hpeny
-        clc
-        adc hcx
+        lda hcy
+        jsr cp_xp
+        sta cptx
+        lda hcx
+        jsr cp_yp
         tay
+        ldx cptx
         jsr setpixel_xy
         ; (cx-y, cy+x)
-        lda hpenx
-        sec
-        sbc hcy
-        tax
-        lda hpeny
-        clc
-        adc hcx
+        lda hcy
+        jsr cp_xm
+        sta cptx
+        lda hcx
+        jsr cp_yp
         tay
+        ldx cptx
         jsr setpixel_xy
         ; (cx+y, cy-x)
-        lda hpenx
-        clc
-        adc hcy
-        tax
-        lda hpeny
-        sec
-        sbc hcx
+        lda hcy
+        jsr cp_xp
+        sta cptx
+        lda hcx
+        jsr cp_ym
         tay
+        ldx cptx
         jsr setpixel_xy
         ; (cx-y, cy-x)
+        lda hcy
+        jsr cp_xm
+        sta cptx
+        lda hcx
+        jsr cp_ym
+        tay
+        ldx cptx
+        jmp setpixel_xy
+
+; Helpers de clamp pour circ_points. A = offset en entree ; A = coordonnee en
+; sortie, ou 240 ou 200 (hors champ) si le calcul deborde de l'octet.
+cp_xp:                           ; A = hpenx + A (clampe #240 si overflow)
+        clc
+        adc hpenx
+        bcc cp_ret
+        lda #240
+        rts
+cp_xm:                           ; A = hpenx - A (clampe #240 si underflow)
+        sta cptmp
         lda hpenx
         sec
-        sbc hcy
-        tax
+        sbc cptmp
+        bcs cp_ret
+        lda #240
+cp_ret:
+        rts
+cp_yp:                           ; A = hpeny + A (clampe #200 si overflow)
+        clc
+        adc hpeny
+        bcc cp_ret
+        lda #200
+        rts
+cp_ym:                           ; A = hpeny - A (clampe #200 si underflow)
+        sta cptmp
         lda hpeny
         sec
-        sbc hcx
-        tay
-        jmp setpixel_xy
-hc_done2:
+        sbc cptmp
+        bcs cp_ret
+        lda #200
         rts
+
+cptx:     .byt 0
+cptmp:    .byt 0
 
 ; ---------------------------------------------------------------------------
 ;  hires_char - trace le glyphe hch (6x8) en (hx1,hy1), lu dans le charset ROM

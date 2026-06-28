@@ -6,6 +6,31 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Fixed (HIRES — revue qualité, 28/06/2026)
+- **`fillbox` ne dégénère plus en colonne d'1 pixel.** `fb_hline` (`client/hires.s`)
+  échangeait `hx0`/`hx1` **en place** pour ordonner les bornes ; comme `hires_fillbox`
+  réutilise `hx1` (x cible) à chaque ligne sans le recharger, dès la 2e ligne
+  `hx0 == hx1` et le rectangle se réduisait à sa 1re ligne + un trait vertical.
+  Déclenché quand le crayon était à droite de la cible (`curset 200,y` puis
+  `fillbox 10,…`). Les bornes sont désormais copiées dans `fbx`/`fbxe` sans muter
+  `hx0`/`hx1`.
+- **`circle` ne dessine plus de pixels parasites sur le bord opposé.** `circ_points`
+  calculait `cx±x` / `cy±y` en 8 bits ; un dépassement (`cx-x` négatif ou `cx+x` > 255)
+  se repliait dans la zone visible et échappait au clamp de `setpixel_xy`, traçant un
+  point fantôme (et, en mode couleur, un attribut d'encre) à l'opposé. Nouveaux helpers
+  `cp_xp`/`cp_xm`/`cp_yp`/`cp_ym` qui clampent tout débordement hors champ.
+- **Aperçu studio (`studio/web/app.js`)** : l'op `ink` ignore désormais une couleur
+  absente ou hors `0–7` (au lieu de basculer silencieusement en noir/blanc) ; commentaire
+  d'en-tête et hint mis à jour (l'aperçu est colorisé ; un tracé en encre 0 noir est
+  invisible sur le fond noir, `paper` non rendu).
+- Firmware réassemblé (`client/term.tap`), `go test ./...` vert.
+- **Validé visuellement dans `oric1-emu`** (`docs/img/hires-regress-emu.png`) : un
+  `fillbox` crayon-à-droite rend un rectangle plein (et non plus une ligne + un trait
+  d'1 px) et un `circle` débordant à gauche est clippé net sans point fantôme au bord
+  opposé.
+
+![Validation régression HIRES](img/hires-regress-emu.png)
+
 ### Added (HIRES pages — ink colour, 27/06/2026)
 - **HIRES drawing is now in colour.** The `ink` primitive sets the colour of the
   following shapes; the terminal renders it the Oric way — a **per-line ink serial

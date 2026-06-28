@@ -1054,8 +1054,9 @@ function dataWindowEditor(p) {
 // --- éditeur de page graphique HIRES (240×200) ---
 // Le JSON porte `hires` = { background?: base64(8000 octets VRAM), draw?: [HiresOp] }.
 // Primitives : curset/point/line/box/fillbox (X,Y), circle (R), char (X,Y,ch),
-// ink/paper (couleur Oric 0-7). L'aperçu est rastérisé EN JS (miroir du firmware),
-// monochrome (encre blanche) — la couleur per-attribut n'est pas encore rendue.
+// ink/paper (couleur Oric 0-7). L'aperçu est rastérisé EN JS (miroir du firmware) :
+// l'op « ink » colore les primitives suivantes (8 encres) ; sur Oric la couleur est
+// un attribut par ligne (cf. hint), l'aperçu l'applique pixel par pixel. paper non rendu.
 const HIRES_OPS = ['curset', 'point', 'line', 'box', 'fillbox', 'circle', 'char', 'ink', 'paper'];
 const ORIC_COLORS = ['noir', 'rouge', 'vert', 'jaune', 'bleu', 'magenta', 'cyan', 'blanc']; // index = n° Oric
 const HIW = 240, HIH = 200;
@@ -1145,7 +1146,7 @@ function hiresEditor(p) {
     bgRow.append(rmbg);
   }
   wrap.append(bgRow);
-  wrap.append(el('p', { className: 'hint', textContent: 'L\'op « ink » colore les primitives suivantes (sur Oric : un attribut par ligne, donc la couleur déborde sur toute la ligne et sacrifie la 1re cellule).' }));
+  wrap.append(el('p', { className: 'hint', textContent: 'L\'op « ink » colore les primitives suivantes (sur Oric : un attribut par ligne, donc la couleur déborde sur toute la ligne et sacrifie la 1re cellule). L\'aperçu a un fond noir (paper non rendu) : un tracé en encre 0 (noir) y est invisible.' }));
 
   const rm = el('button', { className: 'del', textContent: 'supprimer la page graphique' });
   rm.onclick = () => { delete p.hires; p.lines = p.lines || []; p.entries = p.entries || []; renderForm(); refreshPreview(); renderPageList(); };
@@ -1233,7 +1234,7 @@ function renderHiresPreview(p) {
   for (const op of h.draw || []) {
     const x = op.x | 0, y = op.y | 0;
     switch (op.op) {
-      case 'ink': hiInk = (op.c | 0) & 7; break;
+      case 'ink': if (typeof op.c === 'number' && op.c >= 0 && op.c <= 7) hiInk = op.c | 0; break; // c absent/hors 0-7 → encre inchangée
       case 'curset': penx = x; peny = y; break;
       case 'point': penx = x; peny = y; hiSet(px, x, y); break;
       case 'line': hiLine(px, penx, peny, x, y); penx = x; peny = y; break;
