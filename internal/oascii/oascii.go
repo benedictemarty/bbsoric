@@ -199,20 +199,33 @@ func (b *Builder) Text(s string) *Builder {
 	return b
 }
 
+// ReemitAttrs ré-émet sur b les attributs non-défaut fournis (l'ULA réinitialise
+// encre/fond/attributs au début de chaque ligne). Renvoie le nombre d'octets émis
+// (chacun occupe une case écran). Invariant unique partagé par le mode sticky
+// (Newline) et le repli du rendu (internal/render) — cf. S11.10.
+func (b *Builder) ReemitAttrs(ink, paper Color, blink, dbl, alt bool) int {
+	n := 0
+	if paper != Black {
+		b.Paper(paper)
+		n++
+	}
+	if blink || dbl || alt {
+		b.Attrs(blink, dbl, alt)
+		n++
+	}
+	if ink != White {
+		b.Ink(ink)
+		n++
+	}
+	return n
+}
+
 // Newline termine la ligne (CR LF). En mode sticky, ré-émet les attributs
 // courants non par défaut pour la ligne suivante.
 func (b *Builder) Newline() *Builder {
 	b.buf.WriteString("\r\n")
 	if b.sticky {
-		if b.ink != White {
-			b.buf.WriteByte(InkAttr(b.ink))
-		}
-		if b.paper != Black {
-			b.buf.WriteByte(PaperAttr(b.paper))
-		}
-		if b.blink || b.dbl || b.alt {
-			b.buf.WriteByte(TextAttr(b.blink, b.dbl, b.alt))
-		}
+		b.ReemitAttrs(b.ink, b.paper, b.blink, b.dbl, b.alt)
 	}
 	return b
 }

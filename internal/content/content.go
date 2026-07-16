@@ -20,8 +20,8 @@ const (
 
 // Site est l'ensemble du contenu navigable.
 type Site struct {
-	Start          string                   `json:"start"` // identifiant de la page de départ
-	Pages          map[string]*Page         `json:"pages"` // pages indexées par identifiant
+	Start          string                   `json:"start"`                     // identifiant de la page de départ
+	Pages          map[string]*Page         `json:"pages"`                     // pages indexées par identifiant
 	SourcesDonnees map[string]SourceDonnees `json:"sources_donnees,omitempty"` // tables DataWindow
 }
 
@@ -41,12 +41,19 @@ type Site struct {
 // Applet (optionnel, compat JSON écrit à la main) : à l'arrivée sur la page, on
 // lance l'applet nommé puis on va vers Next. Le studio ne crée plus de telles
 // pages — les applets se lancent via une entrée de menu (Entry.Applet).
+//
+// NB : un champ JSON "type" (ex. "menu"/"page"/"applet") apparaît dans beaucoup
+// de contenus et de fixtures ; c'est un INDICE DESCRIPTIF LISIBLE, sans champ Go
+// correspondant. Le moteur n'en dépend pas — le genre de page est déduit des
+// champs renseignés (Entries → menu, Applet, Form, DataWindow, Hires, sinon
+// contenu). Il est toléré et préservé au round-trip du studio (json.Indent), mais
+// jamais interprété (cf. S11.9).
 type Page struct {
-	Title   string  `json:"title"`
-	Lines   []Line  `json:"lines,omitempty"`   // texte (optionnel)
-	Entries []Entry `json:"entries,omitempty"` // choix (optionnel → menu)
-	Applet  string  `json:"applet,omitempty"`  // applet auto-lancé à l'arrivée (compat)
-	Next    string  `json:"next,omitempty"`    // page après succès de l'applet
+	Title      string      `json:"title"`
+	Lines      []Line      `json:"lines,omitempty"`      // texte (optionnel)
+	Entries    []Entry     `json:"entries,omitempty"`    // choix (optionnel → menu)
+	Applet     string      `json:"applet,omitempty"`     // applet auto-lancé à l'arrivée (compat)
+	Next       string      `json:"next,omitempty"`       // page après succès de l'applet
 	Raw        bool        `json:"raw,omitempty"`        // écran brut (rendu tel quel)
 	Screen     []byte      `json:"screen,omitempty"`     // écran brut : buffer 40×28 d'octets (base64 JSON)
 	Form       *Form       `json:"form,omitempty"`       // page de saisie déclarative (login/inscription)

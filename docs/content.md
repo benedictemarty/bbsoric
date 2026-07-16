@@ -28,7 +28,15 @@ of sessions in progress).
 
 ### The page (single type)
 A page has a **title** and, **optionally**, **text** (`lines`) and/or
-**choices** (`entries`):
+**choices** (`entries`).
+
+> A JSON `"type"` field (e.g. `"menu"`/`"page"`/`"applet"`) is often present in
+> content and fixtures: it is a **human-readable hint only**. There is no Go field
+> for it — the engine infers the page kind from which fields are set (`entries` →
+> menu, `applet`, `form`, `datawindow`, `hires`, otherwise content). It is tolerated
+> and preserved on studio round-trip, but never interpreted.
+
+
 - **with `entries`** → **interactive** screen: a key routes to the chosen entry;
   the optional text (`lines`) is displayed **above** the choices;
 - **without `entries`** → **content** screen: a key goes back

@@ -6,6 +6,21 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Changed (Sprint 11 slice 4 — hygiène, 16/07/2026)
+- **S11.9 — Champ JSON `"type"` clarifié.** Documenté (struct `content.Page` + `docs/content.md`)
+  comme un indice descriptif lisible, sans champ Go, jamais interprété (le genre de page est
+  déduit des champs renseignés) et préservé au round-trip du studio — plutôt que retiré de
+  quelques fixtures alors qu'il est utilisé partout.
+- **S11.10 — Invariant de ré-émission d'attributs unifié.** Nouvelle méthode
+  `oascii.Builder.ReemitAttrs` partagée par le mode sticky (`Newline`) et le repli du rendu
+  (`internal/render`, `reemitState`) — fin de la double implémentation. Centrage `render.center`
+  rendu rune-safe (largeur comptée en runes, pas en octets). Test `TestReemitAttrs` (couvre le
+  cas multi-attributs auparavant non testé).
+- **S11.11 — Nettoyages firmware Oric.** Commentaire trompeur corrigé dans `client/term.s`
+  (l'octet `$3A` envoyé est bien « : », séparateur hôte/port) ; bloc mort retiré dans
+  `client/hires.s` (`hires_fillbox` : `hy0` réassigné avant lecture + `lda hy1`/`sta hy1` no-op).
+  Firmware réassemblé (`make client`, `term.tap` régénéré, artefact gitignoré).
+
 ### Changed (Sprint 11 slice 3 — robustesse & tests, 16/07/2026)
 - **S11.6 — XMODEM durci et testé.** `internal/xmodem` distingue désormais un dépassement
   d'échéance (transitoire → ré-essai) d'une vraie erreur d'E/S (connexion fermée → remontée

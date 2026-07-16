@@ -5,6 +5,7 @@ package render
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/internal/oascii"
@@ -13,12 +14,14 @@ import (
 // rule trace une règle pleine largeur (40 colonnes).
 func rule() string { return strings.Repeat("=", oascii.Cols) }
 
-// center centre un texte sur 40 colonnes.
+// center centre un texte sur 40 colonnes. La largeur se compte en runes (et non
+// en octets) pour rester correct si le texte contient des caractères multi-octets.
 func center(text string) string {
-	if len(text) >= oascii.Cols {
+	w := utf8.RuneCountInString(text)
+	if w >= oascii.Cols {
 		return text
 	}
-	return strings.Repeat(" ", (oascii.Cols-len(text))/2) + text
+	return strings.Repeat(" ", (oascii.Cols-w)/2) + text
 }
 
 // styleState suit les attributs courants le long d'une ligne afin de n'émettre
@@ -61,21 +64,9 @@ func emitStyle(b *oascii.Builder, cur *styleState, st content.Style) int {
 
 // reemitState ré-émet les attributs non-défaut de st (l'ULA réinitialise au début
 // de chaque ligne). Renvoie le nombre de cases consommées. Sert au repli (wrap).
+// Délègue à l'invariant partagé oascii.ReemitAttrs (S11.10).
 func reemitState(b *oascii.Builder, st styleState) int {
-	n := 0
-	if st.paper != oascii.Black {
-		b.Paper(st.paper)
-		n++
-	}
-	if st.blink || st.dbl || st.alt {
-		b.Attrs(st.blink, st.dbl, st.alt)
-		n++
-	}
-	if st.ink != oascii.White {
-		b.Ink(st.ink)
-		n++
-	}
-	return n
+	return b.ReemitAttrs(st.ink, st.paper, st.blink, st.dbl, st.alt)
 }
 
 // emitChars écrit du texte (inverse = bit 7 par caractère).

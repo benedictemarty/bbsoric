@@ -161,16 +161,20 @@
   `TestHandleSaveInvalidReturns400`.)*
 
 ### Hygiene (low effort)
-- [ ] **I9** (1) As a dev, I want the **phantom `"type"` field removed** from `content` test
-  JSON (and documented), since `Page` has no such field and Go silently ignores it.
-  *(`content_test.go:18,22,55`, `store_test.go:18,33,54` vs `content.go:44-55`.)*
-- [ ] **I10** (1) As a dev, I want the **attribute re-emission invariant deduplicated** between
+- [x] **I9** (1) As a dev, I want the **phantom `"type"` field clarified**, since `Page` has no
+  such field and Go silently ignores it.
+  *(Done 16/07 — documented in `content.Page` + `docs/content.md` as a tolerated, preserved,
+  never-interpreted descriptive hint (page kind inferred from populated fields). Not removed:
+  it is used pervasively and preserved by the studio round-trip.)*
+- [x] **I10** (1) As a dev, I want the **attribute re-emission invariant deduplicated** between
   `oascii.Builder.Newline` (sticky) and `render.reemitState`, and centering made rune-safe.
-  *(`oascii.go:206-216` vs `render.go:64-79`; `render.center/rule` use byte `len`.)*
-- [ ] **I11** (1) As a dev, I want the **firmware minor cleanups**: fix the misleading
-  `term.s:274` comment (`" -"` — the byte actually sent is `:`/`$3A`), drop the dead
-  `hires.s:747-748` (`lda hy1`/`sta hy1`), and note the tight XMODEM buffer margin vs the
-  `$B800` charset in `xmodem.s`.
+  *(Done 16/07 — shared `oascii.Builder.ReemitAttrs`; `render.center` counts runes. Test
+  `TestReemitAttrs`.)*
+- [x] **I11** (1) As a dev, I want the **firmware minor cleanups**: fix the misleading
+  `term.s` comment (byte sent is `:`/`$3A`) and drop the dead `hires.s` block (`hy0` reassigned
+  before use + `lda hy1`/`sta hy1` no-op). *(Done 16/07 — reassembled via `make client`.)*
+  - Note: the tight XMODEM `$4000` buffer vs `$B800` charset margin is a **latent** concern,
+    left as a documented observation (no behaviour change) — see analysis of 16/07.
 
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.

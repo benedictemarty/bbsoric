@@ -95,7 +95,7 @@
 - [ ] **Later**: HIRES `paper` colour, flow-controlled bitmap transfer (vs raw blit),
   differential HIRES buffer for animation.
 
-## Sprint 11 — Code quality & hardening — 🎯 planned (16/07/2026)
+## Sprint 11 — Code quality & hardening — ✅ done (16/07/2026), sauf I2b (firmware, différé)
 > Decomposition of **Epic I** (`docs/agile/backlog.md`), issued from the full source
 > analysis of 16/07/2026. Ordered by value: real bugs first, then security, robustness,
 > hygiene. Each task cites the offending `file:line` and its acceptance test. DoD applies
@@ -140,16 +140,16 @@
   `readBody` errors → 400; invalid save → 400 (detail in body). Tests
   `TestMutatingEndpointsRequirePOST`, `TestHandleSaveInvalidReturns400`.
 
-### Slice 4 — Hygiene (I9, I10, I11)
-- [ ] **S11.10 — Remove phantom `"type"` field** (I9): drop `"type":…` from the `content`
-  test JSON (`content_test.go`, `store_test.go`) or add a real `Type` field if intended;
-  add a note in `docs/content.md`.
-- [ ] **S11.11 — Dedupe re-emit invariant + rune-safe centering** (I10): factor the
-  attribute re-emission shared by `oascii.Builder.Newline` (`oascii.go:206-216`) and
-  `render.reemitState` (`render.go:64-79`); make `render.center/rule` count runes.
-- [ ] **S11.12 — Firmware minor cleanups** (I11): fix the `term.s:274` comment (byte sent is
-  `:`/`$3A`, not `" -"`), remove dead `hires.s:747-748` (`lda hy1`/`sta hy1`), and add a
-  buffer-margin note in `xmodem.s` (`$4000` buffer vs `$B800` charset).
+### Slice 4 — Hygiene (I9, I10, I11) — ✅ done (16/07/2026)
+- [x] **S11.10 — Clarify phantom `"type"` field** (I9): documented in `content.Page` +
+  `docs/content.md` as a tolerated, preserved, never-interpreted descriptive hint (page kind
+  inferred from populated fields). Kept, not removed (used pervasively, preserved by the studio).
+- [x] **S11.11 — Dedupe re-emit invariant + rune-safe centering** (I10): shared
+  `oascii.Builder.ReemitAttrs` used by `Newline` (sticky) and `render.reemitState`;
+  `render.center` counts runes. Test `TestReemitAttrs`.
+- [x] **S11.12 — Firmware minor cleanups** (I11): fixed the `term.s` comment (byte sent is
+  `:`/`$3A`), removed the dead `hires_fillbox` block in `hires.s`; reassembled via `make client`.
+  The tight XMODEM `$4000`↔`$B800` buffer margin is left as a documented latent observation.
 
 ## Sprint 8 — Close out file transfer + news — 🎯 in progress (27/06/2026)
 > Wraps up Epic G (transfer) and starts Epic D (content/news).

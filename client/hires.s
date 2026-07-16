@@ -741,11 +741,6 @@ seg_pen_to:
 ;  hires_fillbox - rectangle plein  - lignes horizontales de peny a y1.
 ; ---------------------------------------------------------------------------
 hires_fillbox:
-        ; normalise y  - ymin a ymax
-        lda hpeny
-        sta hy0
-        lda hy1
-        sta hy1
         ; boucle de hpeny vers hy1 inclus, une hires_line horizontale par ligne
         ; crayon x reste penx ; cible x1 reste hx1 ; on fait varier y0 vers hy1
         lda hpeny

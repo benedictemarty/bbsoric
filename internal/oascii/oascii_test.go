@@ -8,6 +8,23 @@ import (
 // Les valeurs attendues proviennent directement du décodeur ULA de l'émulateur
 // de référence (Oric1/oric1-emu, src/video/video.c : decode_attr).
 
+func TestReemitAttrs(t *testing.T) {
+	// Ré-émet uniquement les attributs non-défaut (ordre paper, attrs, ink).
+	b := New()
+	if n := b.ReemitAttrs(Yellow, Blue, true, false, false); n != 3 {
+		t.Errorf("3 attributs non-défaut attendus, got %d", n)
+	}
+	want := []byte{PaperAttr(Blue), TextAttr(true, false, false), InkAttr(Yellow)}
+	if !bytes.Equal(b.Bytes(), want) {
+		t.Errorf("ReemitAttrs = % X, want % X", b.Bytes(), want)
+	}
+	// Les valeurs par défaut n'émettent aucun octet.
+	b2 := New()
+	if n := b2.ReemitAttrs(White, Black, false, false, false); n != 0 || len(b2.Bytes()) != 0 {
+		t.Errorf("aucun attribut non-défaut attendu: n=%d bytes=% X", n, b2.Bytes())
+	}
+}
+
 func TestInkAttr(t *testing.T) {
 	cases := map[Color]byte{Black: 0x00, Red: 0x01, Green: 0x02, Yellow: 0x03,
 		Blue: 0x04, Magenta: 0x05, Cyan: 0x06, White: 0x07}

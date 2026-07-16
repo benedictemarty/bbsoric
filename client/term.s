@@ -271,7 +271,7 @@ md_hostport:
         lda #>hostbuf
         sta STRPTR+1
         jsr send_string
-        lda #$3A                 ; " -"
+        lda #$3A                 ; 3A = deux-points, separateur hote/port
         jsr ser_tx
         lda #<portbuf
         sta STRPTR
