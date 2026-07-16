@@ -22,7 +22,15 @@ via `./bbsd -content <out> -data <dir>` (+ `-files <dir>` pour les téléchargem
 import argparse
 import json
 import os
+import shutil
 import sys
+
+# Extensions réellement transférables vers un Oric (le reste — PDF, PNG… — est
+# consultable mais pas téléchargeable). Ordre = préférence (cassette avant disque).
+DOWNLOAD_EXTS = (".tap", ".ort", ".rom", ".dsk")
+
+# Buffer de réception du terminal Oric ($4000..~$B800). Au-delà, non téléchargeable.
+DEFAULT_MAX_FILE = 30720
 
 
 def clean(v):
@@ -48,15 +56,62 @@ def titre_from_pdf(name):
     return t[:60]
 
 
-def software_rows(lib, limit):
-    """Lignes 'Logiciel' depuis data/catalog.json."""
+def pick_download(files, maxsize):
+    """Choisit le fichier téléchargeable d'un programme : la plus petite entrée
+    d'extension transférable qui tient dans maxsize (cassette préférée au disque).
+    Renvoie (fileinfo, size) ou (None, best_size) si aucun ne tient (size la plus
+    petite connue, pour information)."""
+    cands = [f for f in (files or []) if f.get("ext", "").lower() in DOWNLOAD_EXTS]
+    if not cands:
+        return None, 0
+    def key(f):
+        return (DOWNLOAD_EXTS.index(f["ext"].lower()), f.get("size", 1 << 62))
+    cands.sort(key=key)
+    for f in cands:
+        if f.get("size", 1 << 62) <= maxsize:
+            return f, f["size"]
+    return None, min(f.get("size", 0) for f in cands)
+
+
+def sedoric_name(name):
+    """Nom court sûr pour -files (majuscules, [A-Z0-9], 8.3), aligné sur ce que le
+    terminal sauvera. Évite les caractères hors ASCII/espace."""
+    base, _, ext = name.rpartition(".")
+    base = base or name
+    keep = lambda s: "".join(c for c in s.upper() if c.isalnum())[:8]
+    b, e = keep(base), keep(ext)[:3]
+    return (b + ("." + e if e else "")) or "FICHIER"
+
+
+def software_rows(lib, limit, maxsize, copy_dest):
+    """Lignes 'Logiciel' depuis data/catalog.json. `fichier` n'est renseigné que si
+    un fichier transférable tient dans maxsize ; si copy_dest, ce fichier y est copié
+    (nom court unique) et `fichier` prend ce nom. `taille` est la taille en octets."""
     path = os.path.join(lib, "data", "catalog.json")
     with open(path, encoding="utf-8") as f:
         cat = json.load(f)
-    rows = []
+    rows, used = [], {}
     for p in cat.get("programs", []):
         m = p.get("metadata") or {}
-        fichier = basename(m.get("filename"))
+        dl, size = pick_download(p.get("files"), maxsize)
+        fichier = ""
+        if dl:
+            fichier = basename(dl["name"])
+            if copy_dest:
+                short = sedoric_name(dl["name"])
+                n, cand = 1, short
+                while cand in used and used[cand] != dl.get("sha1"):
+                    stem, _, ext = short.rpartition(".")
+                    cand = "%s%d.%s" % ((stem or short)[:6], n, ext) if ext else "%s%d" % (short[:7], n)
+                    n += 1
+                used[cand] = dl.get("sha1")
+                try:
+                    if not os.path.exists(os.path.join(copy_dest, cand)):
+                        shutil.copy(dl["path"], os.path.join(copy_dest, cand))
+                    fichier = cand
+                except OSError as e:
+                    print("copie ignoree (%s): %s" % (dl["name"], e), file=sys.stderr)
+                    fichier = ""
         auteur = clean(m.get("programmer")) or clean(m.get("publisher"))
         desc = clean(m.get("comment")) or clean(m.get("genre"))
         pf, pt = m.get("players_from"), m.get("players_to")
@@ -67,7 +122,8 @@ def software_rows(lib, limit):
             "titre": (clean(p.get("title")) or clean(m.get("name")))[:40],
             "auteur": auteur[:40],
             "annee": m.get("year") or 0,
-            "fichier": fichier,        # téléchargeable si présent dans -files et petit
+            "taille": size or 0,
+            "fichier": fichier,        # non vide = téléchargeable (present dans -files)
             "genre": clean(m.get("genre"))[:20],
             "editeur": clean(m.get("publisher"))[:40],
             "langue": clean(m.get("language"))[:16],
@@ -146,8 +202,8 @@ def grille(titre, categorie, avec_fichier):
     return {"title": titre, "datawindow": dw}
 
 
-def build_site(lib, limit):
-    logiciels = software_rows(lib, limit)
+def build_site(lib, limit, maxsize, copy_dest):
+    logiciels = software_rows(lib, limit, maxsize, copy_dest)
     magazines = magazine_rows(lib, limit)
     livres = pdf_rows(os.path.join(lib, "library", "livres"), limit, recursive=False)
     for r in logiciels:
@@ -176,6 +232,7 @@ def build_site(lib, limit):
                     "titre":       {"type": "TEXT", "libelle": "Titre", "longueur_max": 40},
                     "auteur":      {"type": "TEXT", "libelle": "Auteur", "longueur_max": 40},
                     "annee":       {"type": "INTEGER", "libelle": "Annee"},
+                    "taille":      {"type": "INTEGER", "libelle": "Taille o"},
                     "genre":       {"type": "TEXT", "libelle": "Genre", "longueur_max": 20},
                     "editeur":     {"type": "TEXT", "libelle": "Editeur", "longueur_max": 40},
                     "langue":      {"type": "TEXT", "libelle": "Langue", "longueur_max": 16},
@@ -207,17 +264,27 @@ def main():
     ap.add_argument("--lib", required=True, help="racine OricProgramsLib")
     ap.add_argument("--limit", type=int, default=0, help="items max par catégorie (0 = tout)")
     ap.add_argument("--out", default="-", help="fichier de sortie (- = stdout)")
+    ap.add_argument("--max-file-size", type=int, default=DEFAULT_MAX_FILE,
+                    help="taille max d'un fichier téléchargeable en octets (défaut %d)" % DEFAULT_MAX_FILE)
+    ap.add_argument("--copy-files", default="",
+                    help="répertoire -files où copier les fichiers téléchargeables (vide = ne copie pas)")
     args = ap.parse_args()
 
-    site, (nl, nm, nv) = build_site(args.lib, args.limit)
+    if args.copy_files:
+        os.makedirs(args.copy_files, exist_ok=True)
+
+    site, (nl, nm, nv) = build_site(args.lib, args.limit, args.max_file_size, args.copy_files)
+    dl = sum(1 for r in site["sources_donnees"]["catalogue"]["donnees"] if r.get("fichier"))
     data = json.dumps(site, ensure_ascii=False, indent=2)
     if args.out == "-":
         print(data)
     else:
         with open(args.out, "w", encoding="utf-8") as f:
             f.write(data + "\n")
-    print("Catalogue : %d logiciels, %d magazines, %d livres -> %s"
-          % (nl, nm, nv, args.out), file=sys.stderr)
+    print("Catalogue : %d logiciels (%d telechargeables <= %do), %d magazines, %d livres -> %s"
+          % (nl, dl, args.max_file_size, nm, nv, args.out), file=sys.stderr)
+    if args.copy_files:
+        print("Fichiers copies dans %s" % args.copy_files, file=sys.stderr)
 
 
 if __name__ == "__main__":

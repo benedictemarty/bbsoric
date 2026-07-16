@@ -130,6 +130,24 @@ Le générateur `scripts/gen-catalogue.py` produit un catalogue (1 source + 3 vu
 filtrées + menu) depuis la bibliothèque OricProgramsLib ; démo :
 `docs/examples/catalogue-demo.json`.
 
+**Génération complète + peuplement de `-files`** (J2). Le générateur est conscient
+des tailles : un item n'est marqué téléchargeable que si un fichier réellement
+transférable (`.tap`/`.ort`/`.rom`/`.dsk`, le plus petit qui tient) est ≤
+`--max-file-size` (défaut 30720 o, le buffer terminal Oric) ; une colonne `taille`
+est ajoutée. `--copy-files <dir>` copie ces fichiers dans le répertoire `-files`
+sous un nom court sûr (8.3, unique). Exemple :
+
+```bash
+python3 scripts/gen-catalogue.py \
+  --lib "<...>/OricProgramsLib" \
+  --copy-files /srv/bbsfiles --out content/catalogue.json
+# puis : ./bbsd -content content/catalogue.json -data <dir> -files /srv/bbsfiles
+```
+
+Sur la bibliothèque complète : ~2600 logiciels (dont ~1900 téléchargeables ≤ 30 Ko),
+~700 magazines et ~190 livres (consultables, non téléchargeables). Le catalogue
+complet (~1,2 Mo) n'est pas versionné (régénérable) ; seule la démo l'est.
+
 La **fiche détail** (`V`) affiche toutes les colonnes de la ligne ; les valeurs
 longues (ex. `description`) sont **repliées** sur plusieurs lignes (au plus 4,
 marquage `...` au-delà) au lieu d'être tronquées. Un catalogue peut ainsi porter

@@ -7,6 +7,15 @@ versioning [SemVer](https://semver.org/lang/en/).
 ## [Unreleased]
 
 ### Added (Epic J — Catalogue de téléchargement, 16/07/2026)
+- **J2 — Générateur conscient des tailles + peuplement de `-files`.** `gen-catalogue.py`
+  n'indique plus un fichier `téléchargeable` que si un fichier réellement transférable
+  (`.tap`/`.ort`/`.rom`/`.dsk`, le plus petit qui **tient**, cassette préférée) est ≤
+  `--max-file-size` (défaut **30720 o**, le buffer terminal Oric) ; colonne `taille` ajoutée
+  au catalogue. Option `--copy-files <dir>` : copie les fichiers téléchargeables dans le
+  répertoire `-files` sous un nom court sûr (8.3, unique). Sur la bibliothèque complète :
+  **2604 logiciels dont 1911 téléchargeables**, 710 magazines, 192 livres (catalogue ~1,2 Mo,
+  1874 fichiers copiés). Vérifié dans le serveur réel : filtre + `X` initient le vrai
+  téléchargement de `CENTI.TAP` (Centipede) présent dans `-files`.
 - **J4 — Fiche détail enrichie.** La fiche `V` **replie** désormais les valeurs longues
   (auteur, description) sur plusieurs lignes au lieu de les tronquer à 22 colonnes
   (`wrapValeur`, au plus 4 lignes, marquage `...` si tronqué). Le générateur ajoute au

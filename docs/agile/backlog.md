@@ -189,9 +189,15 @@
   detail via `V`, filter `F`, sort `T`. Generator `scripts/gen-catalogue.py` from OricProgramsLib;
   demo `docs/examples/catalogue-demo.json`. Tests `TestDataWindowDownloadFromRow`,
   `TestValidateFichierColonne`. Verified in the real server.)*
-- [ ] **J2** (3) As an admin, I want to **populate `-files` with the downloadable `.tap`**
-  (small software) and generate the **full** catalogue, so the catalogue is live in production.
-  *(Manual/ops: run the generator without `--limit`, copy fitting `.tap` files into `-files`.)*
+- [x] **J2** (3) As an admin, I want to **populate `-files` with the downloadable files** and
+  generate the **full** catalogue, so the catalogue can go live.
+  *(Done 16/07 — generator is now size-aware: only files that actually fit (`--max-file-size`,
+  default 30720 = Oric terminal buffer) are marked downloadable, with a `taille` column;
+  `--copy-files <dir>` copies them into `-files` under a safe short (8.3) name. Full library:
+  2604 software / **1911 downloadable**, 710 magazines, 192 books (~1.2 MB catalogue, 1874 files).
+  Verified in the real server (filter + `X` → real `CENTI.TAP` download).)*
+  - Remaining ops (per `make deploy`): choose to serve the catalogue standalone
+    (`-content catalogue.json -files <dir>`) or merge it into `content/site.json`, then deploy.
 - [x] **J3** (3) As a user, I want a **fixed per-page category filter** (a page shows only its
   category without pressing `F`).
   *(Done 16/07 — `filtre_fixe` (colonne = valeur) on the DataWindow descriptor, combinable
