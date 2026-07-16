@@ -62,8 +62,9 @@ type DataWindow struct {
 	CouleurEntete     string   `json:"couleur_entete,omitempty"`
 	CouleurLignes     string   `json:"couleur_lignes,omitempty"`
 	CouleurSelection  string   `json:"couleur_selection,omitempty"`
-	LignesMax         int      `json:"lignes_max,omitempty"` // lignes de données par écran
-	Editable          bool     `json:"editable,omitempty"`   // autorise N/E/D (créer/éditer/supprimer)
+	LignesMax         int      `json:"lignes_max,omitempty"`      // lignes de données par écran
+	Editable          bool     `json:"editable,omitempty"`        // autorise N/E/D (créer/éditer/supprimer)
+	FichierColonne    string   `json:"fichier_colonne,omitempty"` // colonne portant le nom du fichier téléchargeable (touche X → XMODEM)
 }
 
 // --- Gardes anti-injection SQL (partagées avec le moteur) ---
@@ -151,6 +152,11 @@ func (dw *DataWindow) validate(pageID string, s *Site) error {
 	for _, col := range dw.ColonnesAffichees {
 		if _, ok := src.Colonnes[col]; !ok {
 			return fmt.Errorf("page %q : colonne affichée %q absente de la source %q", pageID, col, dw.Source)
+		}
+	}
+	if dw.FichierColonne != "" {
+		if _, ok := src.Colonnes[dw.FichierColonne]; !ok {
+			return fmt.Errorf("page %q : fichier_colonne %q absente de la source %q", pageID, dw.FichierColonne, dw.Source)
 		}
 	}
 	if len(dw.Largeurs) != 0 && len(dw.Largeurs) != len(dw.ColonnesAffichees) {

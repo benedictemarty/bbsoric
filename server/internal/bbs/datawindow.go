@@ -19,6 +19,7 @@ func init() { Register("datawindow", dataWindowApplet) }
 //	+/-  bouger la sélection      S/R  page suivante/précédente
 //	V    fiche détail             F    filtre LIKE   C  effacer le filtre
 //	N/E/D créer/éditer/supprimer (si éditable et admin)   Q/ESC  quitter
+//	X    télécharger le fichier de la ligne (si fichier_colonne défini) — catalogue
 func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome {
 	dw := ac.Page.DataWindow
 	if dw == nil || ac.Site == nil {
@@ -73,10 +74,12 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 	// L'écriture (CRUD) exige un compte administrateur : la lecture reste ouverte
 	// à tous, mais seul un admin peut créer/éditer/supprimer (cf. ADR-0004, S11.5).
 	editable := dw.Editable && ac.State.IsAdmin()
+	// Catalogue : une colonne peut porter un nom de fichier téléchargeable (touche X).
+	downloadable := dw.FichierColonne != "" && ac.State.Files != nil
 
 	scr := oascii.NewScreen()
 	draw := func() bool {
-		renderGrid(scr, dw, src, rows, sel, page, parPage, total, filtre, triLabel(src, dw, triEtat), editable)
+		renderGrid(scr, dw, src, rows, sel, page, parPage, total, filtre, triLabel(src, dw, triEtat), editable, downloadable)
 		return s.Write(string(scr.Render())) == nil
 	}
 	// Recharge complète de l'écran (après une saisie plein écran qui a brouillé
@@ -188,6 +191,19 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 			if editable && len(rows) > 0 {
 				dwSupprimer(s, eng, src, rows[sel])
 				load()
+				if !redrawAll() {
+					return Outcome{Quit: true}
+				}
+			}
+		case 'X', 'x': // télécharger le fichier de la ligne (catalogue)
+			if downloadable && len(rows) > 0 {
+				nom := strings.TrimSpace(rows[sel][dw.FichierColonne])
+				if nom == "" {
+					writeErr(s, "Aucun fichier pour cette entree.")
+					anyKey(s)
+				} else {
+					sendFileDownload(s, ac.State.Files, nom)
+				}
 				if !redrawAll() {
 					return Outcome{Quit: true}
 				}

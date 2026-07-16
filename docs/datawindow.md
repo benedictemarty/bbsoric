@@ -107,7 +107,19 @@ différentiel laisse apparaître le pied de la grille au-dessus).*
 | `F` / `C` | poser un filtre LIKE / l'effacer |
 | `T` | cycler le tri : défaut → colonne 1 ASC → DESC → colonne 2 ASC → … (libellé au pied) |
 | `N` / `E` / `D` | créer / éditer / supprimer (si `editable` **et** session **admin**) |
+| `X` | **télécharger** le fichier de la ligne (si `fichier_colonne` défini + `-files`) — catalogue |
 | `Q` ou ESC | quitter la grille |
+
+**Catalogue de téléchargement** (Epic J). Un descriptif DataWindow peut porter
+`"fichier_colonne": "<colonne>"` : la valeur de cette colonne pour la ligne
+sélectionnée est un nom de fichier de la bibliothèque (`-files`) ; la touche `X`
+l'envoie via XMODEM (même chemin que l'applet `download`). La légende affiche
+`X=DL` uniquement si une colonne fichier est définie et la bibliothèque active.
+Contrainte : le buffer terminal Oric (~30 Ko, garde serveur 64 Ko) limite les
+téléchargements aux petits fichiers (ex. `.tap`) — un PDF de magazine/livre se
+**consulte** (fiche `V`) mais ne se télécharge pas vers l'Oric. Le générateur
+`scripts/gen-catalogue.py` produit un catalogue (Logiciels/Magazines/Livres) depuis
+la bibliothèque OricProgramsLib ; démo : `docs/examples/catalogue-demo.json`.
 
 La ligne sélectionnée (et le bandeau titre) sont en **vidéo inverse** (bit 7 par
 caractère, propre à l'Oric). Le rendu utilise le **buffer différentiel**

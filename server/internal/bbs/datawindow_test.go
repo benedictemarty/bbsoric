@@ -1,6 +1,7 @@
 package bbs
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log/slog"
@@ -9,7 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benedictemarty/bbsoric/internal/xmodem"
 	"github.com/benedictemarty/bbsoric/server/internal/datawindow"
+	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
@@ -135,6 +138,93 @@ func startBBSDataAuth(t *testing.T, json string) (addr string, users *user.Store
 	wg.Add(1)
 	go func() { defer wg.Done(); srv.Serve(ctx, ln) }()
 	return ln.Addr().String(), users, func() { cancel(); _ = ln.Close(); eng.Close(); wg.Wait() }
+}
+
+// catSiteJSON : un catalogue (source "cat") dont une colonne porte le nom du
+// fichier téléchargeable ; la grille l'expose via fichier_colonne (touche X).
+const catSiteJSON = `{
+  "start": "accueil",
+  "sources_donnees": {
+    "cat": {
+      "table": "cat",
+      "tri_defaut": "titre ASC",
+      "lignes_par_page": 10,
+      "colonnes": {
+        "id":      {"type":"INTEGER","libelle":"ID","cle_primaire":true,"auto_increment":true},
+        "titre":   {"type":"TEXT","libelle":"Titre","longueur_max":20},
+        "fichier": {"type":"TEXT","libelle":"Fichier","longueur_max":16}
+      },
+      "donnees": [ {"titre":"Demo","fichier":"demo.tap"} ]
+    }
+  },
+  "pages": {
+    "accueil": {"title":"BIENVENUE","entries":[
+      {"key":"1","label":"Invite","applet":"guest","next":"accueil"},
+      {"key":"2","label":"Catalogue","target":"grille"},
+      {"key":"Q","label":"Quitter","target":"__quit__"}
+    ]},
+    "grille": {"title":"CATALOGUE","datawindow":{
+      "source":"cat",
+      "colonnes_affichees":["titre"],
+      "largeurs":[20],
+      "fichier_colonne":"fichier"
+    }}
+  }
+}`
+
+// startBBSDataCatalogue démarre un BBS DataWindow AVEC une bibliothèque de fichiers.
+func startBBSDataCatalogue(t *testing.T, json string, lib *files.Library) (addr string, stop func()) {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	store := storeFromJSON(t, json)
+	eng := datawindow.NewEngine(t.TempDir(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	for _, src := range store.Site().SourcesDonnees {
+		if err := eng.InitialiserSource(src); err != nil {
+			t.Fatalf("init source: %v", err)
+		}
+	}
+	cfg := server.Config{Addr: ln.Addr().String(), IdleTimeout: 30 * time.Second}
+	srv := server.New(cfg, WelcomeHandler{Store: store, Data: eng, Files: lib},
+		slog.New(slog.NewTextHandler(io.Discard, nil)))
+	ctx, cancel := context.WithCancel(context.Background())
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() { defer wg.Done(); srv.Serve(ctx, ln) }()
+	return ln.Addr().String(), func() { cancel(); _ = ln.Close(); eng.Close(); wg.Wait() }
+}
+
+// TestDataWindowDownloadFromRow : la touche X d'une grille catalogue télécharge le
+// fichier nommé dans fichier_colonne de la ligne sélectionnée, via XMODEM.
+func TestDataWindowDownloadFromRow(t *testing.T) {
+	lib, _ := files.Open(t.TempDir(), 0)
+	want := []byte("Programme Oric de demonstration (petit .tap).")
+	if err := lib.Write("demo.tap", want); err != nil {
+		t.Fatal(err)
+	}
+	addr, stop := startBBSDataCatalogue(t, catSiteJSON, lib)
+	defer stop()
+
+	conn, r := enterAsGuest(t, addr)
+	defer conn.Close()
+
+	conn.Write([]byte("2")) // -> catalogue
+	if out, ok := readFor(t, r, conn, "F/T Q", time.Second); !ok || !contains(out, "X=DL") {
+		t.Fatalf("légende de téléchargement absente ; vu : %q", out)
+	}
+	conn.Write([]byte("X")) // télécharge la ligne sélectionnée (Demo -> demo.tap)
+	if out, ok := readFor(t, r, conn, "terminal.", 2*time.Second); !ok {
+		t.Fatalf("invite de réception absente ; vu : %q", out)
+	}
+	got, err := xmodem.Receive(&clientConn{r: r, c: conn})
+	if err != nil {
+		t.Fatalf("Receive: %v", err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("téléchargé %q, attendu %q", got, want)
+	}
 }
 
 func TestDataWindowGrille(t *testing.T) {

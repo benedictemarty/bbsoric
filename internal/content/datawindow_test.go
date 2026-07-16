@@ -81,6 +81,22 @@ func TestValidateColumnPattern(t *testing.T) {
 	}
 }
 
+// TestValidateFichierColonne : fichier_colonne doit désigner une colonne de la source.
+func TestValidateFichierColonne(t *testing.T) {
+	ok := siteAvecDW(func(s *Site) {
+		s.Pages["g"].DataWindow.FichierColonne = "nom" // colonne existante
+	})
+	if err := ok.Validate(); err != nil {
+		t.Errorf("fichier_colonne valide refusé : %v", err)
+	}
+	ko := siteAvecDW(func(s *Site) {
+		s.Pages["g"].DataWindow.FichierColonne = "absente"
+	})
+	if err := ko.Validate(); err == nil {
+		t.Error("fichier_colonne inconnue aurait dû échouer")
+	}
+}
+
 func TestValidateDataWindowErreurs(t *testing.T) {
 	cas := []struct {
 		nom string

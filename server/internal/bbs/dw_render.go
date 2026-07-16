@@ -83,7 +83,7 @@ func putLigne(scr *oascii.Screen, row int, ink oascii.Color, inverse bool, texte
 //   - page,total: pagination ; parPage = taille de page
 //   - filtre    : filtre LIKE courant (affiché s'il est posé)
 func renderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDonnees,
-	rows []map[string]string, sel, page, parPage, total int, filtre, triLabel string, editable bool) {
+	rows []map[string]string, sel, page, parPage, total int, filtre, triLabel string, editable, downloadable bool) {
 
 	scr.Clear()
 	inkEntete := content.Ink(dw.CouleurEntete)
@@ -137,6 +137,9 @@ func renderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 	legende := "+/- S/R V=fiche"
 	if editable {
 		legende += " N/E/D"
+	}
+	if downloadable {
+		legende += " X=DL"
 	}
 	legende += " F/T Q"
 	putLigne(scr, gridLegendRow, oascii.Cyan, false, cell(legende, oascii.Cols-gridContentX))

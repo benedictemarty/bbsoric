@@ -6,6 +6,23 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (Epic J — Catalogue de téléchargement, 16/07/2026)
+- **Catalogue Logiciels / Magazines / Livres** basé sur DataWindow. Nouvelle option
+  `fichier_colonne` sur un descriptif DataWindow (`internal/content`) : la colonne nommée
+  porte le fichier téléchargeable ; la grille expose alors la touche **`X` (télécharger la
+  ligne)** qui envoie ce fichier via XMODEM (helper `sendFileDownload` factorisé, réutilisé
+  par l'applet `download`). La fiche détail existante (`V`), le filtre (`F`), le tri (`T`) et
+  la pagination servent la consultation. Validation `fichier_colonne` (colonne existante) +
+  légende `X=DL` affichée uniquement si un fichier est disponible.
+  - **Contrainte assumée** : le téléchargement XMODEM vers l'Oric est borné (~30 Ko buffer
+    terminal, garde 64 Ko). Les logiciels (petits `.tap`) sont téléchargeables ; les magazines
+    et livres (PDF) sont **listés et consultables** mais leur colonne fichier reste vide.
+  - **Générateur** `scripts/gen-catalogue.py` : produit un Site catalogue (3 sources / 3
+    grilles / 1 menu) depuis la bibliothèque **OricProgramsLib** (`data/catalog.json` pour les
+    logiciels, `library/*/*.pdf` pour les magazines, `library/livres/*.pdf` pour les livres).
+    Démo committée : `docs/examples/catalogue-demo.json` (8 items/catégorie, validée `content`,
+    vérifiée dans le serveur réel). Tests `TestDataWindowDownloadFromRow`, `TestValidateFichierColonne`.
+
 ### Changed (Sprint 11 slice 4 — hygiène, 16/07/2026)
 - **S11.9 — Champ JSON `"type"` clarifié.** Documenté (struct `content.Page` + `docs/content.md`)
   comme un indice descriptif lisible, sans champ Go, jamais interprété (le genre de page est

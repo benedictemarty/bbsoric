@@ -7,6 +7,7 @@ import (
 
 	"github.com/benedictemarty/bbsoric/internal/oascii"
 	"github.com/benedictemarty/bbsoric/internal/xmodem"
+	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 )
 
@@ -57,21 +58,32 @@ func downloadApplet(ctx context.Context, s *server.Session, ac *AppContext) Outc
 		return Outcome{} // annulation
 	}
 	f := list[idx]
-	data, err := ac.Files.Read(f.Name)
+	sendFileDownload(s, ac.Files, f.Name)
+	return Outcome{Done: true}
+}
+
+// sendFileDownload envoie le fichier name de la bibliothèque au client via XMODEM :
+// lecture, garde de taille (en-tête 16 bits), en-tête de download puis flux, avec
+// messages de progression/erreur et pause finale. Réutilisé par l'applet download
+// et par l'action « télécharger la ligne » du catalogue DataWindow.
+func sendFileDownload(s *server.Session, lib *files.Library, name string) {
+	data, err := lib.Read(name)
 	if err != nil {
 		writeErr(s, "Lecture impossible : "+err.Error())
-		return Outcome{}
+		anyKey(s)
+		return
 	}
 	// L'en-tête de download code la taille réelle sur 16 bits (cf. downloadHeader) :
 	// au-delà, elle serait tronquée silencieusement et la sauvegarde côté terminal
 	// serait corrompue. On refuse proprement plutôt que d'émettre un en-tête faux.
 	if len(data) > maxDownloadSize {
 		writeErr(s, fmt.Sprintf("Fichier trop volumineux : %do (max %do).", len(data), maxDownloadSize))
-		return Outcome{}
+		anyKey(s)
+		return
 	}
 
 	info := oascii.New()
-	info.Newline().Ink(oascii.Yellow).Text("Envoi de " + f.Name + " (XMODEM)...").Newline()
+	info.Newline().Ink(oascii.Yellow).Text("Envoi de " + name + " (XMODEM)...").Newline()
 	info.Ink(oascii.White).Text("Demarrez la reception sur votre terminal.").Newline()
 	_ = s.Write(info.String())
 
@@ -87,12 +99,13 @@ func downloadApplet(ctx context.Context, s *server.Session, ac *AppContext) Outc
 	// Un terminal plus ancien (qui ne lisait que 2 octets) n'est PAS compatible
 	// avec cet en-tête : terminal et serveur évoluent ensemble.
 	_ = s.Write(oascii.RecvCmd())
-	_ = s.Write(string(downloadHeader(f.Name, len(data))))
+	_ = s.Write(string(downloadHeader(name, len(data))))
 
 	if err := xmodem.Send(s.Raw(), data); err != nil {
 		s.ClearDeadline()
 		writeErr(s, "Transfert echoue : "+err.Error())
-		return Outcome{}
+		anyKey(s)
+		return
 	}
 	s.ClearDeadline()
 	okMsg := oascii.New()
@@ -100,7 +113,6 @@ func downloadApplet(ctx context.Context, s *server.Session, ac *AppContext) Outc
 	okMsg.Text("Appuyez sur une touche...").Newline()
 	_ = s.Write(okMsg.String())
 	_, _ = s.ReadKey()
-	return Outcome{Done: true}
 }
 
 // uploadApplet reçoit un fichier du client via XMODEM et l'enregistre dans la

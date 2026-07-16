@@ -176,6 +176,25 @@
   - Note: the tight XMODEM `$4000` buffer vs `$B800` charset margin is a **latent** concern,
     left as a documented observation (no behaviour change) — see analysis of 16/07.
 
+## Epic J — Download catalogue (software / magazines / books)
+
+> Browsable catalogue backed by DataWindow, sourced from the **OricProgramsLib** library.
+> Honest constraint: XMODEM download to an Oric is bounded (~30 KB terminal buffer, 64 KB
+> guard) — software (small `.tap`) is downloadable; magazines/books (PDF) are listed and
+> browsable but not downloadable to an Oric.
+
+- [x] **J1** (5) As a user, I want to **browse a catalogue** of software, magazines and books
+  (title / author / year, with a detail screen) and **download** a software title.
+  *(Done 16/07 — DataWindow `fichier_colonne` + grid key `X` → XMODEM (`sendFileDownload`);
+  detail via `V`, filter `F`, sort `T`. Generator `scripts/gen-catalogue.py` from OricProgramsLib;
+  demo `docs/examples/catalogue-demo.json`. Tests `TestDataWindowDownloadFromRow`,
+  `TestValidateFichierColonne`. Verified in the real server.)*
+- [ ] **J2** (3) As an admin, I want to **populate `-files` with the downloadable `.tap`**
+  (small software) and generate the **full** catalogue, so the catalogue is live in production.
+  *(Manual/ops: run the generator without `--limit`, copy fitting `.tap` files into `-files`.)*
+- [ ] **J3** (3) As a user, I want a **fixed per-page category filter** (a page shows only its
+  category without pressing `F`), and/or richer detail (screenshot ref, download count).
+
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.
 - Tests passing for the delivered feature.
