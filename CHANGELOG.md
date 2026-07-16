@@ -7,6 +7,14 @@ versioning [SemVer](https://semver.org/lang/en/).
 ## [Unreleased]
 
 ### Added (Epic J — Catalogue de téléchargement, 16/07/2026)
+- **J5 — Outillage de déploiement du catalogue.** `gen-catalogue.py --merge-into <site.json>`
+  greffe le catalogue (source + pages + entrée de menu, clé `8` sur `main`) dans un site.json
+  existant, sans écraser le reste. Nouveau `scripts/deploy-catalogue.sh` : récupère le site.json
+  **de prod** (préserve les éditions à chaud), fusionne, copie les fichiers téléchargeables,
+  **valide** (`internal/content`), puis rsync `-files` + dépose le site.json + redémarre le
+  service (avec `--dry-run`). Nouveau validateur `tools/validate-content` (valide un site.json
+  avec le paquet du serveur). Doc `docs/catalogue-deploy.md`, `ORIC_LIB` dans
+  `deploy.conf.example`. Testé en dry-run de bout en bout (fusion + validation OK).
 - **J2 — Générateur conscient des tailles + peuplement de `-files`.** `gen-catalogue.py`
   n'indique plus un fichier `téléchargeable` que si un fichier réellement transférable
   (`.tap`/`.ort`/`.rom`/`.dsk`, le plus petit qui **tient**, cassette préférée) est ≤

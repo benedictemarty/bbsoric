@@ -202,7 +202,27 @@ def grille(titre, categorie, avec_fichier):
     return {"title": titre, "datawindow": dw}
 
 
-def build_site(lib, limit, maxsize, copy_dest):
+# Colonnes du catalogue (partagées standalone / merge).
+CAT_COLONNES = {
+    "id":          {"type": "INTEGER", "libelle": "ID", "cle_primaire": True, "auto_increment": True},
+    "categorie":   {"type": "TEXT", "libelle": "Categorie", "longueur_max": 10},
+    "titre":       {"type": "TEXT", "libelle": "Titre", "longueur_max": 40},
+    "auteur":      {"type": "TEXT", "libelle": "Auteur", "longueur_max": 40},
+    "annee":       {"type": "INTEGER", "libelle": "Annee"},
+    "taille":      {"type": "INTEGER", "libelle": "Taille o"},
+    "genre":       {"type": "TEXT", "libelle": "Genre", "longueur_max": 20},
+    "editeur":     {"type": "TEXT", "libelle": "Editeur", "longueur_max": 40},
+    "langue":      {"type": "TEXT", "libelle": "Langue", "longueur_max": 16},
+    "joueurs":     {"type": "TEXT", "libelle": "Joueurs", "longueur_max": 8},
+    "ecran":       {"type": "TEXT", "libelle": "Ecran", "longueur_max": 32},
+    "fichier":     {"type": "TEXT", "libelle": "Fichier", "longueur_max": 16},
+    "description": {"type": "TEXT", "libelle": "Description", "longueur_max": 200},
+}
+
+
+def build_catalogue(lib, limit, maxsize, copy_dest):
+    """Construit la source `catalogue` (1 table, colonne categorie) et ses pages
+    (menu + 3 vues filtrées). Renvoie (source, pages, (nl, nm, nv))."""
     logiciels = software_rows(lib, limit, maxsize, copy_dest)
     magazines = magazine_rows(lib, limit)
     livres = pdf_rows(os.path.join(lib, "library", "livres"), limit, recursive=False)
@@ -212,51 +232,63 @@ def build_site(lib, limit, maxsize, copy_dest):
         r["categorie"] = "Magazine"
     for r in livres:
         r["categorie"] = "Livre"
-    toutes = logiciels + magazines + livres
+    source = {
+        "table": "catalogue",
+        "tri_defaut": "titre ASC",
+        "lignes_par_page": 15,
+        "colonnes": CAT_COLONNES,
+        "donnees": logiciels + magazines + livres,
+    }
+    pages = {
+        "catalogue": {"title": "CATALOGUE", "entries": [
+            {"key": "1", "label": "Logiciels (%d)" % len(logiciels), "target": "g_logiciels"},
+            {"key": "2", "label": "Magazines (%d)" % len(magazines), "target": "g_magazines"},
+            {"key": "3", "label": "Livres (%d)" % len(livres), "target": "g_livres"},
+            {"key": "R", "label": "Retour", "target": "__back__"},
+        ]},
+        "g_logiciels": grille("LOGICIELS", "Logiciel", avec_fichier=True),
+        "g_magazines": grille("MAGAZINES", "Magazine", avec_fichier=False),
+        "g_livres":    grille("LIVRES", "Livre", avec_fichier=False),
+    }
+    return source, pages, (len(logiciels), len(magazines), len(livres))
 
+
+def build_site(lib, limit, maxsize, copy_dest):
+    """Site autonome dont la page de départ est le catalogue."""
+    source, pages, counts = build_catalogue(lib, limit, maxsize, copy_dest)
     site = {
         "_comment": "Catalogue de telechargement BBS Oric (genere par scripts/gen-catalogue.py). "
                     "UN catalogue (colonne categorie) presente en 3 vues filtrees (filtre_fixe). "
                     "Logiciels telechargeables (touche X, XMODEM) si le fichier est petit et present "
-                    "dans -files ; magazines/livres (PDF) consultables (fiche V) mais non telechargeables "
-                    "vers l'Oric. Filtre utilisateur F, tri T, pagination S/R.",
+                    "dans -files ; magazines/livres (PDF) consultables (fiche V). Filtre F, tri T.",
         "start": "catalogue",
-        "sources_donnees": {
-            "catalogue": {
-                "table": "catalogue",
-                "tri_defaut": "titre ASC",
-                "lignes_par_page": 15,
-                "colonnes": {
-                    "id":          {"type": "INTEGER", "libelle": "ID", "cle_primaire": True, "auto_increment": True},
-                    "categorie":   {"type": "TEXT", "libelle": "Categorie", "longueur_max": 10},
-                    "titre":       {"type": "TEXT", "libelle": "Titre", "longueur_max": 40},
-                    "auteur":      {"type": "TEXT", "libelle": "Auteur", "longueur_max": 40},
-                    "annee":       {"type": "INTEGER", "libelle": "Annee"},
-                    "taille":      {"type": "INTEGER", "libelle": "Taille o"},
-                    "genre":       {"type": "TEXT", "libelle": "Genre", "longueur_max": 20},
-                    "editeur":     {"type": "TEXT", "libelle": "Editeur", "longueur_max": 40},
-                    "langue":      {"type": "TEXT", "libelle": "Langue", "longueur_max": 16},
-                    "joueurs":     {"type": "TEXT", "libelle": "Joueurs", "longueur_max": 8},
-                    "ecran":       {"type": "TEXT", "libelle": "Ecran", "longueur_max": 32},
-                    "fichier":     {"type": "TEXT", "libelle": "Fichier", "longueur_max": 16},
-                    "description": {"type": "TEXT", "libelle": "Description", "longueur_max": 200},
-                },
-                "donnees": toutes,
-            },
-        },
-        "pages": {
-            "catalogue": {"title": "CATALOGUE", "entries": [
-                {"key": "1", "label": "Logiciels (%d)" % len(logiciels), "target": "g_logiciels"},
-                {"key": "2", "label": "Magazines (%d)" % len(magazines), "target": "g_magazines"},
-                {"key": "3", "label": "Livres (%d)" % len(livres), "target": "g_livres"},
-                {"key": "Q", "label": "Retour", "target": "__back__"},
-            ]},
-            "g_logiciels": grille("LOGICIELS", "Logiciel", avec_fichier=True),
-            "g_magazines": grille("MAGAZINES", "Magazine", avec_fichier=False),
-            "g_livres":    grille("LIVRES", "Livre", avec_fichier=False),
-        },
+        "sources_donnees": {"catalogue": source},
+        "pages": pages,
     }
-    return site, (len(logiciels), len(magazines), len(livres))
+    return site, counts
+
+
+def merge_into(site_path, lib, limit, maxsize, copy_dest, menu_page, menu_key):
+    """Greffe le catalogue dans un site.json existant : ajoute la source `catalogue`,
+    ses pages, et une entrée de menu (menu_key -> "catalogue") sur menu_page, insérée
+    avant l'éventuelle sortie (__quit__). Idempotent sur l'entrée de menu."""
+    with open(site_path, encoding="utf-8") as f:
+        site = json.load(f)
+    source, pages, counts = build_catalogue(lib, limit, maxsize, copy_dest)
+    site.setdefault("sources_donnees", {})["catalogue"] = source
+    site.setdefault("pages", {}).update(pages)
+
+    mp = site.get("pages", {}).get(menu_page)
+    if mp is None:
+        raise SystemExit("page de menu %r introuvable dans %s" % (menu_page, site_path))
+    entries = mp.setdefault("entries", [])
+    entries = [e for e in entries if e.get("target") != "catalogue"]  # évite un doublon
+    entry = {"key": menu_key, "label": "Catalogue", "target": "catalogue"}
+    quit_idx = next((i for i, e in enumerate(entries)
+                     if e.get("target") == "__quit__" or e.get("target") == "__back__"), len(entries))
+    entries.insert(quit_idx, entry)
+    mp["entries"] = entries
+    return site, counts
 
 
 def main():
@@ -268,12 +300,20 @@ def main():
                     help="taille max d'un fichier téléchargeable en octets (défaut %d)" % DEFAULT_MAX_FILE)
     ap.add_argument("--copy-files", default="",
                     help="répertoire -files où copier les fichiers téléchargeables (vide = ne copie pas)")
+    ap.add_argument("--merge-into", default="",
+                    help="site.json existant où greffer le catalogue (au lieu d'un site autonome)")
+    ap.add_argument("--menu-page", default="main", help="page de menu où ajouter l'entrée Catalogue (avec --merge-into)")
+    ap.add_argument("--menu-key", default="8", help="touche de l'entrée Catalogue (avec --merge-into)")
     args = ap.parse_args()
 
     if args.copy_files:
         os.makedirs(args.copy_files, exist_ok=True)
 
-    site, (nl, nm, nv) = build_site(args.lib, args.limit, args.max_file_size, args.copy_files)
+    if args.merge_into:
+        site, (nl, nm, nv) = merge_into(args.merge_into, args.lib, args.limit,
+                                        args.max_file_size, args.copy_files, args.menu_page, args.menu_key)
+    else:
+        site, (nl, nm, nv) = build_site(args.lib, args.limit, args.max_file_size, args.copy_files)
     dl = sum(1 for r in site["sources_donnees"]["catalogue"]["donnees"] if r.get("fichier"))
     data = json.dumps(site, ensure_ascii=False, indent=2)
     if args.out == "-":

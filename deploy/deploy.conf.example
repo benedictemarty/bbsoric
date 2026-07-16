@@ -17,3 +17,6 @@ RUN_USER=root
 
 # Port public du BBS (telnet)
 BBS_PORT=6502
+
+# Chemin de la bibliothèque OricProgramsLib (pour scripts/deploy-catalogue.sh)
+ORIC_LIB=/media/bmarty/SP PHD U3/OricProgramsLib
