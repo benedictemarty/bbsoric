@@ -49,8 +49,11 @@ ssh vps "systemctl restart bbsoric && systemctl is-active bbsoric"
 - **Redémarrage obligatoire** : le semis SQLite d'une source neuve se fait au boot
   (`InitialiserSource`). Un simple rechargement à chaud du JSON ne crée pas la table.
 - **Semis idempotent** : au redémarrage suivant, si la table `catalogue` existe déjà
-  et n'est pas vide, elle **n'est pas re-semée**. Pour republier un catalogue modifié,
-  vider la table (ou son fichier SQLite dans `-data`) avant le restart.
+  et n'est pas vide, elle **n'est pas re-semée**. Pour republier un catalogue **modifié**,
+  utiliser **`scripts/deploy-catalogue.sh --reseed`** : il arrête le service, **DROP** la
+  table `catalogue` dans `/var/lib/bbsoric/dwdata/bbsoric.db`, puis redémarre — la table
+  est recréée et re-semée depuis le nouveau `site.json`. (Sans `--reseed`, seul le contenu
+  des pages est mis à jour, pas les données déjà semées.)
 - **Taille** : seuls les fichiers ≤ `--max-file-size` (défaut 30720 o = buffer terminal
   Oric) sont téléchargeables ; magazines/livres (PDF) sont consultables (fiche `V`).
 - **Catalogue complet** : ~2600 logiciels (dont ~1900 téléchargeables), ~700 magazines,

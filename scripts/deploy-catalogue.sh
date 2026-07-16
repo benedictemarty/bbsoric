@@ -23,10 +23,12 @@ source "$ROOT/deploy/deploy.conf"
 LIB="${ORIC_LIB:?definir ORIC_LIB=chemin/vers/OricProgramsLib (env ou deploy.conf)}"
 
 DRY=false
+RESEED=false
 LIMIT=0
 while [ $# -gt 0 ]; do
     case "$1" in
         --dry-run) DRY=true ;;
+        --reseed) RESEED=true ;;
         --limit) LIMIT="$2"; shift ;;
         *) echo "option inconnue : $1" >&2; exit 2 ;;
     esac
@@ -36,6 +38,7 @@ done
 SSH="ssh -p $VPS_PORT -o ConnectTimeout=8 $VPS_USER@$VPS_HOST"
 REMOTE_FILES="/var/lib/bbsoric/files"
 REMOTE_CONTENT="/etc/bbsoric/site.json"
+REMOTE_DB="/var/lib/bbsoric/dwdata/bbsoric.db"   # base SQLite DataWindow
 
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
@@ -79,8 +82,25 @@ echo "--- 5. Dépôt du site.json fusionné (atomique) ---"
 scp -P "$VPS_PORT" -o ConnectTimeout=8 "$STAGE/site.json" "$VPS_USER@$VPS_HOST:$REMOTE_CONTENT.new"
 $SSH "mv $REMOTE_CONTENT.new $REMOTE_CONTENT"
 
-echo "--- 6. Redémarrage du service (semis de la nouvelle source au boot) ---"
-$SSH "systemctl restart $SERVICE"
+if $RESEED; then
+    echo "--- 6. Re-semis : arrêt, DROP de la table catalogue, redémarrage ---"
+    $SSH "systemctl stop $SERVICE"
+    $SSH "REMOTE_DB=$REMOTE_DB python3 -" <<'PYEOF'
+import os, sqlite3
+p = os.environ["REMOTE_DB"]
+if os.path.exists(p):
+    con = sqlite3.connect(p)
+    con.execute("DROP TABLE IF EXISTS catalogue")
+    con.commit(); con.close()
+    print("  table 'catalogue' supprimée (sera re-semée au démarrage)")
+else:
+    print("  pas de base SQLite (%s) — semis complet au démarrage" % p)
+PYEOF
+    $SSH "systemctl start $SERVICE"
+else
+    echo "--- 6. Redémarrage du service (semis de la nouvelle source au boot) ---"
+    $SSH "systemctl restart $SERVICE"
+fi
 sleep 2
 ETAT=$($SSH "systemctl is-active $SERVICE" 2>/dev/null || true)
 echo "  service : $ETAT"

@@ -6,6 +6,15 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Fixed (Catalogue prod — re-semis, 17/07/2026)
+- **Données du catalogue de prod rafraîchies** : certains gros fichiers (ex. `1337.dsk`,
+  205 Ko) restaient annoncés `téléchargeables` car la table SQLite `catalogue`, semée une
+  fois, n'est pas re-semée (idempotent) après une régénération. Nouvelle option
+  `scripts/deploy-catalogue.sh --reseed` (arrêt → DROP table `catalogue` → redémarrage →
+  re-semis depuis le `site.json` à jour). Re-déployé en prod : la fiche de `1337` n'annonce
+  plus de fichier téléchargeable (colonne `Fichier` vide, conforme au générateur conscient
+  des tailles). Doc `docs/catalogue-deploy.md` mise à jour.
+
 ### Verified (E2 — terminal réel contre la production, 17/07/2026)
 - **Le firmware terminal Oric (dans `oric1-emu`) se connecte au serveur de PRODUCTION**
   via le modem émulé et atteint le catalogue en direct. Nouveau `scripts/test-emulateur-prod.sh` :
