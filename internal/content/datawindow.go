@@ -56,15 +56,25 @@ func (src SourceDonnees) EstAPI() bool { return src.TypeSource == "api" }
 
 // DataWindow est le descripteur de page qui présente une source en grille.
 type DataWindow struct {
-	Source            string   `json:"source"`             // clé dans Site.SourcesDonnees
-	ColonnesAffichees []string `json:"colonnes_affichees"` // colonnes montrées dans la grille
-	Largeurs          []int    `json:"largeurs,omitempty"` // largeur de chaque colonne (en cases)
-	CouleurEntete     string   `json:"couleur_entete,omitempty"`
-	CouleurLignes     string   `json:"couleur_lignes,omitempty"`
-	CouleurSelection  string   `json:"couleur_selection,omitempty"`
-	LignesMax         int      `json:"lignes_max,omitempty"`      // lignes de données par écran
-	Editable          bool     `json:"editable,omitempty"`        // autorise N/E/D (créer/éditer/supprimer)
-	FichierColonne    string   `json:"fichier_colonne,omitempty"` // colonne portant le nom du fichier téléchargeable (touche X → XMODEM)
+	Source            string      `json:"source"`             // clé dans Site.SourcesDonnees
+	ColonnesAffichees []string    `json:"colonnes_affichees"` // colonnes montrées dans la grille
+	Largeurs          []int       `json:"largeurs,omitempty"` // largeur de chaque colonne (en cases)
+	CouleurEntete     string      `json:"couleur_entete,omitempty"`
+	CouleurLignes     string      `json:"couleur_lignes,omitempty"`
+	CouleurSelection  string      `json:"couleur_selection,omitempty"`
+	LignesMax         int         `json:"lignes_max,omitempty"`      // lignes de données par écran
+	Editable          bool        `json:"editable,omitempty"`        // autorise N/E/D (créer/éditer/supprimer)
+	FichierColonne    string      `json:"fichier_colonne,omitempty"` // colonne portant le nom du fichier téléchargeable (touche X → XMODEM)
+	FiltreFixe        *FiltreFixe `json:"filtre_fixe,omitempty"`     // filtre permanent de la page (ex. categorie = "Logiciel")
+}
+
+// FiltreFixe est un filtre d'égalité permanent appliqué par une page (en plus du
+// filtre utilisateur F) : la grille n'affiche que les lignes où Colonne = Valeur.
+// Sert aux vues par catégorie (Logiciels / Magazines / Livres) sans que
+// l'utilisateur ait à saisir un filtre.
+type FiltreFixe struct {
+	Colonne string `json:"colonne"`
+	Valeur  string `json:"valeur"`
 }
 
 // --- Gardes anti-injection SQL (partagées avec le moteur) ---
@@ -157,6 +167,14 @@ func (dw *DataWindow) validate(pageID string, s *Site) error {
 	if dw.FichierColonne != "" {
 		if _, ok := src.Colonnes[dw.FichierColonne]; !ok {
 			return fmt.Errorf("page %q : fichier_colonne %q absente de la source %q", pageID, dw.FichierColonne, dw.Source)
+		}
+	}
+	if dw.FiltreFixe != nil {
+		if dw.FiltreFixe.Colonne == "" {
+			return fmt.Errorf("page %q : filtre_fixe sans colonne", pageID)
+		}
+		if _, ok := src.Colonnes[dw.FiltreFixe.Colonne]; !ok {
+			return fmt.Errorf("page %q : filtre_fixe colonne %q absente de la source %q", pageID, dw.FiltreFixe.Colonne, dw.Source)
 		}
 	}
 	if len(dw.Largeurs) != 0 && len(dw.Largeurs) != len(dw.ColonnesAffichees) {

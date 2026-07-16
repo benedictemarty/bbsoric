@@ -86,6 +86,33 @@ func TestListerTriPaginationFiltre(t *testing.T) {
 	}
 }
 
+// TestListerFiltreFixe : le filtre fixe d'une page (égalité sur une colonne) ne
+// montre que les lignes correspondantes, et se combine (AND) avec le filtre F (J3).
+func TestListerFiltreFixe(t *testing.T) {
+	e := testEngine(t)
+	src := repertoire()
+	if err := e.InitialiserSource(src); err != nil {
+		t.Fatal(err)
+	}
+	ffLyon := content.FiltreFixe{Colonne: "ville", Valeur: "Lyon"}
+
+	// Filtre fixe seul : Lyon -> Alice + Charlie (2).
+	rows, total, _ := e.Lister(src, "", "nom ASC", 1, 10, ffLyon)
+	if total != 2 || len(rows) != 2 {
+		t.Fatalf("filtre fixe Lyon : total=%d len=%d (attendu 2)", total, len(rows))
+	}
+	// Combiné au filtre utilisateur (AND) : Lyon + "Alice" -> Alice seule.
+	rows, total, _ = e.Lister(src, "Alice", "", 1, 10, ffLyon)
+	if total != 1 || len(rows) != 1 || rows[0]["nom"] != "Alice" {
+		t.Errorf("filtre fixe + recherche : total=%d rows=%v", total, rows)
+	}
+	// Le filtre fixe exclut bien les autres (Bob/Paris n'apparaît jamais).
+	rows, _, _ = e.Lister(src, "Bob", "", 1, 10, ffLyon)
+	if len(rows) != 0 {
+		t.Errorf("Bob (Paris) ne doit pas passer le filtre fixe Lyon : %v", rows)
+	}
+}
+
 func TestCRUDRoundTrip(t *testing.T) {
 	e := testEngine(t)
 	src := repertoire()
@@ -215,5 +242,5 @@ func TestCellString(t *testing.T) {
 }
 
 // helpers de test
-func fmtInt(i int64) string         { return strconv.FormatInt(i, 10) }
-func contains(s, sub string) bool   { return strings.Contains(s, sub) }
+func fmtInt(i int64) string       { return strconv.FormatInt(i, 10) }
+func contains(s, sub string) bool { return strings.Contains(s, sub) }

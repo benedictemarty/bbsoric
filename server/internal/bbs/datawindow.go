@@ -47,13 +47,18 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 	var rows []map[string]string
 	var total int
 
+	// Filtre fixe éventuel de la page (vue par catégorie sans saisie utilisateur).
+	var ff []content.FiltreFixe
+	if dw.FiltreFixe != nil {
+		ff = []content.FiltreFixe{*dw.FiltreFixe}
+	}
 	load := func() {
 		tri := triString(dw, triEtat)
 		var err error
-		rows, total, err = eng.Lister(src, filtre, tri, page, parPage)
+		rows, total, err = eng.Lister(src, filtre, tri, page, parPage, ff...)
 		if err == nil && len(rows) == 0 && total > 0 && page > 1 {
 			page = 1
-			rows, total, err = eng.Lister(src, filtre, tri, page, parPage)
+			rows, total, err = eng.Lister(src, filtre, tri, page, parPage, ff...)
 		}
 		if err != nil {
 			rows, total = nil, 0

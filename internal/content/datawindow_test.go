@@ -97,6 +97,22 @@ func TestValidateFichierColonne(t *testing.T) {
 	}
 }
 
+// TestValidateFiltreFixe : filtre_fixe doit désigner une colonne existante (J3).
+func TestValidateFiltreFixe(t *testing.T) {
+	ok := siteAvecDW(func(s *Site) {
+		s.Pages["g"].DataWindow.FiltreFixe = &FiltreFixe{Colonne: "nom", Valeur: "Alice"}
+	})
+	if err := ok.Validate(); err != nil {
+		t.Errorf("filtre_fixe valide refusé : %v", err)
+	}
+	ko := siteAvecDW(func(s *Site) {
+		s.Pages["g"].DataWindow.FiltreFixe = &FiltreFixe{Colonne: "absente", Valeur: "x"}
+	})
+	if err := ko.Validate(); err == nil {
+		t.Error("filtre_fixe colonne inconnue aurait dû échouer")
+	}
+}
+
 func TestValidateDataWindowErreurs(t *testing.T) {
 	cas := []struct {
 		nom string

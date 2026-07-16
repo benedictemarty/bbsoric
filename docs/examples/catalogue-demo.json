@@ -1,9 +1,9 @@
 {
-  "_comment": "Catalogue de telechargement BBS Oric (genere par scripts/gen-catalogue.py). Logiciels telechargeables (touche X, XMODEM) si le fichier est petit et present dans -files ; magazines/livres (PDF) consultables (fiche V) mais non telechargeables vers l'Oric. Filtre F, tri T, pagination S/R.",
+  "_comment": "Catalogue de telechargement BBS Oric (genere par scripts/gen-catalogue.py). UN catalogue (colonne categorie) presente en 3 vues filtrees (filtre_fixe). Logiciels telechargeables (touche X, XMODEM) si le fichier est petit et present dans -files ; magazines/livres (PDF) consultables (fiche V) mais non telechargeables vers l'Oric. Filtre utilisateur F, tri T, pagination S/R.",
   "start": "catalogue",
   "sources_donnees": {
-    "cat_logiciels": {
-      "table": "cat_logiciels",
+    "catalogue": {
+      "table": "catalogue",
       "tri_defaut": "titre ASC",
       "lignes_par_page": 15,
       "colonnes": {
@@ -12,6 +12,11 @@
           "libelle": "ID",
           "cle_primaire": true,
           "auto_increment": true
+        },
+        "categorie": {
+          "type": "TEXT",
+          "libelle": "Categorie",
+          "longueur_max": 10
         },
         "titre": {
           "type": "TEXT",
@@ -44,246 +49,192 @@
           "auteur": "Chema (José Maria Enguita)",
           "annee": 2010,
           "fichier": "1337.dsk",
-          "description": "Oric version of  \" ELITE \""
+          "description": "Oric version of  \" ELITE \"",
+          "categorie": "Logiciel"
         },
         {
           "titre": "1815",
           "auteur": "Alain Savetier",
           "annee": 1984,
           "fichier": "1815.tap",
-          "description": "War"
+          "description": "War",
+          "categorie": "Logiciel"
         },
         {
           "titre": "2048",
           "auteur": "",
           "annee": 0,
           "fichier": "",
-          "description": ""
+          "description": "",
+          "categorie": "Logiciel"
         },
         {
           "titre": "256 BYTES ZOOMING CIRCLES DEMO",
           "auteur": "",
           "annee": 0,
           "fichier": "",
-          "description": ""
+          "description": "",
+          "categorie": "Logiciel"
         },
         {
           "titre": "3D BATTLESTAR",
           "auteur": "",
           "annee": 0,
           "fichier": "",
-          "description": ""
+          "description": "",
+          "categorie": "Logiciel"
         },
         {
           "titre": "3D Driver",
           "auteur": "Peter Shaw",
           "annee": 1983,
           "fichier": "DRIVER.tap",
-          "description": "Stay on Track"
+          "description": "Stay on Track",
+          "categorie": "Logiciel"
         },
         {
           "titre": "3D Fongus",
           "auteur": "Luc-Edouard Thibaud",
           "annee": 1985,
           "fichier": "3D Fongus.TAP",
-          "description": "[uncategorized]"
+          "description": "[uncategorized]",
+          "categorie": "Logiciel"
         },
         {
           "titre": "3D GRAPH",
           "auteur": "",
           "annee": 0,
           "fichier": "",
-          "description": ""
-        }
-      ]
-    },
-    "cat_magazines": {
-      "table": "cat_magazines",
-      "tri_defaut": "titre ASC",
-      "lignes_par_page": 15,
-      "colonnes": {
-        "id": {
-          "type": "INTEGER",
-          "libelle": "ID",
-          "cle_primaire": true,
-          "auto_increment": true
+          "description": "",
+          "categorie": "Logiciel"
         },
-        "titre": {
-          "type": "TEXT",
-          "libelle": "Titre",
-          "longueur_max": 40
-        },
-        "auteur": {
-          "type": "TEXT",
-          "libelle": "Auteur",
-          "longueur_max": 40
-        },
-        "annee": {
-          "type": "INTEGER",
-          "libelle": "Annee"
-        },
-        "fichier": {
-          "type": "TEXT",
-          "libelle": "Fichier",
-          "longueur_max": 16
-        },
-        "description": {
-          "type": "TEXT",
-          "libelle": "Description",
-          "longueur_max": 200
-        }
-      },
-      "donnees": [
         {
           "titre": "ASM.N02.1986.04",
           "auteur": "asm",
           "annee": 0,
           "fichier": "",
-          "description": "ASM.N02.1986.04.pdf"
+          "description": "ASM.N02.1986.04.pdf",
+          "categorie": "Magazine"
         },
         {
           "titre": "ASM.N03.1986.05",
           "auteur": "asm",
           "annee": 0,
           "fichier": "",
-          "description": "ASM.N03.1986.05.pdf"
+          "description": "ASM.N03.1986.05.pdf",
+          "categorie": "Magazine"
         },
         {
           "titre": "ASM.N06.1986.08",
           "auteur": "asm",
           "annee": 0,
           "fichier": "",
-          "description": "ASM.N06.1986.08.pdf"
+          "description": "ASM.N06.1986.08.pdf",
+          "categorie": "Magazine"
         },
         {
           "titre": "ASM.N07.1986.09",
           "auteur": "asm",
           "annee": 0,
           "fichier": "",
-          "description": "ASM.N07.1986.09.pdf"
+          "description": "ASM.N07.1986.09.pdf",
+          "categorie": "Magazine"
         },
         {
           "titre": "ASM.N09.1987.02",
           "auteur": "asm",
           "annee": 0,
           "fichier": "",
-          "description": "ASM.N09.1987.02.pdf"
+          "description": "ASM.N09.1987.02.pdf",
+          "categorie": "Magazine"
         },
         {
           "titre": "ASM.N10.1987.03",
           "auteur": "asm",
           "annee": 0,
           "fichier": "",
-          "description": "ASM.N10.1987.03.pdf"
+          "description": "ASM.N10.1987.03.pdf",
+          "categorie": "Magazine"
         },
         {
           "titre": "ASM.N11.1987.04",
           "auteur": "asm",
           "annee": 0,
           "fichier": "",
-          "description": "ASM.N11.1987.04.pdf"
+          "description": "ASM.N11.1987.04.pdf",
+          "categorie": "Magazine"
         },
         {
           "titre": "ASM.N14.1987.09",
           "auteur": "asm",
           "annee": 0,
           "fichier": "",
-          "description": "ASM.N14.1987.09.pdf"
-        }
-      ]
-    },
-    "cat_livres": {
-      "table": "cat_livres",
-      "tri_defaut": "titre ASC",
-      "lignes_par_page": 15,
-      "colonnes": {
-        "id": {
-          "type": "INTEGER",
-          "libelle": "ID",
-          "cle_primaire": true,
-          "auto_increment": true
+          "description": "ASM.N14.1987.09.pdf",
+          "categorie": "Magazine"
         },
-        "titre": {
-          "type": "TEXT",
-          "libelle": "Titre",
-          "longueur_max": 40
-        },
-        "auteur": {
-          "type": "TEXT",
-          "libelle": "Auteur",
-          "longueur_max": 40
-        },
-        "annee": {
-          "type": "INTEGER",
-          "libelle": "Annee"
-        },
-        "fichier": {
-          "type": "TEXT",
-          "libelle": "Fichier",
-          "longueur_max": 16
-        },
-        "description": {
-          "type": "TEXT",
-          "libelle": "Description",
-          "longueur_max": 200
-        }
-      },
-      "donnees": [
         {
           "titre": "1987 01 01 tast 1987 01",
           "auteur": "",
           "annee": 0,
           "fichier": "",
-          "description": "1987-01-01-tast-1987-01.pdf"
+          "description": "1987-01-01-tast-1987-01.pdf",
+          "categorie": "Livre"
         },
         {
           "titre": "8 pravetz 8d manual",
           "auteur": "",
           "annee": 0,
           "fichier": "",
-          "description": "8-pravetz-8d-manual.pdf"
+          "description": "8-pravetz-8d-manual.pdf",
+          "categorie": "Livre"
         },
         {
           "titre": "Computer Answers Issue8405",
           "auteur": "",
           "annee": 0,
           "fichier": "",
-          "description": "Computer_Answers_Issue8405.pdf"
+          "description": "Computer_Answers_Issue8405.pdf",
+          "categorie": "Livre"
         },
         {
           "titre": "Creepy Computer Games 1983 Usborne Publi",
           "auteur": "",
           "annee": 0,
           "fichier": "",
-          "description": "Creepy_Computer_Games_1983_Usborne_Publishing.pdf"
+          "description": "Creepy_Computer_Games_1983_Usborne_Publishing.pdf",
+          "categorie": "Livre"
         },
         {
           "titre": "CumanaTheBestNameInMemoryadvert",
           "auteur": "",
           "annee": 0,
           "fichier": "",
-          "description": "CumanaTheBestNameInMemoryadvert.pdf"
+          "description": "CumanaTheBestNameInMemoryadvert.pdf",
+          "categorie": "Livre"
         },
         {
           "titre": "Cuthbert Chronicles The Vol. 1 No. 5 198",
           "auteur": "",
           "annee": 0,
           "fichier": "",
-          "description": "Cuthbert_Chronicles_The_Vol._1_No._5_1985_Computer_Marketplace_GB.pdf"
+          "description": "Cuthbert_Chronicles_The_Vol._1_No._5_1985_Computer_Marketplace_GB.pdf",
+          "categorie": "Livre"
         },
         {
           "titre": "Hobbydata041983.04NO",
           "auteur": "",
           "annee": 0,
           "fichier": "",
-          "description": "Hobbydata041983.04NO.pdf"
+          "description": "Hobbydata041983.04NO.pdf",
+          "categorie": "Livre"
         },
         {
           "titre": "HomeComputerPravez",
           "auteur": "",
           "annee": 0,
           "fichier": "",
-          "description": "HomeComputerPravez.pdf"
+          "description": "HomeComputerPravez.pdf",
+          "categorie": "Livre"
         }
       ]
     }
@@ -317,7 +268,7 @@
     "g_logiciels": {
       "title": "LOGICIELS",
       "datawindow": {
-        "source": "cat_logiciels",
+        "source": "catalogue",
         "colonnes_affichees": [
           "titre",
           "auteur",
@@ -328,13 +279,17 @@
           12,
           4
         ],
+        "filtre_fixe": {
+          "colonne": "categorie",
+          "valeur": "Logiciel"
+        },
         "fichier_colonne": "fichier"
       }
     },
     "g_magazines": {
       "title": "MAGAZINES",
       "datawindow": {
-        "source": "cat_magazines",
+        "source": "catalogue",
         "colonnes_affichees": [
           "titre",
           "auteur",
@@ -344,13 +299,17 @@
           17,
           12,
           4
-        ]
+        ],
+        "filtre_fixe": {
+          "colonne": "categorie",
+          "valeur": "Magazine"
+        }
       }
     },
     "g_livres": {
       "title": "LIVRES",
       "datawindow": {
-        "source": "cat_livres",
+        "source": "catalogue",
         "colonnes_affichees": [
           "titre",
           "auteur",
@@ -360,7 +319,11 @@
           17,
           12,
           4
-        ]
+        ],
+        "filtre_fixe": {
+          "colonne": "categorie",
+          "valeur": "Livre"
+        }
       }
     }
   }

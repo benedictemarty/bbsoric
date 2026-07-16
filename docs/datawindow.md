@@ -117,9 +117,18 @@ l'envoie via XMODEM (même chemin que l'applet `download`). La légende affiche
 `X=DL` uniquement si une colonne fichier est définie et la bibliothèque active.
 Contrainte : le buffer terminal Oric (~30 Ko, garde serveur 64 Ko) limite les
 téléchargements aux petits fichiers (ex. `.tap`) — un PDF de magazine/livre se
-**consulte** (fiche `V`) mais ne se télécharge pas vers l'Oric. Le générateur
-`scripts/gen-catalogue.py` produit un catalogue (Logiciels/Magazines/Livres) depuis
-la bibliothèque OricProgramsLib ; démo : `docs/examples/catalogue-demo.json`.
+**consulte** (fiche `V`) mais ne se télécharge pas vers l'Oric.
+
+**Vue filtrée par page** (`filtre_fixe`). Un descriptif peut porter
+`"filtre_fixe": {"colonne": "categorie", "valeur": "Logiciel"}` : la page n'affiche
+que les lignes où `colonne = valeur`, **sans saisie de filtre**, tout en restant
+combinable (AND) avec le filtre utilisateur `F` et le tri `T`. Cela permet **un seul**
+source `catalogue` (colonne `categorie`) présenté en plusieurs vues (Logiciels /
+Magazines / Livres). Appliqué en SQL (SQLite) et en mémoire (source API).
+
+Le générateur `scripts/gen-catalogue.py` produit un catalogue (1 source + 3 vues
+filtrées + menu) depuis la bibliothèque OricProgramsLib ; démo :
+`docs/examples/catalogue-demo.json`.
 
 La ligne sélectionnée (et le bandeau titre) sont en **vidéo inverse** (bit 7 par
 caractère, propre à l'Oric). Le rendu utilise le **buffer différentiel**

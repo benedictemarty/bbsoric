@@ -192,8 +192,14 @@
 - [ ] **J2** (3) As an admin, I want to **populate `-files` with the downloadable `.tap`**
   (small software) and generate the **full** catalogue, so the catalogue is live in production.
   *(Manual/ops: run the generator without `--limit`, copy fitting `.tap` files into `-files`.)*
-- [ ] **J3** (3) As a user, I want a **fixed per-page category filter** (a page shows only its
-  category without pressing `F`), and/or richer detail (screenshot ref, download count).
+- [x] **J3** (3) As a user, I want a **fixed per-page category filter** (a page shows only its
+  category without pressing `F`).
+  *(Done 16/07 — `filtre_fixe` (colonne = valeur) on the DataWindow descriptor, combinable
+  (AND) with the `F` filter; applied in SQL (SQLite) and in-memory (API). The catalogue is now
+  a single `catalogue` source presented as 3 filtered views. Tests `TestListerFiltreFixe`,
+  `TestValidateFiltreFixe`. Verified in the real server.)*
+- [ ] **J4** (2) As a user, I want **richer detail** (screenshot reference, download count,
+  genre) on the fiche `V`, using the extra OricProgramsLib metadata.
 
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.

@@ -122,10 +122,22 @@ func jsonValeurString(v any) string {
 
 // listerAPI applique recherche (sous-chaîne), tri et pagination côté client sur
 // les enregistrements récupérés de l'API. Renvoie la page et le total filtré.
-func (e *Engine) listerAPI(src content.SourceDonnees, recherche, tri string, page, parPage int) ([]map[string]string, int, error) {
+func (e *Engine) listerAPI(src content.SourceDonnees, recherche, tri string, page, parPage int, filtreFixe ...content.FiltreFixe) ([]map[string]string, int, error) {
 	rows, err := e.fetchAPI(src)
 	if err != nil {
 		return nil, 0, err
+	}
+
+	// Filtre fixe de la page (égalité exacte sur une colonne) : appliqué en mémoire.
+	if len(filtreFixe) > 0 && filtreFixe[0].Colonne != "" {
+		col, val := filtreFixe[0].Colonne, filtreFixe[0].Valeur
+		var gardees []map[string]string
+		for _, r := range rows {
+			if r[col] == val {
+				gardees = append(gardees, r)
+			}
+		}
+		rows = gardees
 	}
 
 	// Filtre : sous-chaîne (insensible à la casse) sur n'importe quelle colonne.

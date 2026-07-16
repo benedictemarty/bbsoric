@@ -39,10 +39,10 @@ type Engine struct {
 	dbPool  map[string]*sql.DB
 	poolMu  sync.RWMutex
 
-	httpClient *http.Client                // pour les sources type_source="api"
-	apiCache   map[string]apiCacheEntry    // URL -> réponse mise en cache
+	httpClient *http.Client             // pour les sources type_source="api"
+	apiCache   map[string]apiCacheEntry // URL -> réponse mise en cache
 	apiMu      sync.Mutex
-	now        func() time.Time            // horloge (injectable pour les tests de TTL)
+	now        func() time.Time // horloge (injectable pour les tests de TTL)
 }
 
 // NewEngine crée le moteur ; les bases sont stockées dans dataDir.
@@ -390,9 +390,9 @@ func (e *Engine) importerDonnees(tx *sql.Tx, srcDef content.SourceDonnees, donne
 
 // Lister retourne les enregistrements (map colonne→texte), avec pagination,
 // recherche globale LIKE (sur les colonnes TEXT) et tri, plus le total.
-func (e *Engine) Lister(srcDef content.SourceDonnees, recherche, tri string, page, parPage int) ([]map[string]string, int, error) {
+func (e *Engine) Lister(srcDef content.SourceDonnees, recherche, tri string, page, parPage int, filtreFixe ...content.FiltreFixe) ([]map[string]string, int, error) {
 	if srcDef.EstAPI() {
-		return e.listerAPI(srcDef, recherche, tri, page, parPage)
+		return e.listerAPI(srcDef, recherche, tri, page, parPage, filtreFixe...)
 	}
 	table := srcDef.Table
 	if err := content.ValiderNomSQL(table); err != nil {
@@ -411,16 +411,29 @@ func (e *Engine) Lister(srcDef content.SourceDonnees, recherche, tri string, pag
 	var whereParts []string
 	var params []any
 	if recherche != "" {
+		var likeParts []string
 		for nomCol, colDef := range srcDef.Colonnes {
 			if colDef.Type == "TEXT" || colDef.Type == "" {
-				whereParts = append(whereParts, fmt.Sprintf(`"%s" LIKE ?`, nomCol))
+				likeParts = append(likeParts, fmt.Sprintf(`"%s" LIKE ?`, nomCol))
 				params = append(params, "%"+recherche+"%")
 			}
 		}
+		if len(likeParts) > 0 {
+			// Groupé pour ne pas rompre l'AND du filtre fixe (préséance OR/AND).
+			whereParts = append(whereParts, "("+strings.Join(likeParts, " OR ")+")")
+		}
+	}
+	// Filtre fixe de la page (égalité sur une colonne, ANDé au filtre utilisateur).
+	if len(filtreFixe) > 0 && filtreFixe[0].Colonne != "" {
+		if err := content.ValiderNomSQL(filtreFixe[0].Colonne); err != nil {
+			return nil, 0, err
+		}
+		whereParts = append(whereParts, fmt.Sprintf(`"%s" = ?`, filtreFixe[0].Colonne))
+		params = append(params, filtreFixe[0].Valeur)
 	}
 	whereSQL := ""
 	if len(whereParts) > 0 {
-		whereSQL = "WHERE " + strings.Join(whereParts, " OR ")
+		whereSQL = "WHERE " + strings.Join(whereParts, " AND ")
 	}
 
 	var total int

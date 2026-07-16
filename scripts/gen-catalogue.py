@@ -123,31 +123,14 @@ def magazine_rows(lib, limit):
     return rows
 
 
-def source(table, tri, rows):
-    """Descripteur de source DataWindow (colonnes + seed)."""
-    return {
-        "table": table,
-        "tri_defaut": tri,
-        "lignes_par_page": 15,
-        "colonnes": {
-            "id":          {"type": "INTEGER", "libelle": "ID", "cle_primaire": True, "auto_increment": True},
-            "titre":       {"type": "TEXT", "libelle": "Titre", "longueur_max": 40},
-            "auteur":      {"type": "TEXT", "libelle": "Auteur", "longueur_max": 40},
-            "annee":       {"type": "INTEGER", "libelle": "Annee"},
-            "fichier":     {"type": "TEXT", "libelle": "Fichier", "longueur_max": 16},
-            "description": {"type": "TEXT", "libelle": "Description", "longueur_max": 200},
-        },
-        "donnees": rows,
-    }
-
-
-def grille(source_name, titre, avec_fichier):
-    """Page grille (colonnes affichées + budget 40 col). fichier_colonne pour les
-    logiciels (touche X)."""
+def grille(titre, categorie, avec_fichier):
+    """Page grille : vue filtrée d'une catégorie du catalogue unique (filtre_fixe),
+    sans que l'utilisateur ait à saisir de filtre. fichier_colonne pour les logiciels."""
     dw = {
-        "source": source_name,
+        "source": "catalogue",
         "colonnes_affichees": ["titre", "auteur", "annee"],
         "largeurs": [17, 12, 4],  # 1 + 3(index) + (17+1)+(12+1)+(4+1) = 40
+        "filtre_fixe": {"colonne": "categorie", "valeur": categorie},
     }
     if avec_fichier:
         dw["fichier_colonne"] = "fichier"
@@ -158,17 +141,37 @@ def build_site(lib, limit):
     logiciels = software_rows(lib, limit)
     magazines = magazine_rows(lib, limit)
     livres = pdf_rows(os.path.join(lib, "library", "livres"), limit, recursive=False)
+    for r in logiciels:
+        r["categorie"] = "Logiciel"
+    for r in magazines:
+        r["categorie"] = "Magazine"
+    for r in livres:
+        r["categorie"] = "Livre"
+    toutes = logiciels + magazines + livres
 
     site = {
         "_comment": "Catalogue de telechargement BBS Oric (genere par scripts/gen-catalogue.py). "
+                    "UN catalogue (colonne categorie) presente en 3 vues filtrees (filtre_fixe). "
                     "Logiciels telechargeables (touche X, XMODEM) si le fichier est petit et present "
                     "dans -files ; magazines/livres (PDF) consultables (fiche V) mais non telechargeables "
-                    "vers l'Oric. Filtre F, tri T, pagination S/R.",
+                    "vers l'Oric. Filtre utilisateur F, tri T, pagination S/R.",
         "start": "catalogue",
         "sources_donnees": {
-            "cat_logiciels": source("cat_logiciels", "titre ASC", logiciels),
-            "cat_magazines": source("cat_magazines", "titre ASC", magazines),
-            "cat_livres":    source("cat_livres", "titre ASC", livres),
+            "catalogue": {
+                "table": "catalogue",
+                "tri_defaut": "titre ASC",
+                "lignes_par_page": 15,
+                "colonnes": {
+                    "id":          {"type": "INTEGER", "libelle": "ID", "cle_primaire": True, "auto_increment": True},
+                    "categorie":   {"type": "TEXT", "libelle": "Categorie", "longueur_max": 10},
+                    "titre":       {"type": "TEXT", "libelle": "Titre", "longueur_max": 40},
+                    "auteur":      {"type": "TEXT", "libelle": "Auteur", "longueur_max": 40},
+                    "annee":       {"type": "INTEGER", "libelle": "Annee"},
+                    "fichier":     {"type": "TEXT", "libelle": "Fichier", "longueur_max": 16},
+                    "description": {"type": "TEXT", "libelle": "Description", "longueur_max": 200},
+                },
+                "donnees": toutes,
+            },
         },
         "pages": {
             "catalogue": {"title": "CATALOGUE", "entries": [
@@ -177,9 +180,9 @@ def build_site(lib, limit):
                 {"key": "3", "label": "Livres (%d)" % len(livres), "target": "g_livres"},
                 {"key": "Q", "label": "Retour", "target": "__back__"},
             ]},
-            "g_logiciels": grille("cat_logiciels", "LOGICIELS", avec_fichier=True),
-            "g_magazines": grille("cat_magazines", "MAGAZINES", avec_fichier=False),
-            "g_livres":    grille("cat_livres", "LIVRES", avec_fichier=False),
+            "g_logiciels": grille("LOGICIELS", "Logiciel", avec_fichier=True),
+            "g_magazines": grille("MAGAZINES", "Magazine", avec_fichier=False),
+            "g_livres":    grille("LIVRES", "Livre", avec_fichier=False),
         },
     }
     return site, (len(logiciels), len(magazines), len(livres))
