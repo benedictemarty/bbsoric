@@ -243,21 +243,56 @@ func colonnesOrdre(src content.SourceDonnees, dw *content.DataWindow) []string {
 	return append(ordre, reste...)
 }
 
-// dwDetail affiche une fiche détail plein écran (lecture seule).
+// dwDetail affiche une fiche détail plein écran (lecture seule). Les valeurs
+// longues (ex. description) sont REPLIÉES sur plusieurs lignes (alignées sous la
+// valeur) au lieu d'être tronquées à 22 colonnes.
 func dwDetail(s *server.Session, src content.SourceDonnees, dw *content.DataWindow, row map[string]string) {
+	const labW, valW, maxLines = 14, 22, 4
 	header(s, "FICHE")
 	b := oascii.New()
+	indent := fmt.Sprintf(" %-*s ", labW, "") // alignement des lignes de suite
 	for _, col := range colonnesOrdre(src, dw) {
 		lib := col
 		if cd, ok := src.Colonnes[col]; ok && cd.Libelle != "" {
 			lib = cd.Libelle
 		}
-		b.Ink(oascii.Cyan).Text(fmt.Sprintf(" %-14s ", trunc(lib, 14)))
-		b.Ink(oascii.White).Text(trunc(row[col], 22)).Newline()
+		lignes := wrapValeur(row[col], valW, maxLines)
+		b.Ink(oascii.Cyan).Text(fmt.Sprintf(" %-*s ", labW, trunc(lib, labW)))
+		b.Ink(oascii.White).Text(lignes[0]).Newline()
+		for _, suite := range lignes[1:] {
+			b.Text(indent).Ink(oascii.White).Text(suite).Newline()
+		}
 	}
 	b.Newline().Ink(oascii.Green).Text("Appuyez sur une touche...").Newline()
 	_ = s.Write(b.String())
 	anyKey(s)
+}
+
+// wrapValeur replie une valeur en lignes d'au plus width caractères (au plus
+// maxLines ; la dernière est marquée « ... » si la valeur est tronquée). Renvoie
+// toujours au moins une ligne (vide si la valeur est vide).
+func wrapValeur(v string, width, maxLines int) []string {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return []string{""}
+	}
+	var out []string
+	for len(v) > 0 && len(out) < maxLines {
+		if len(v) <= width {
+			out = append(out, v)
+			v = ""
+			break
+		}
+		out = append(out, v[:width])
+		v = v[width:]
+	}
+	if v != "" { // reste tronqué : marquer la dernière ligne
+		last := out[len(out)-1]
+		if len(last) > 3 {
+			out[len(out)-1] = last[:len(last)-3] + "..."
+		}
+	}
+	return out
 }
 
 // champsSaisissables renvoie les colonnes à saisir (hors clé auto et auto-date).

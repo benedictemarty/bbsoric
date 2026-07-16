@@ -7,6 +7,13 @@ versioning [SemVer](https://semver.org/lang/en/).
 ## [Unreleased]
 
 ### Added (Epic J — Catalogue de téléchargement, 16/07/2026)
+- **J4 — Fiche détail enrichie.** La fiche `V` **replie** désormais les valeurs longues
+  (auteur, description) sur plusieurs lignes au lieu de les tronquer à 22 colonnes
+  (`wrapValeur`, au plus 4 lignes, marquage `...` si tronqué). Le générateur ajoute au
+  catalogue des colonnes de métadonnées OricProgramsLib — **genre, éditeur, langue, joueurs,
+  référence de capture d'écran** — qui apparaissent sur la fiche. *(Le « nombre de
+  téléchargements » par item n'existe pas dans les données de la bibliothèque : non ajouté
+  plutôt qu'inventé.)* Test `TestWrapValeur` ; vérifié dans le serveur réel.
 - **Catalogue Logiciels / Magazines / Livres** basé sur DataWindow. Nouvelle option
   `fichier_colonne` sur un descriptif DataWindow (`internal/content`) : la colonne nommée
   porte le fichier téléchargeable ; la grille expose alors la touche **`X` (télécharger la

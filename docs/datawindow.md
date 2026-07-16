@@ -130,6 +130,12 @@ Le générateur `scripts/gen-catalogue.py` produit un catalogue (1 source + 3 vu
 filtrées + menu) depuis la bibliothèque OricProgramsLib ; démo :
 `docs/examples/catalogue-demo.json`.
 
+La **fiche détail** (`V`) affiche toutes les colonnes de la ligne ; les valeurs
+longues (ex. `description`) sont **repliées** sur plusieurs lignes (au plus 4,
+marquage `...` au-delà) au lieu d'être tronquées. Un catalogue peut ainsi porter
+des colonnes de métadonnées riches (genre, éditeur, langue, joueurs, référence de
+capture) qui apparaissent sur la fiche.
+
 La ligne sélectionnée (et le bandeau titre) sont en **vidéo inverse** (bit 7 par
 caractère, propre à l'Oric). Le rendu utilise le **buffer différentiel**
 `oascii.Screen` : déplacer la sélection ne réémet que les deux lignes changées.

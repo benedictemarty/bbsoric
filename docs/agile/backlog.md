@@ -198,8 +198,12 @@
   (AND) with the `F` filter; applied in SQL (SQLite) and in-memory (API). The catalogue is now
   a single `catalogue` source presented as 3 filtered views. Tests `TestListerFiltreFixe`,
   `TestValidateFiltreFixe`. Verified in the real server.)*
-- [ ] **J4** (2) As a user, I want **richer detail** (screenshot reference, download count,
-  genre) on the fiche `V`, using the extra OricProgramsLib metadata.
+- [x] **J4** (2) As a user, I want **richer detail** on the fiche `V`, using the extra
+  OricProgramsLib metadata.
+  *(Done 16/07 — the fiche now **wraps** long values (author, description) instead of
+  truncating at 22 cols (`wrapValeur`); generator adds genre / publisher / language / players /
+  screenshot-reference columns. Per-item download count is not in the library data → not added
+  (not invented). Test `TestWrapValeur`. Verified in the real server.)*
 
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.

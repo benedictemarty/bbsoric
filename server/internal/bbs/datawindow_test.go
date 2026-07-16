@@ -227,6 +227,36 @@ func TestDataWindowDownloadFromRow(t *testing.T) {
 	}
 }
 
+// TestWrapValeur : la fiche détail replie une valeur longue (au lieu de tronquer)
+// et marque la troncature au-delà de maxLines (J4).
+func TestWrapValeur(t *testing.T) {
+	if got := wrapValeur("", 22, 4); len(got) != 1 || got[0] != "" {
+		t.Errorf("vide -> une ligne vide, got %v", got)
+	}
+	if got := wrapValeur("court", 22, 4); len(got) != 1 || got[0] != "court" {
+		t.Errorf("court -> une ligne, got %v", got)
+	}
+	long := "AAAAAAAAAA"    // 10
+	v := long + long + long // 30 -> 2 lignes de 22 + reste
+	got := wrapValeur(v, 22, 4)
+	if len(got) != 2 || len(got[0]) != 22 {
+		t.Errorf("repli: got %v (len0=%d)", got, len(got[0]))
+	}
+	// Troncature : beaucoup de contenu, cap 2 lignes -> dernière finit par "..."
+	g2 := wrapValeur(bytesRepeat('X', 200), 22, 2)
+	if len(g2) != 2 || g2[1][len(g2[1])-3:] != "..." {
+		t.Errorf("troncature attendue avec ... ; got %v", g2)
+	}
+}
+
+func bytesRepeat(c byte, n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = c
+	}
+	return string(b)
+}
+
 func TestDataWindowGrille(t *testing.T) {
 	addr, stop := startBBSData(t, dwSiteJSON)
 	defer stop()

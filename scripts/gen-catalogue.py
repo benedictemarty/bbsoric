@@ -59,11 +59,20 @@ def software_rows(lib, limit):
         fichier = basename(m.get("filename"))
         auteur = clean(m.get("programmer")) or clean(m.get("publisher"))
         desc = clean(m.get("comment")) or clean(m.get("genre"))
+        pf, pt = m.get("players_from"), m.get("players_to")
+        joueurs = ""
+        if pf:
+            joueurs = str(pf) if not pt or pt == pf else "%s-%s" % (pf, pt)
         rows.append({
             "titre": (clean(p.get("title")) or clean(m.get("name")))[:40],
             "auteur": auteur[:40],
             "annee": m.get("year") or 0,
             "fichier": fichier,        # téléchargeable si présent dans -files et petit
+            "genre": clean(m.get("genre"))[:20],
+            "editeur": clean(m.get("publisher"))[:40],
+            "langue": clean(m.get("language"))[:16],
+            "joueurs": joueurs,
+            "ecran": basename(m.get("screenshot")),   # référence capture d'écran
             "description": desc[:200],
         })
         if limit and len(rows) >= limit:
@@ -167,6 +176,11 @@ def build_site(lib, limit):
                     "titre":       {"type": "TEXT", "libelle": "Titre", "longueur_max": 40},
                     "auteur":      {"type": "TEXT", "libelle": "Auteur", "longueur_max": 40},
                     "annee":       {"type": "INTEGER", "libelle": "Annee"},
+                    "genre":       {"type": "TEXT", "libelle": "Genre", "longueur_max": 20},
+                    "editeur":     {"type": "TEXT", "libelle": "Editeur", "longueur_max": 40},
+                    "langue":      {"type": "TEXT", "libelle": "Langue", "longueur_max": 16},
+                    "joueurs":     {"type": "TEXT", "libelle": "Joueurs", "longueur_max": 8},
+                    "ecran":       {"type": "TEXT", "libelle": "Ecran", "longueur_max": 32},
                     "fichier":     {"type": "TEXT", "libelle": "Fichier", "longueur_max": 16},
                     "description": {"type": "TEXT", "libelle": "Description", "longueur_max": 200},
                 },

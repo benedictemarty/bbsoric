@@ -32,6 +32,31 @@
           "type": "INTEGER",
           "libelle": "Annee"
         },
+        "genre": {
+          "type": "TEXT",
+          "libelle": "Genre",
+          "longueur_max": 20
+        },
+        "editeur": {
+          "type": "TEXT",
+          "libelle": "Editeur",
+          "longueur_max": 40
+        },
+        "langue": {
+          "type": "TEXT",
+          "libelle": "Langue",
+          "longueur_max": 16
+        },
+        "joueurs": {
+          "type": "TEXT",
+          "libelle": "Joueurs",
+          "longueur_max": 8
+        },
+        "ecran": {
+          "type": "TEXT",
+          "libelle": "Ecran",
+          "longueur_max": 32
+        },
         "fichier": {
           "type": "TEXT",
           "libelle": "Fichier",
@@ -49,6 +74,11 @@
           "auteur": "Chema (José Maria Enguita)",
           "annee": 2010,
           "fichier": "1337.dsk",
+          "genre": "Trading",
+          "editeur": "Defence Force",
+          "langue": "English",
+          "joueurs": "1",
+          "ecran": "1337.png",
           "description": "Oric version of  \" ELITE \"",
           "categorie": "Logiciel"
         },
@@ -57,7 +87,64 @@
           "auteur": "Alain Savetier",
           "annee": 1984,
           "fichier": "1815.tap",
+          "genre": "War",
+          "editeur": "Cobra Soft",
+          "langue": "French",
+          "joueurs": "1",
+          "ecran": "1815.png",
           "description": "War",
+          "categorie": "Logiciel"
+        },
+        {
+          "titre": "1K Centipede",
+          "auteur": "Stephane Geley",
+          "annee": 2011,
+          "fichier": "Centi.TAP",
+          "genre": "Centipede",
+          "editeur": "",
+          "langue": "English",
+          "joueurs": "1",
+          "ecran": "1K_Centipede.png",
+          "description": "Game crashes upon loading unless loaded from within the emulator itself using the ' INSERT TAPE ' option.",
+          "categorie": "Logiciel"
+        },
+        {
+          "titre": "1K Snake",
+          "auteur": "Stephane Geley",
+          "annee": 2006,
+          "fichier": "1ksnake.tap",
+          "genre": "Worm/Snake",
+          "editeur": "",
+          "langue": "English",
+          "joueurs": "1",
+          "ecran": "1K_Snake.png",
+          "description": "Worm/Snake",
+          "categorie": "Logiciel"
+        },
+        {
+          "titre": "1K Space",
+          "auteur": "Stephane Geley",
+          "annee": 2006,
+          "fichier": "1KSPACE.TAP",
+          "genre": "Space Invaders",
+          "editeur": "",
+          "langue": "English",
+          "joueurs": "1",
+          "ecran": "1K_Space.png",
+          "description": "Game crashes upon loading unless loaded from within the emulator itself using the ' INSERT TAPE ' option.",
+          "categorie": "Logiciel"
+        },
+        {
+          "titre": "1K Sudoku",
+          "auteur": "Stephane Geley",
+          "annee": 2011,
+          "fichier": "1K Sudoku.TAP",
+          "genre": "Logical Game",
+          "editeur": "",
+          "langue": "English",
+          "joueurs": "1",
+          "ecran": "1K_Sudoku.png",
+          "description": "Logical Game",
           "categorie": "Logiciel"
         },
         {
@@ -65,6 +152,11 @@
           "auteur": "",
           "annee": 0,
           "fichier": "",
+          "genre": "",
+          "editeur": "",
+          "langue": "",
+          "joueurs": "",
+          "ecran": "",
           "description": "",
           "categorie": "Logiciel"
         },
@@ -73,38 +165,11 @@
           "auteur": "",
           "annee": 0,
           "fichier": "",
-          "description": "",
-          "categorie": "Logiciel"
-        },
-        {
-          "titre": "3D BATTLESTAR",
-          "auteur": "",
-          "annee": 0,
-          "fichier": "",
-          "description": "",
-          "categorie": "Logiciel"
-        },
-        {
-          "titre": "3D Driver",
-          "auteur": "Peter Shaw",
-          "annee": 1983,
-          "fichier": "DRIVER.tap",
-          "description": "Stay on Track",
-          "categorie": "Logiciel"
-        },
-        {
-          "titre": "3D Fongus",
-          "auteur": "Luc-Edouard Thibaud",
-          "annee": 1985,
-          "fichier": "3D Fongus.TAP",
-          "description": "[uncategorized]",
-          "categorie": "Logiciel"
-        },
-        {
-          "titre": "3D GRAPH",
-          "auteur": "",
-          "annee": 0,
-          "fichier": "",
+          "genre": "",
+          "editeur": "",
+          "langue": "",
+          "joueurs": "",
+          "ecran": "",
           "description": "",
           "categorie": "Logiciel"
         },
