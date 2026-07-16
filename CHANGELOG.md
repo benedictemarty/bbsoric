@@ -6,6 +6,14 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Verified (E2 — terminal réel contre la production, 17/07/2026)
+- **Le firmware terminal Oric (dans `oric1-emu`) se connecte au serveur de PRODUCTION**
+  via le modem émulé et atteint le catalogue en direct. Nouveau `scripts/test-emulateur-prod.sh` :
+  boote `client/term.tap`, compose `pavi.3617.fr:6502` (répertoire), navigue accueil → invité →
+  menu → Catalogue → Logiciels, capture l'écran (`docs/img/e2-prod-catalogue.png` : grille
+  LOGICIELS, « Page 1/131 2604 enreg. », légende `X=DL`). Meilleure validation possible sans
+  Oric physique (firmware réel + séquence AT + réseau → BBS déployé). Reste le matériel réel (E2).
+
 ### Added (Epic J — Catalogue de téléchargement, 16/07/2026)
 - **J5 — Outillage de déploiement du catalogue.** `gen-catalogue.py --merge-into <site.json>`
   greffe le catalogue (source + pages + entrée de menu, clé `8` sur `main`) dans un site.json

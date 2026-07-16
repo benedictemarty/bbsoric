@@ -47,7 +47,11 @@
 - [x] **E1** (3) As a user, I want a **connection doc** for WiFiModem + LOCI.
   *(`docs/hardware-connection.md`: ACIA `$031C`/LOCI `$0380`, AT, 9600 8N1, recipe T1–T9)*
 - [~] **E2** (5) As a user, I want to connect from a **real Oric**.
-  *(terminal validated in the emulator; hardware test awaiting a physical Oric)*
+  *(terminal validated in the emulator; hardware test awaiting a physical Oric.
+  17/07: the terminal firmware, in `oric1-emu`, dials the **PRODUCTION** server via
+  the emulated modem (`scripts/test-emulateur-prod.sh` → `--serial modem:pavi.3617.fr:6502`)
+  and reaches the live catalogue — `docs/img/e2-prod-catalogue.png` (LOGICIELS grid,
+  2604 entries, X=DL). Only the physical Oric + WiFi modem + LOCI/ACIA remains.)*
 - [x] **E3** (3) As an admin, I want to **deploy** the server (Docker) and **supervise** it.
   *(prod systemd + Docker image ~18 MB + `/healthz`,`/metrics` + probe/timer)*
 - [x] **E4** (3) As an admin, I want to **back up and restore the state** (accounts,
