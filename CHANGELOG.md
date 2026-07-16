@@ -6,6 +6,32 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Fixed (Sprint 11 slice 1 — bugs réels, 16/07/2026)
+- **S11.1 — Présence propagée après login via une page `form`.** `applyFormAction`
+  (`server/internal/bbs/form.go`) posait `State.User` sans appeler `setPresenceHandle` (à la
+  différence de `login.go`) : un utilisateur authentifié par une page `form` restait affiché
+  « connexion… » dans « qui est en ligne » et le chat. Ajout de `setPresenceHandle(ac.State,
+  u.Handle)` dans les cas login **et** register. Test de régression `TestFormLoginSetsPresence`
+  (vérifié : échoue sans le correctif, handle restant `connexion...`).
+- **S11.2 — Refus propre d'un fichier trop volumineux au téléchargement.** L'en-tête de
+  download (`downloadHeader`, `xfer.go`) code la taille réelle sur 16 bits ; au-delà de 65535
+  octets elle était tronquée silencieusement (sauvegarde terminal corrompue). Ajout d'une garde
+  `maxDownloadSize` (0xFFFF) refusant le fichier avec un message explicite avant tout transfert.
+  Test `TestDownloadTooLarge`. *(Variante « en-tête élargi » côté firmware = S11.2b, non traitée.)*
+
+### Added
+- **Sprint 11 — Code quality & hardening** (`ROADMAP.md`) : décomposition de l'Epic I en
+  12 tâches techniques (S11.1→S11.12) réparties en 4 slices (bugs réels → sécurité →
+  robustesse/tests → hygiène), chacune reliée à sa story, avec `fichier:ligne` et test
+  d'acceptation.
+- **Epic I — Code quality & hardening** (`docs/agile/backlog.md`) : 11 user stories issues
+  de l'analyse complète du code du 16/07/2026 (serveur / studio / `internal/` partagé /
+  firmware Oric), classées bugs réels → sécurité → robustesse/tests → hygiène, chaque
+  story citant le `fichier:ligne` concerné.
+- **`CLAUDE.md`** — guide d'onboarding pour Claude Code : commandes (`make`), architecture des trois
+  sous-projets (server / studio / client), couche OASCII, moteur BBS (Site JSON, applets, modèle d'entrée
+  ReadKey/ReadLine), concepts transverses (DataWindow, HIRES, XMODEM, terminal), et conventions du projet.
+
 ### Fixed (HIRES — revue qualité, 28/06/2026)
 - **`fillbox` ne dégénère plus en colonne d'1 pixel.** `fb_hline` (`client/hires.s`)
   échangeait `hx0`/`hx1` **en place** pour ordonner les bornes ; comme `hires_fillbox`

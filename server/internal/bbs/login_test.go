@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/benedictemarty/bbsoric/internal/content"
+	"github.com/benedictemarty/bbsoric/server/internal/presence"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
@@ -25,6 +26,23 @@ func startServerFull(t *testing.T, store *content.Store, users *user.Store) (add
 	}
 	cfg := server.Config{Addr: ln.Addr().String(), IdleTimeout: 30 * time.Second}
 	srv := server.New(cfg, WelcomeHandler{Store: store, Users: users}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	ctx, cancel := context.WithCancel(context.Background())
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() { defer wg.Done(); srv.Serve(ctx, ln) }()
+	return ln.Addr().String(), func() { cancel(); _ = ln.Close(); wg.Wait() }
+}
+
+// startServerFullPresence démarre un BBS avec comptes ET registre de présence.
+func startServerFullPresence(t *testing.T, store *content.Store, users *user.Store, reg *presence.Registry) (addr string, stop func()) {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	cfg := server.Config{Addr: ln.Addr().String(), IdleTimeout: 30 * time.Second}
+	srv := server.New(cfg, WelcomeHandler{Store: store, Users: users, Presence: reg},
+		slog.New(slog.NewTextHandler(io.Discard, nil)))
 	ctx, cancel := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -99,6 +117,51 @@ func TestFormPageLogin(t *testing.T) {
 	main := readUntil(t, r, conn, "MENU PRINCIPAL")
 	if !strings.Contains(main, "MENU PRINCIPAL") {
 		t.Errorf("navigation vers form.next échouée:\n%s", main)
+	}
+}
+
+// TestFormLoginSetsPresence : après une identification via une page « form »,
+// le pseudo doit être propagé au registre de présence (régression S11.1 — form.go
+// posait State.User sans appeler setPresenceHandle ; l'utilisateur restait affiché
+// « connexion… » dans « qui est en ligne » et le chat).
+func TestFormLoginSetsPresence(t *testing.T) {
+	users, _ := user.Open("")
+	if _, err := users.Register("Bob", "pw1234"); err != nil {
+		t.Fatalf("register fixture: %v", err)
+	}
+	reg := presence.New()
+	const json = `{
+      "start": "login",
+      "pages": {
+        "login": { "title": "CONNEXION",
+          "form": { "action": "login", "next": "main", "fields": [
+            { "key": "login", "label": "Pseudo" },
+            { "key": "password", "label": "Mot de passe", "secret": true }
+          ] } },
+        "main": { "title": "MENU PRINCIPAL", "entries": [
+          { "key": "Q", "label": "Quitter", "target": "__quit__" }
+        ] }
+      }
+    }`
+	addr, stop := startServerFullPresence(t, storeFromJSON(t, json), users, reg)
+	defer stop()
+
+	r, conn := dialAuth(t, addr)
+	defer conn.Close()
+	readUntil(t, r, conn, "Pseudo")
+	conn.Write([]byte("bob\r"))
+	readUntil(t, r, conn, "Mot de passe")
+	conn.Write([]byte("pw1234\r"))
+	readUntil(t, r, conn, "Bonjour") // login abouti : le handle est déjà propagé
+
+	found := false
+	for _, m := range reg.List() {
+		if m.Handle == "Bob" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("pseudo « Bob » absent du registre de présence après login via form: %+v", reg.List())
 	}
 }
 

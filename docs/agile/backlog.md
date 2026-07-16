@@ -107,6 +107,68 @@
   *(Interactive column sort (key `T`) + REST API sources (`type_source:"api"`,
   read-only) done 27/06. Remaining: studio editor, prefix search.)*
 
+## Epic I — Code quality & hardening (post-analysis, 16/07/2026)
+
+> Issued from the full source analysis of 16/07/2026 (server / studio / shared
+> `internal/` / Oric firmware). Priority order: real bugs → security → robustness →
+> hygiene. Each story cites the offending `file:line`.
+
+### Real bugs
+- [x] **I1** (2) As a connected user, I want my **pseudo to appear in "who's online" and chat
+  even when I log in via a `form` page**, so presence is consistent across auth paths.
+  *(Done 16/07: `form.go` `applyFormAction` now calls `setPresenceHandle` in the login and
+  register cases; regression test `TestFormLoginSetsPresence` — verified failing without the fix.)*
+- [x] **I2** (2) As a user downloading a file, I want the **real size to be sent whole**
+  (not truncated to 16 bits), so oversized files never corrupt the terminal save.
+  *(Done 16/07 — server-side guard: `downloadApplet` rejects a file larger than
+  `maxDownloadSize` (0xFFFF, the header's 16-bit size limit) with an explicit message;
+  test `TestDownloadTooLarge`. Widening the header to 3 bytes needs a matching `client/xmodem.s`
+  change → tracked as **I2b**.)*
+- [ ] **I2b** (3) As a user, I want to download files **larger than 64 KB** by widening the
+  download header size field, with a matching terminal firmware change. *(Requires emulator
+  validation per DoD; deferred from I2.)*
+
+### Security
+- [ ] **I3** (3) As an admin deploying content, I want the **remote backup/reload commands
+  to be injection-safe**, so a crafted profile value cannot run arbitrary shell on the target.
+  *(`studio/internal/deploy/deploy.go:269,304` interpolate `ContentPath`/`Service` into
+  shell strings run via `ssh` — `test -f %s && cp …`, `systemctl reload %s` — without
+  escaping; `parseProfile` accepts any value. Quote/validate, or use arg-separated form.)*
+- [ ] **I4** (3) As the server, I want **auth attempts rate-limited over time / per IP**, so
+  re-navigating to the login screen cannot be used for brute-force.
+  *(`login.go` caps 3 tries **per applet pass** only; PBKDF2 100k slows but does not block.)*
+- [ ] **I5** (2) As an admin, I want an **admin role gating DataWindow CRUD**, so not every
+  logged-in account can write editable grids.
+  *(`server/internal/bbs/datawindow.go:82` — `editable = dw.Editable && LoggedIn()`; no role.)*
+
+### Robustness & tests
+- [ ] **I6** (3) As a dev, I want **XMODEM hardened and fully tested**, so transfers fail cleanly.
+  *(`internal/xmodem`: the **checksum branch is never exercised** by tests — round-trip
+  always starts the receiver in CRC; error handling conflates timeouts with real I/O
+  errors (loops instead of surfacing); no `CAN` emitted on abort; `Receive` has no size
+  bound. Add checksum-path tests, distinguish error kinds, emit CAN, bound the buffer.)*
+- [ ] **I7** (2) As a content author, I want **`content.Validate` to catch more errors up
+  front**, so a bad site fails at load, not at runtime.
+  *(`internal/content`: referenced applet existence never checked (`content.go:158-177`);
+  column `Pattern` regex never compiled at validation; DataWindow default width hard-coded
+  `8` in `datawindow.go:153` — dedupe with the renderer to avoid drift.)*
+- [ ] **I8** (2) As a Forge user, I want the **HTTP layer to enforce methods and report real
+  status codes**, so client errors are distinguishable.
+  *(`studio/cmd/forge/main.go:181` etc. don't require POST and always return 200 with
+  `{ok:false}`; `readBody` errors are ignored throughout.)*
+
+### Hygiene (low effort)
+- [ ] **I9** (1) As a dev, I want the **phantom `"type"` field removed** from `content` test
+  JSON (and documented), since `Page` has no such field and Go silently ignores it.
+  *(`content_test.go:18,22,55`, `store_test.go:18,33,54` vs `content.go:44-55`.)*
+- [ ] **I10** (1) As a dev, I want the **attribute re-emission invariant deduplicated** between
+  `oascii.Builder.Newline` (sticky) and `render.reemitState`, and centering made rune-safe.
+  *(`oascii.go:206-216` vs `render.go:64-79`; `render.center/rule` use byte `len`.)*
+- [ ] **I11** (1) As a dev, I want the **firmware minor cleanups**: fix the misleading
+  `term.s:274` comment (`" -"` — the byte actually sent is `:`/`$3A`), drop the dead
+  `hires.s:747-748` (`lda hy1`/`sta hy1`), and note the tight XMODEM buffer margin vs the
+  `$B800` charset in `xmodem.s`.
+
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.
 - Tests passing for the delivered feature.

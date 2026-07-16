@@ -62,6 +62,13 @@ func downloadApplet(ctx context.Context, s *server.Session, ac *AppContext) Outc
 		writeErr(s, "Lecture impossible : "+err.Error())
 		return Outcome{}
 	}
+	// L'en-tête de download code la taille réelle sur 16 bits (cf. downloadHeader) :
+	// au-delà, elle serait tronquée silencieusement et la sauvegarde côté terminal
+	// serait corrompue. On refuse proprement plutôt que d'émettre un en-tête faux.
+	if len(data) > maxDownloadSize {
+		writeErr(s, fmt.Sprintf("Fichier trop volumineux : %do (max %do).", len(data), maxDownloadSize))
+		return Outcome{}
+	}
 
 	info := oascii.New()
 	info.Newline().Ink(oascii.Yellow).Text("Envoi de " + f.Name + " (XMODEM)...").Newline()
@@ -139,6 +146,11 @@ func uploadApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcom
 	_, _ = s.ReadKey()
 	return Outcome{Done: true}
 }
+
+// maxDownloadSize borne la taille d'un fichier téléchargeable : l'en-tête de
+// download (downloadHeader) code la taille réelle sur 2 octets, donc 0xFFFF est
+// le plus grand fichier représentable sans troncature.
+const maxDownloadSize = 0xFFFF
 
 // itoa convertit un petit entier positif (0..9) en chaîne.
 func itoa(n int) string { return string(rune('0' + n)) }

@@ -87,6 +87,31 @@ func TestDownloadApplet(t *testing.T) {
 	}
 }
 
+// TestDownloadTooLarge vérifie qu'un fichier dépassant la capacité de l'en-tête
+// 16 bits (maxDownloadSize) est refusé proprement, sans troncature silencieuse.
+func TestDownloadTooLarge(t *testing.T) {
+	lib, _ := files.Open(t.TempDir(), 0) // 0 = pas de limite d'upload
+	big := bytes.Repeat([]byte("A"), maxDownloadSize+1)
+	if err := lib.Write("gros.bin", big); err != nil {
+		t.Fatal(err)
+	}
+	addr, stop := startBBSFiles(t, xferSiteJSON, lib)
+	defer stop()
+
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+	r := bufio.NewReader(conn)
+
+	readUntil(t, r, conn, "Votre choix")
+	conn.Write([]byte("1")) // -> applet download
+	readUntil(t, r, conn, "annuler")
+	conn.Write([]byte("1"))                  // choisit gros.bin
+	readUntil(t, r, conn, "trop volumineux") // refus explicite, pas de transfert
+}
+
 func TestUploadApplet(t *testing.T) {
 	lib, _ := files.Open(t.TempDir(), 0)
 	addr, stop := startBBSFiles(t, xferSiteJSON, lib)

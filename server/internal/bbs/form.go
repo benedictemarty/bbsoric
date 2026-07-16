@@ -105,6 +105,7 @@ func applyFormAction(s *server.Session, action string, vals map[string]string, a
 			return false
 		}
 		ac.State.User = &u
+		setPresenceHandle(ac.State, u.Handle)
 		greet(s, u)
 		return true
 
@@ -119,6 +120,7 @@ func applyFormAction(s *server.Session, action string, vals map[string]string, a
 			return false
 		}
 		ac.State.User = &u
+		setPresenceHandle(ac.State, u.Handle)
 		b := oascii.New()
 		b.Newline().Ink(oascii.Green).Text(center("Compte cree !")).Newline()
 		b.Ink(oascii.Yellow).Text(center("Bienvenue " + u.Handle + " !")).Newline()

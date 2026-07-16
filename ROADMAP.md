@@ -95,6 +95,63 @@
 - [ ] **Later**: HIRES `paper` colour, flow-controlled bitmap transfer (vs raw blit),
   differential HIRES buffer for animation.
 
+## Sprint 11 — Code quality & hardening — 🎯 planned (16/07/2026)
+> Decomposition of **Epic I** (`docs/agile/backlog.md`), issued from the full source
+> analysis of 16/07/2026. Ordered by value: real bugs first, then security, robustness,
+> hygiene. Each task cites the offending `file:line` and its acceptance test. DoD applies
+> per task (CHANGELOG + tests green + doc if behaviour changes).
+
+### Slice 1 — Real bugs (I1, I2) — ✅ done (16/07/2026)
+- [x] **S11.1 — Presence via `form` applet** (I1): `applyFormAction` (`form.go`) now calls
+  `setPresenceHandle(ac.State, u.Handle)` in the login and register cases, as `login.go`
+  does. Regression test `TestFormLoginSetsPresence` — **verified failing without the fix**
+  (handle stayed `connexion...`).
+- [x] **S11.2 — Guard oversized download** (I2): `downloadApplet` refuses a file larger than
+  `maxDownloadSize` (0xFFFF — the 16-bit size header's limit) with an explicit message,
+  before any transfer, instead of silently truncating. Test `TestDownloadTooLarge`.
+- [ ] **S11.2b — Widen download header for files > 64 KB** (I2b): 3-byte size field + matching
+  `client/xmodem.s` change; needs emulator validation (DoD). Deferred.
+
+### Slice 2 — Security (I3, I4, I5)
+- [ ] **S11.3 — Injection-safe remote deploy** (I3): in `deploy.go:269,304` quote/validate
+  `ContentPath` and `Service` before interpolation (shell-escape helper, or restrict
+  `parseProfile` `deploy.go:155-187` to a safe charset `^[A-Za-z0-9._/@:-]+$`). *Test*:
+  `deploy_test.go` — a profile with `;`/`$(…)`/backticks in `ContentPath`/`Service` is
+  rejected at parse (or neutralised in the emitted command string).
+- [ ] **S11.4 — Auth rate-limiting over time** (I4): add a per-IP (and/or per-account)
+  attempt counter with a cooldown in the auth path (`login.go` / `user.Store.Authenticate`),
+  independent of the per-pass cap. *Test*: N failed logins from one IP across separate
+  applet passes get throttled.
+- [ ] **S11.5 — Admin role for DataWindow CRUD** (I5): add an `Admin` flag to `user.User`
+  and gate `editable` at `datawindow.go:82` on it (read stays open, write requires admin).
+  *Test*: `datawindow_test.go` — a non-admin logged-in user cannot mutate an editable grid.
+
+### Slice 3 — Robustness & tests (I6, I7, I8)
+- [ ] **S11.6 — XMODEM checksum-path tests** (I6a): add `xmodem_test.go` cases driving the
+  **checksum** branch (receiver starts with NAK), NAK re-send, repeated-block re-ACK.
+- [ ] **S11.7 — XMODEM error handling** (I6b): distinguish timeout from real I/O error
+  (`xmodem.go:131-133,162-165,197-207`) — surface I/O errors immediately; emit `CAN` on
+  abort; bound `Receive` growth with a max-blocks limit. *Test*: closed-conn surfaces an
+  I/O error, not `ErrTooManyNAK`; oversized transfer is refused.
+- [ ] **S11.8 — Stronger `content.Validate`** (I7): check referenced-applet existence
+  (`content.go:158-177`), compile column `Pattern` regexes at validation, and dedupe the
+  hard-coded default width (`datawindow.go:153`) with the renderer's value. *Test*: unknown
+  applet name and an invalid `Pattern` both fail `Site.Validate()`.
+- [ ] **S11.9 — Forge HTTP hardening** (I8): require POST where mutating
+  (`main.go:181` etc.), return real 4xx/5xx status codes, and stop ignoring `readBody`
+  errors. *Test*: `main_test.go` — GET on a mutating endpoint → 405; malformed body → 400.
+
+### Slice 4 — Hygiene (I9, I10, I11)
+- [ ] **S11.10 — Remove phantom `"type"` field** (I9): drop `"type":…` from the `content`
+  test JSON (`content_test.go`, `store_test.go`) or add a real `Type` field if intended;
+  add a note in `docs/content.md`.
+- [ ] **S11.11 — Dedupe re-emit invariant + rune-safe centering** (I10): factor the
+  attribute re-emission shared by `oascii.Builder.Newline` (`oascii.go:206-216`) and
+  `render.reemitState` (`render.go:64-79`); make `render.center/rule` count runes.
+- [ ] **S11.12 — Firmware minor cleanups** (I11): fix the `term.s:274` comment (byte sent is
+  `:`/`$3A`, not `" -"`), remove dead `hires.s:747-748` (`lda hy1`/`sta hy1`), and add a
+  buffer-margin note in `xmodem.s` (`$4000` buffer vs `$B800` charset).
+
 ## Sprint 8 — Close out file transfer + news — 🎯 in progress (27/06/2026)
 > Wraps up Epic G (transfer) and starts Epic D (content/news).
 - [~] **S1 — User-editable filename at reception** (terminal): before saving, the
