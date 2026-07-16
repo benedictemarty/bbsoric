@@ -15,11 +15,33 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/benedictemarty/bbsoric/internal/content"
 )
+
+// profileFieldRe restreint les valeurs de profil à un jeu de caractères sûr.
+// HOST/USER/PORT/CONTENT_PATH/SERVICE sont interpolés dans des commandes exécutées
+// par le shell distant (ssh « test -f … && cp … », « systemctl reload … ») : un
+// métacaractère shell (`;`, `$(…)`, backtick, espace, guillemet…) permettrait une
+// injection de commande. On refuse tout ce qui sort de ce jeu.
+var profileFieldRe = regexp.MustCompile(`^[A-Za-z0-9._@/-]*$`)
+
+// validateProfileFields refuse un profil dont un champ interpolé dans une commande
+// shell distante contient un caractère non sûr.
+func validateProfileFields(p *Profile) error {
+	for _, f := range []struct{ label, v string }{
+		{"HOST", p.Host}, {"USER", p.User}, {"PORT", p.Port},
+		{"CONTENT_PATH", p.ContentPath}, {"SERVICE", p.Service},
+	} {
+		if !profileFieldRe.MatchString(f.v) {
+			return fmt.Errorf("valeur de profil %s invalide (caractères non autorisés) : %q", f.label, f.v)
+		}
+	}
+	return nil
+}
 
 // Profile décrit un environnement de déploiement.
 type Profile struct {
@@ -63,6 +85,9 @@ func SaveProfile(baseDir, siteFile, env string, p *Profile) error {
 	}
 	if env == "" || strings.ContainsAny(env, `/\`) || strings.Contains(env, "..") {
 		return fmt.Errorf("environnement invalide : %q", env)
+	}
+	if err := validateProfileFields(p); err != nil {
+		return err
 	}
 	dir := filepath.Join(baseDir, SiteKey(siteFile))
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -211,6 +236,9 @@ func Deploy(p *Profile, site []byte, dryRun bool, stamp string) (*Result, error)
 	}
 	if p.ContentPath == "" {
 		return nil, fmt.Errorf("profil %q : CONTENT_PATH manquant", p.Name)
+	}
+	if err := validateProfileFields(p); err != nil {
+		return nil, err
 	}
 	if _, err := content.Parse(site); err != nil {
 		return nil, fmt.Errorf("contenu invalide, déploiement refusé : %w", err)

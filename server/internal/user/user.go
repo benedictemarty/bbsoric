@@ -39,11 +39,12 @@ const (
 
 // User est un compte du BBS.
 type User struct {
-	Handle    string    `json:"handle"`    // pseudo affiché (casse d'origine)
-	PassHash  string    `json:"passHash"`  // mot de passe haché (jamais en clair)
-	Created   time.Time `json:"created"`   // date de création
-	LastLogin time.Time `json:"lastLogin"` // dernière connexion réussie
-	Calls     int       `json:"calls"`     // nombre d'appels (connexions réussies)
+	Handle    string    `json:"handle"`          // pseudo affiché (casse d'origine)
+	PassHash  string    `json:"passHash"`        // mot de passe haché (jamais en clair)
+	Created   time.Time `json:"created"`         // date de création
+	LastLogin time.Time `json:"lastLogin"`       // dernière connexion réussie
+	Calls     int       `json:"calls"`           // nombre d'appels (connexions réussies)
+	Admin     bool      `json:"admin,omitempty"` // sysop : droit d'écriture DataWindow (CRUD)
 }
 
 // NormalizeHandle renvoie la forme canonique d'un pseudo, utilisée comme clé

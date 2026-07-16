@@ -6,6 +6,25 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Security (Sprint 11 slice 2 — 16/07/2026)
+- **S11.3 — Déploiement studio à l'épreuve de l'injection shell.** `deployRemote`
+  (`studio/internal/deploy`) interpolait `CONTENT_PATH`/`SERVICE` dans des commandes
+  exécutées par le shell distant (`ssh … test -f … && cp …`, `systemctl reload …`) sans
+  échappement. Ajout de `validateProfileFields` (jeu de caractères sûr `[A-Za-z0-9._@/-]`)
+  appliqué à `Deploy` **et** `SaveProfile` : un champ de profil contenant un métacaractère
+  (`;`, `$(…)`, backtick…) est refusé avant toute exécution. Test `TestDeployRejectsShellInjection`.
+- **S11.4 — Rate-limiting anti brute-force sur l'authentification.** Nouveau composant
+  `server/internal/throttle` (fenêtre glissante par clé, sûr en concurrence, horloge
+  injectable). Câblé sur l'IP client : au plus **5 échecs d'auth par IP sur 5 minutes**, en
+  complément du plafond de 3 essais par passage d'applet. Appliqué à `login` et à l'action
+  `form` login. Tests unitaires du limiteur + intégration `TestLoginRateLimited`.
+- **S11.5 — Écriture DataWindow réservée aux administrateurs.** Nouveau champ `User.Admin`
+  (le 1er compte enregistré devient sysop ; flag éditable dans le JSON des comptes pour en
+  promouvoir d'autres). L'écriture (CRUD) exige désormais `SessionState.IsAdmin()` ; la
+  lecture reste ouverte à tous, et la légende de la grille n'affiche `N/E/D` qu'aux admins.
+  Tests `TestFirstAccountIsAdmin`, `TestAdminFlagPersists`, `TestDataWindowGuestCannotCreate`
+  (vérifié en échec sous l'ancien gate `LoggedIn`).
+
 ### Fixed (Sprint 11 slice 1 — bugs réels, 16/07/2026)
 - **S11.1 — Présence propagée après login via une page `form`.** `applyFormAction`
   (`server/internal/bbs/form.go`) posait `State.User` sans appeler `setPresenceHandle` (à la

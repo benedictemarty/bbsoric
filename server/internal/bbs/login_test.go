@@ -14,6 +14,7 @@ import (
 	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/server/internal/presence"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
+	"github.com/benedictemarty/bbsoric/server/internal/throttle"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
 
@@ -42,6 +43,23 @@ func startServerFullPresence(t *testing.T, store *content.Store, users *user.Sto
 	}
 	cfg := server.Config{Addr: ln.Addr().String(), IdleTimeout: 30 * time.Second}
 	srv := server.New(cfg, WelcomeHandler{Store: store, Users: users, Presence: reg},
+		slog.New(slog.NewTextHandler(io.Discard, nil)))
+	ctx, cancel := context.WithCancel(context.Background())
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() { defer wg.Done(); srv.Serve(ctx, ln) }()
+	return ln.Addr().String(), func() { cancel(); _ = ln.Close(); wg.Wait() }
+}
+
+// startServerThrottled démarre un BBS avec comptes ET limiteur anti brute-force.
+func startServerThrottled(t *testing.T, store *content.Store, users *user.Store, lim *throttle.Limiter) (addr string, stop func()) {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	cfg := server.Config{Addr: ln.Addr().String(), IdleTimeout: 30 * time.Second}
+	srv := server.New(cfg, WelcomeHandler{Store: store, Users: users, Login: lim},
 		slog.New(slog.NewTextHandler(io.Discard, nil)))
 	ctx, cancel := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
@@ -162,6 +180,42 @@ func TestFormLoginSetsPresence(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("pseudo « Bob » absent du registre de présence après login via form: %+v", reg.List())
+	}
+}
+
+// TestLoginRateLimited : après le quota d'échecs par IP (limiteur), les tentatives
+// suivantes sont bloquées avec un message dédié (régression S11.4).
+func TestLoginRateLimited(t *testing.T) {
+	users, _ := user.Open("")
+	if _, err := users.Register("Bob", "pw1234"); err != nil {
+		t.Fatalf("register fixture: %v", err)
+	}
+	lim := throttle.New(2, time.Minute) // 2 échecs max -> le 3e essai est bloqué
+	addr, stop := startServerThrottled(t, storeFromJSON(t, authSiteJSON), users, lim)
+	defer stop()
+
+	r, conn := dialAuth(t, addr)
+	defer conn.Close()
+	readUntil(t, r, conn, "Votre choix")
+	conn.Write([]byte("1")) // -> applet login
+
+	// 1er échec (mauvais mot de passe) enregistré par le limiteur.
+	readUntil(t, r, conn, "Pseudo")
+	conn.Write([]byte("Bob\r"))
+	readUntil(t, r, conn, "Mot de passe")
+	conn.Write([]byte("mauvais\r"))
+	readUntil(t, r, conn, "Echec")
+
+	// 2e échec : après lui, le quota (2) est atteint et la tentative suivante est
+	// bloquée. On lit d'un trait jusqu'au message de blocage (il suit le 2e Echec
+	// dans le même flux, d'où un seul readUntil pour ne rien perdre).
+	readUntil(t, r, conn, "Pseudo")
+	conn.Write([]byte("Bob\r"))
+	readUntil(t, r, conn, "Mot de passe")
+	conn.Write([]byte("mauvais\r"))
+	out := readUntil(t, r, conn, "Trop de tentatives")
+	if !strings.Contains(out, "Trop de tentatives") {
+		t.Errorf("blocage anti brute-force attendu ; vu : %q", out)
 	}
 }
 

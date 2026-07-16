@@ -125,6 +125,32 @@ func TestDeployRefusesInvalidSite(t *testing.T) {
 	}
 }
 
+// TestDeployRejectsShellInjection : un champ de profil interpolé dans une commande
+// shell distante (CONTENT_PATH, SERVICE, HOST…) contenant un métacaractère doit
+// faire échouer le déploiement AVANT toute exécution (régression S11.3).
+func TestDeployRejectsShellInjection(t *testing.T) {
+	cases := []*Profile{
+		{Name: "p", Host: "h", User: "root", Port: "22", ContentPath: "/etc/x.json; rm -rf /", Service: "bbsoric", Reload: "reload"},
+		{Name: "p", Host: "h", User: "root", Port: "22", ContentPath: "/etc/x.json", Service: "bbsoric; reboot", Reload: "reload"},
+		{Name: "p", Host: "h;evil", User: "root", Port: "22", ContentPath: "/etc/x.json", Service: "bbsoric", Reload: "reload"},
+		{Name: "p", Host: "h", User: "root", Port: "22", ContentPath: "/etc/$(id).json", Service: "bbsoric", Reload: "reload"},
+	}
+	for i, p := range cases {
+		if _, err := Deploy(p, []byte(validSite), false, "S"); err == nil {
+			t.Errorf("cas %d : une injection shell doit être refusée (%+v)", i, p)
+		}
+		// dry-run aussi : la validation précède le dispatch
+		if _, err := Deploy(p, []byte(validSite), true, "S"); err == nil {
+			t.Errorf("cas %d : injection refusée même en dry-run", i)
+		}
+	}
+	// SaveProfile doit aussi refuser de persister un profil dangereux.
+	bad := &Profile{ContentPath: "/etc/x.json; rm -rf /", Host: "h", User: "root", Port: "22"}
+	if err := SaveProfile(t.TempDir(), "site.json", "prod", bad); err == nil {
+		t.Errorf("SaveProfile doit refuser un CONTENT_PATH avec métacaractère")
+	}
+}
+
 func TestDeployDryRunDoesNothing(t *testing.T) {
 	dir := t.TempDir()
 	target := filepath.Join(dir, "site.json")

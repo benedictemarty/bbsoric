@@ -21,10 +21,11 @@ import (
 
 	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/server/internal/bbs"
-	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/datawindow"
+	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/presence"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
+	"github.com/benedictemarty/bbsoric/server/internal/throttle"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
 
@@ -93,7 +94,10 @@ func main() {
 	}
 
 	online := presence.New()
-	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users, Files: lib, Presence: online, Data: dwEngine}, log)
+	// Garde-fou anti brute-force : au plus 5 échecs d'auth par IP sur 5 minutes,
+	// en complément du plafond de 3 essais par passage d'applet (S11.4).
+	loginLimiter := throttle.New(5, 5*time.Minute)
+	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users, Files: lib, Presence: online, Data: dwEngine, Login: loginLimiter}, log)
 
 	// Arrêt propre sur SIGINT/SIGTERM.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

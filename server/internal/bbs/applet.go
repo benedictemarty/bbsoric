@@ -8,6 +8,7 @@ import (
 	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/presence"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
+	"github.com/benedictemarty/bbsoric/server/internal/throttle"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
 )
 
@@ -23,6 +24,8 @@ type SessionState struct {
 	Data     *datawindow.Engine // moteur DataWindow SQLite (peut être nil)
 	MemberID uint64             // identifiant de la session dans le registre de présence
 	Handle   string             // pseudo affiché (compte ou « Invité-N »)
+	IP       string             // adresse IP du client (clé de rate-limiting)
+	Login    *throttle.Limiter  // limiteur anti brute-force sur l'auth (peut être nil)
 }
 
 // displayName renvoie le pseudo affiché de la session, avec un repli sûr.
@@ -35,6 +38,10 @@ func (st *SessionState) displayName() string {
 
 // LoggedIn indique si la session est authentifiée ou en accès invité.
 func (st *SessionState) LoggedIn() bool { return st != nil && (st.User != nil || st.Guest) }
+
+// IsAdmin indique si la session est authentifiée sur un compte sysop (admin).
+// Un invité n'est jamais admin. Sert à gater l'écriture DataWindow (S11.5).
+func (st *SessionState) IsAdmin() bool { return st != nil && st.User != nil && st.User.Admin }
 
 // Outcome indique au moteur quoi faire après l'exécution d'un applet.
 type Outcome struct {

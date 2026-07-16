@@ -91,7 +91,11 @@ func (s *Store) Register(handle, password string) (User, error) {
 	if _, exists := s.users[key]; exists {
 		return User{}, fmt.Errorf("le pseudo %q est deja pris", clean)
 	}
-	u := &User{Handle: clean, PassHash: hash, Created: s.now()}
+	// Le tout premier compte devient sysop (admin) — convention BBS. Les comptes
+	// suivants sont des utilisateurs normaux ; le flag reste éditable dans le JSON
+	// des comptes pour promouvoir d'autres sysops (cf. S11.5).
+	firstAccount := len(s.users) == 0
+	u := &User{Handle: clean, PassHash: hash, Created: s.now(), Admin: firstAccount}
 	s.users[key] = u
 	if err := s.saveLocked(); err != nil {
 		delete(s.users, key) // rollback mémoire si la persistance échoue

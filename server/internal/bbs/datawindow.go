@@ -18,7 +18,7 @@ func init() { Register("datawindow", dataWindowApplet) }
 //
 //	+/-  bouger la sélection      S/R  page suivante/précédente
 //	V    fiche détail             F    filtre LIKE   C  effacer le filtre
-//	N/E/D créer/éditer/supprimer (si éditable et connecté)   Q/ESC  quitter
+//	N/E/D créer/éditer/supprimer (si éditable et admin)   Q/ESC  quitter
 func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome {
 	dw := ac.Page.DataWindow
 	if dw == nil || ac.Site == nil {
@@ -70,16 +70,18 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 		}
 		return 1
 	}
+	// L'écriture (CRUD) exige un compte administrateur : la lecture reste ouverte
+	// à tous, mais seul un admin peut créer/éditer/supprimer (cf. ADR-0004, S11.5).
+	editable := dw.Editable && ac.State.IsAdmin()
+
 	scr := oascii.NewScreen()
 	draw := func() bool {
-		renderGrid(scr, dw, src, rows, sel, page, parPage, total, filtre, triLabel(src, dw, triEtat))
+		renderGrid(scr, dw, src, rows, sel, page, parPage, total, filtre, triLabel(src, dw, triEtat), editable)
 		return s.Write(string(scr.Render())) == nil
 	}
 	// Recharge complète de l'écran (après une saisie plein écran qui a brouillé
 	// l'affichage côté terminal).
 	redrawAll := func() bool { scr.Reset(); return draw() }
-
-	editable := dw.Editable && ac.State.LoggedIn()
 
 	load()
 	if !redrawAll() {

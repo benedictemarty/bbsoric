@@ -147,11 +147,11 @@ func TestUploadApplet(t *testing.T) {
 
 func TestSedoricName(t *testing.T) {
 	cases := []struct{ in, want string }{
-		{"ASTERORIC.TAP", "ASTERORICTAP"},  // nom 9 + ext 3, pile rempli
-		{"jeu.bin", "JEU      BIN"},          // minuscules -> majuscules
-		{"README", "README      "},          // pas d'extension
-		{"a.b.c", "AB       C  "},            // dernier point = séparateur ext
-		{"my file!.t", "MYFILE   T  "},       // espaces/symboles retirés
+		{"ASTERORIC.TAP", "ASTERORICTAP"},     // nom 9 + ext 3, pile rempli
+		{"jeu.bin", "JEU      BIN"},           // minuscules -> majuscules
+		{"README", "README      "},            // pas d'extension
+		{"a.b.c", "AB       C  "},             // dernier point = séparateur ext
+		{"my file!.t", "MYFILE   T  "},        // espaces/symboles retirés
 		{"LONGFILENAME.DATA", "LONGFILENDAT"}, // nom 9 + ext 3
 	}
 	for _, c := range cases {

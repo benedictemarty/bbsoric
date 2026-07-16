@@ -30,6 +30,9 @@ func loginApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome
 		return Outcome{}
 	}
 	for attempt := 1; attempt <= maxLoginAttempts; attempt++ {
+		if loginThrottled(s, ac.State) {
+			return Outcome{Failed: true}
+		}
 		handle, err := prompt(s, "Pseudo (vide=annuler)")
 		if err != nil {
 			return Outcome{Quit: true}
@@ -44,11 +47,13 @@ func loginApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome
 		}
 		u, err := ac.Users.Authenticate(handle, pass)
 		if err != nil {
+			recordLoginFailure(ac.State)
 			writeErr(s, "Echec : "+err.Error())
 			continue
 		}
 		ac.State.User = &u
 		setPresenceHandle(ac.State, u.Handle)
+		recordLoginSuccess(ac.State)
 		greet(s, u)
 		return Outcome{Done: true}
 	}
@@ -117,6 +122,31 @@ func guestApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcome
 	}
 	_, _ = s.ReadKey()
 	return Outcome{Done: true}
+}
+
+// loginThrottled indique si l'IP de la session a dépassé le quota de tentatives
+// d'authentification (anti brute-force, S11.4) ; affiche un message si bloqué.
+// Un limiteur absent (nil) n'impose aucune limite.
+func loginThrottled(s *server.Session, st *SessionState) bool {
+	if st == nil || st.Login.Allowed(st.IP) {
+		return false
+	}
+	writeErr(s, "Trop de tentatives. Reessayez plus tard.")
+	return true
+}
+
+// recordLoginFailure enregistre un échec d'authentification pour l'IP courante.
+func recordLoginFailure(st *SessionState) {
+	if st != nil {
+		st.Login.Fail(st.IP)
+	}
+}
+
+// recordLoginSuccess remet à zéro le compteur d'échecs de l'IP après un succès.
+func recordLoginSuccess(st *SessionState) {
+	if st != nil {
+		st.Login.Reset(st.IP)
+	}
 }
 
 // setPresenceHandle fixe le pseudo affiché de la session et le propage au

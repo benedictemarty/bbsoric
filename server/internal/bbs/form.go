@@ -99,13 +99,18 @@ func readFields(s *server.Session, f *content.Form) (vals map[string]string, can
 func applyFormAction(s *server.Session, action string, vals map[string]string, ac *AppContext) bool {
 	switch action {
 	case content.FormLogin:
+		if loginThrottled(s, ac.State) {
+			return false
+		}
 		u, err := ac.Users.Authenticate(vals["login"], vals["password"])
 		if err != nil {
+			recordLoginFailure(ac.State)
 			writeErr(s, "Echec : "+err.Error())
 			return false
 		}
 		ac.State.User = &u
 		setPresenceHandle(ac.State, u.Handle)
+		recordLoginSuccess(ac.State)
 		greet(s, u)
 		return true
 

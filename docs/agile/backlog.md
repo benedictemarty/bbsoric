@@ -129,17 +129,19 @@
   validation per DoD; deferred from I2.)*
 
 ### Security
-- [ ] **I3** (3) As an admin deploying content, I want the **remote backup/reload commands
+- [x] **I3** (3) As an admin deploying content, I want the **remote backup/reload commands
   to be injection-safe**, so a crafted profile value cannot run arbitrary shell on the target.
-  *(`studio/internal/deploy/deploy.go:269,304` interpolate `ContentPath`/`Service` into
-  shell strings run via `ssh` — `test -f %s && cp …`, `systemctl reload %s` — without
-  escaping; `parseProfile` accepts any value. Quote/validate, or use arg-separated form.)*
-- [ ] **I4** (3) As the server, I want **auth attempts rate-limited over time / per IP**, so
+  *(Done 16/07 — `validateProfileFields` (safe charset) rejects unsafe `HOST/USER/PORT/
+  CONTENT_PATH/SERVICE` at both `Deploy` and `SaveProfile`; test `TestDeployRejectsShellInjection`.)*
+- [x] **I4** (3) As the server, I want **auth attempts rate-limited over time / per IP**, so
   re-navigating to the login screen cannot be used for brute-force.
-  *(`login.go` caps 3 tries **per applet pass** only; PBKDF2 100k slows but does not block.)*
-- [ ] **I5** (2) As an admin, I want an **admin role gating DataWindow CRUD**, so not every
+  *(Done 16/07 — new `server/internal/throttle` sliding-window limiter; 5 fails/IP/5 min,
+  wired to `login` + `form` login; `TestLoginRateLimited` + unit tests.)*
+- [x] **I5** (2) As an admin, I want an **admin role gating DataWindow CRUD**, so not every
   logged-in account can write editable grids.
-  *(`server/internal/bbs/datawindow.go:82` — `editable = dw.Editable && LoggedIn()`; no role.)*
+  *(Done 16/07 — `User.Admin` (first account = sysop, flag editable in users.json);
+  `editable = dw.Editable && IsAdmin()`; legend hides `N/E/D` from non-admins. Tests
+  `TestFirstAccountIsAdmin`, `TestAdminFlagPersists`, `TestDataWindowGuestCannotCreate`.)*
 
 ### Robustness & tests
 - [ ] **I6** (3) As a dev, I want **XMODEM hardened and fully tested**, so transfers fail cleanly.

@@ -106,7 +106,7 @@ différentiel laisse apparaître le pied de la grille au-dessus).*
 | `V` | fiche détail de la ligne sélectionnée |
 | `F` / `C` | poser un filtre LIKE / l'effacer |
 | `T` | cycler le tri : défaut → colonne 1 ASC → DESC → colonne 2 ASC → … (libellé au pied) |
-| `N` / `E` / `D` | créer / éditer / supprimer (si `editable` **et** session identifiée) |
+| `N` / `E` / `D` | créer / éditer / supprimer (si `editable` **et** session **admin**) |
 | `Q` ou ESC | quitter la grille |
 
 La ligne sélectionnée (et le bandeau titre) sont en **vidéo inverse** (bit 7 par
@@ -119,6 +119,10 @@ caractère, propre à l'Oric). Le rendu utilise le **buffer différentiel**
   Une grille trop large est refusée par `Site.Validate()`.
 - **Sécurité** : noms de table/colonnes validés (liste blanche d'identifiants), valeurs
   toujours passées en paramètres `?` (jamais interpolées). Voir `ValiderNomSQL`/`ValiderTypeSQL`.
+- **Écriture réservée aux admins** (S11.5) : la lecture est ouverte à tous (invités inclus),
+  mais le CRUD (`N`/`E`/`D`) exige un compte **sysop** (`User.Admin`). Le premier compte
+  enregistré devient sysop ; le flag `admin` reste éditable dans le JSON des comptes pour en
+  promouvoir d'autres. Un non-admin ne voit pas les touches `N/E/D` dans la légende.
 - **Sessions** : un verrou par base couvre les écritures concurrentes (1 goroutine/session).
 
 ## Édition dans le studio Forge

@@ -112,19 +112,19 @@
 - [ ] **S11.2b — Widen download header for files > 64 KB** (I2b): 3-byte size field + matching
   `client/xmodem.s` change; needs emulator validation (DoD). Deferred.
 
-### Slice 2 — Security (I3, I4, I5)
-- [ ] **S11.3 — Injection-safe remote deploy** (I3): in `deploy.go:269,304` quote/validate
-  `ContentPath` and `Service` before interpolation (shell-escape helper, or restrict
-  `parseProfile` `deploy.go:155-187` to a safe charset `^[A-Za-z0-9._/@:-]+$`). *Test*:
-  `deploy_test.go` — a profile with `;`/`$(…)`/backticks in `ContentPath`/`Service` is
-  rejected at parse (or neutralised in the emitted command string).
-- [ ] **S11.4 — Auth rate-limiting over time** (I4): add a per-IP (and/or per-account)
-  attempt counter with a cooldown in the auth path (`login.go` / `user.Store.Authenticate`),
-  independent of the per-pass cap. *Test*: N failed logins from one IP across separate
-  applet passes get throttled.
-- [ ] **S11.5 — Admin role for DataWindow CRUD** (I5): add an `Admin` flag to `user.User`
-  and gate `editable` at `datawindow.go:82` on it (read stays open, write requires admin).
-  *Test*: `datawindow_test.go` — a non-admin logged-in user cannot mutate an editable grid.
+### Slice 2 — Security (I3, I4, I5) — ✅ done (16/07/2026)
+- [x] **S11.3 — Injection-safe remote deploy** (I3): `validateProfileFields` restricts
+  `HOST/USER/PORT/CONTENT_PATH/SERVICE` to a safe charset (`[A-Za-z0-9._@/-]`), enforced in
+  both `Deploy` (before execution) and `SaveProfile` (before persisting). A profile with a
+  shell metacharacter is refused. Test `TestDeployRejectsShellInjection`.
+- [x] **S11.4 — Auth rate-limiting over time** (I4): new `server/internal/throttle` limiter
+  (sliding window per key, concurrency-safe, injectable clock); wired on the client IP —
+  5 fails/IP/5 min, in addition to the per-pass cap. Applied to `login` and the `form` login
+  action. Unit tests + integration `TestLoginRateLimited`.
+- [x] **S11.5 — Admin role for DataWindow CRUD** (I5): `User.Admin` (first registered account
+  = sysop; flag editable in users.json). `editable = dw.Editable && IsAdmin()`; read stays
+  open to all, write requires admin, and the grid legend hides `N/E/D` from non-admins.
+  Tests `TestFirstAccountIsAdmin`, `TestAdminFlagPersists`, `TestDataWindowGuestCannotCreate`.
 
 ### Slice 3 — Robustness & tests (I6, I7, I8)
 - [ ] **S11.6 — XMODEM checksum-path tests** (I6a): add `xmodem_test.go` cases driving the

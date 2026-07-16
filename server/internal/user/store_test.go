@@ -117,6 +117,48 @@ func TestPersistenceRoundTrip(t *testing.T) {
 	}
 }
 
+// TestFirstAccountIsAdmin : le tout premier compte devient sysop (admin), les
+// suivants non (S11.5).
+func TestFirstAccountIsAdmin(t *testing.T) {
+	s, _ := Open("")
+	sysop, err := s.Register("Sysop", "pw1234")
+	if err != nil {
+		t.Fatalf("Register (1) : %v", err)
+	}
+	if !sysop.Admin {
+		t.Errorf("le premier compte doit être admin (sysop)")
+	}
+	normal, err := s.Register("Bob", "pw1234")
+	if err != nil {
+		t.Fatalf("Register (2) : %v", err)
+	}
+	if normal.Admin {
+		t.Errorf("les comptes suivants ne doivent pas être admin")
+	}
+	// Get renvoie une copie qui doit refléter le flag admin.
+	got, ok := s.Get("Sysop")
+	if !ok || !got.Admin {
+		t.Errorf("le flag admin du sysop doit être conservé : %+v", got)
+	}
+}
+
+// TestAdminFlagPersists : le flag admin survit à une réouverture (persistance JSON).
+func TestAdminFlagPersists(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "users.json")
+	s1, _ := Open(path)
+	if _, err := s1.Register("Sysop", "pw1234"); err != nil { // 1er = admin
+		t.Fatalf("Register : %v", err)
+	}
+	s2, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open (2) : %v", err)
+	}
+	u, ok := s2.Get("Sysop")
+	if !ok || !u.Admin {
+		t.Errorf("le flag admin doit persister après rechargement : %+v", u)
+	}
+}
+
 func TestOpenMissingFileIsEmpty(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "absent.json")
 	s, err := Open(path)
