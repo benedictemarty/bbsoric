@@ -75,6 +75,46 @@ func TestHandleSaveThenReload(t *testing.T) {
 	}
 }
 
+// TestMutatingEndpointsRequirePOST : les endpoints mutants refusent une méthode
+// autre que POST avec 405 + en-tête Allow (S11.8).
+func TestMutatingEndpointsRequirePOST(t *testing.T) {
+	s, _ := newServer(t)
+	cases := []struct {
+		name string
+		h    http.HandlerFunc
+		path string
+	}{
+		{"validate", s.handleValidate, "/api/validate"},
+		{"save", s.handleSave, "/api/save?name=x.json"},
+		{"screen", s.handleScreen, "/api/screen?page=main"},
+		{"deploy", s.handleDeploy, "/api/deploy?site=site.json&profile=dev"},
+	}
+	for _, c := range cases {
+		rec := httptest.NewRecorder()
+		c.h(rec, httptest.NewRequest("GET", c.path, nil))
+		if rec.Code != http.StatusMethodNotAllowed {
+			t.Errorf("%s en GET: code %d, attendu 405", c.name, rec.Code)
+		}
+		if got := rec.Header().Get("Allow"); got != "POST" {
+			t.Errorf("%s: en-tête Allow = %q, attendu POST", c.name, got)
+		}
+	}
+}
+
+// TestHandleSaveInvalidReturns400 : une sauvegarde de contenu invalide renvoie 400
+// (et non plus 200), tout en portant le détail dans le corps (S11.8).
+func TestHandleSaveInvalidReturns400(t *testing.T) {
+	s, _ := newServer(t)
+	rec := httptest.NewRecorder()
+	s.handleSave(rec, httptest.NewRequest("POST", "/api/save?name=bad.json", strings.NewReader(`{"pages":{}}`)))
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("save invalide: code %d, attendu 400", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), `"ok":false`) {
+		t.Errorf("le corps doit porter l'erreur: %s", rec.Body.String())
+	}
+}
+
 func TestHandleScreen(t *testing.T) {
 	s, _ := newServer(t)
 	rec := httptest.NewRecorder()

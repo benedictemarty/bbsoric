@@ -17,16 +17,16 @@ import (
 
 // ColonneDef définit une colonne d'une source de données.
 type ColonneDef struct {
-	Type          string `json:"type"`                    // type SQL (TEXT par défaut)
-	Libelle       string `json:"libelle"`                 // libellé affiché
-	ClePrimaire   bool   `json:"cle_primaire"`            // clé primaire
-	Requis        bool   `json:"requis"`                  // NOT NULL / validation requise
-	LongueurMax   int    `json:"longueur_max"`            // longueur max (0 = illimité)
+	Type          string `json:"type"`                     // type SQL (TEXT par défaut)
+	Libelle       string `json:"libelle"`                  // libellé affiché
+	ClePrimaire   bool   `json:"cle_primaire"`             // clé primaire
+	Requis        bool   `json:"requis"`                   // NOT NULL / validation requise
+	LongueurMax   int    `json:"longueur_max"`             // longueur max (0 = illimité)
 	AutoIncrement bool   `json:"auto_increment,omitempty"` // AUTOINCREMENT (INTEGER PK)
-	Pattern       string `json:"pattern,omitempty"`       // regex de validation
-	ValeurDefaut  any    `json:"valeur_defaut,omitempty"` // DEFAULT SQL
-	AutoDate      bool   `json:"auto_date,omitempty"`     // rempli à la date courante
-	Masque        string `json:"masque,omitempty"`        // masque de saisie (réservé)
+	Pattern       string `json:"pattern,omitempty"`        // regex de validation
+	ValeurDefaut  any    `json:"valeur_defaut,omitempty"`  // DEFAULT SQL
+	AutoDate      bool   `json:"auto_date,omitempty"`      // rempli à la date courante
+	Masque        string `json:"masque,omitempty"`         // masque de saisie (réservé)
 }
 
 // SourceDonnees définit une source de données. Par défaut une table SQLite
@@ -47,8 +47,8 @@ type SourceDonnees struct {
 // lui-même un tableau). Chaque objet mappe ses champs sur les colonnes par nom.
 type APIConfig struct {
 	URL    string `json:"url"`
-	Racine string `json:"racine,omitempty"`    // clé du tableau dans la réponse (ex. "results")
-	TTL    int    `json:"ttl_sec,omitempty"`   // durée de cache en secondes (défaut 60)
+	Racine string `json:"racine,omitempty"`  // clé du tableau dans la réponse (ex. "results")
+	TTL    int    `json:"ttl_sec,omitempty"` // durée de cache en secondes (défaut 60)
 }
 
 // EstAPI indique si la source est une source REST (lecture seule).
@@ -56,9 +56,9 @@ func (src SourceDonnees) EstAPI() bool { return src.TypeSource == "api" }
 
 // DataWindow est le descripteur de page qui présente une source en grille.
 type DataWindow struct {
-	Source            string   `json:"source"`              // clé dans Site.SourcesDonnees
-	ColonnesAffichees []string `json:"colonnes_affichees"`  // colonnes montrées dans la grille
-	Largeurs          []int    `json:"largeurs,omitempty"`  // largeur de chaque colonne (en cases)
+	Source            string   `json:"source"`             // clé dans Site.SourcesDonnees
+	ColonnesAffichees []string `json:"colonnes_affichees"` // colonnes montrées dans la grille
+	Largeurs          []int    `json:"largeurs,omitempty"` // largeur de chaque colonne (en cases)
 	CouleurEntete     string   `json:"couleur_entete,omitempty"`
 	CouleurLignes     string   `json:"couleur_lignes,omitempty"`
 	CouleurSelection  string   `json:"couleur_selection,omitempty"`
@@ -102,6 +102,11 @@ func ValiderTypeSQL(typ string) error {
 // GridIndexWidth est la largeur de la colonne d'index ("NN ") en tête de ligne.
 const GridIndexWidth = 3
 
+// DefaultColWidth est la largeur d'une colonne DataWindow non dimensionnée.
+// Partagée entre la validation (budget 40 colonnes) et le rendu (largeurCol) pour
+// éviter toute dérive entre les deux (S11.7).
+const DefaultColWidth = 8
+
 // validate vérifie une source de données. Source SQLite : noms et types sûrs.
 // Source API : URL requise (lecture seule, pas de table SQL).
 func (src SourceDonnees) validate(nomSrc string) error {
@@ -123,6 +128,11 @@ func (src SourceDonnees) validate(nomSrc string) error {
 		}
 		if err := ValiderTypeSQL(col.Type); err != nil {
 			return fmt.Errorf("source %q.%s : %w", nomSrc, nomCol, err)
+		}
+		if col.Pattern != "" {
+			if _, err := regexp.Compile(col.Pattern); err != nil {
+				return fmt.Errorf("source %q.%s : motif de validation invalide : %w", nomSrc, nomCol, err)
+			}
 		}
 	}
 	return nil
@@ -150,7 +160,7 @@ func (dw *DataWindow) validate(pageID string, s *Site) error {
 	// Budget de largeur : col 0 (attribut couleur) + index + Σ(largeur+1) ≤ 40.
 	total := 1 + GridIndexWidth
 	for i := range dw.ColonnesAffichees {
-		largeur := 8 // défaut si non précisé
+		largeur := DefaultColWidth // défaut si non précisé
 		if i < len(dw.Largeurs) {
 			largeur = dw.Largeurs[i]
 		}

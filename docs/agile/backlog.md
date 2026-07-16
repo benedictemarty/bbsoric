@@ -144,20 +144,21 @@
   `TestFirstAccountIsAdmin`, `TestAdminFlagPersists`, `TestDataWindowGuestCannotCreate`.)*
 
 ### Robustness & tests
-- [ ] **I6** (3) As a dev, I want **XMODEM hardened and fully tested**, so transfers fail cleanly.
-  *(`internal/xmodem`: the **checksum branch is never exercised** by tests — round-trip
-  always starts the receiver in CRC; error handling conflates timeouts with real I/O
-  errors (loops instead of surfacing); no `CAN` emitted on abort; `Receive` has no size
-  bound. Add checksum-path tests, distinguish error kinds, emit CAN, bound the buffer.)*
-- [ ] **I7** (2) As a content author, I want **`content.Validate` to catch more errors up
-  front**, so a bad site fails at load, not at runtime.
-  *(`internal/content`: referenced applet existence never checked (`content.go:158-177`);
-  column `Pattern` regex never compiled at validation; DataWindow default width hard-coded
-  `8` in `datawindow.go:153` — dedupe with the renderer to avoid drift.)*
-- [ ] **I8** (2) As a Forge user, I want the **HTTP layer to enforce methods and report real
+- [x] **I6** (3) As a dev, I want **XMODEM hardened and fully tested**, so transfers fail cleanly.
+  *(Done 16/07 — timeout vs real I/O error distinguished (surfaced immediately); `CAN` emitted
+  on abort; `Receive` bounded by `maxReceiveBytes` (`ErrTooLarge`). Checksum branch now tested:
+  `TestSendChecksumMode`, `TestReadBlockChecksum`; plus `TestSendSurfacesIOError`,
+  `TestReceiveRejectsOversize`.)*
+- [x] **I7** (2) As a content author, I want **validation to catch more errors up front**,
+  so a bad site fails at load, not at runtime.
+  *(Done 16/07 — column `Pattern` regex compiled in `content` validation; `bbs.ValidateSiteApplets`
+  detects an unknown referenced applet at startup (called in `main`); default column width
+  deduped via `content.DefaultColWidth`. Tests `TestValidateColumnPattern`, `TestValidateSiteApplets`.)*
+- [x] **I8** (2) As a Forge user, I want the **HTTP layer to enforce methods and report real
   status codes**, so client errors are distinguishable.
-  *(`studio/cmd/forge/main.go:181` etc. don't require POST and always return 200 with
-  `{ok:false}`; `readBody` errors are ignored throughout.)*
+  *(Done 16/07 — mutating endpoints require POST (405 + `Allow`); `readBody` errors → 400;
+  invalid save → 400 (detail in body). Tests `TestMutatingEndpointsRequirePOST`,
+  `TestHandleSaveInvalidReturns400`.)*
 
 ### Hygiene (low effort)
 - [ ] **I9** (1) As a dev, I want the **phantom `"type"` field removed** from `content` test

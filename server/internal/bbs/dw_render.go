@@ -39,12 +39,13 @@ func cell(s string, n int) string {
 	return s + strings.Repeat(" ", n-len(s))
 }
 
-// largeurCol renvoie la largeur configurée d'une colonne affichée (8 par défaut).
+// largeurCol renvoie la largeur configurée d'une colonne affichée (défaut partagé
+// content.DefaultColWidth, aligné sur le budget vérifié par Site.Validate).
 func largeurCol(dw *content.DataWindow, i int) int {
 	if i < len(dw.Largeurs) && dw.Largeurs[i] > 0 {
 		return dw.Largeurs[i]
 	}
-	return 8
+	return content.DefaultColWidth
 }
 
 // ligneGrille assemble le texte d'une ligne (index + cellules paddées).

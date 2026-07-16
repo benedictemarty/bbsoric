@@ -59,6 +59,11 @@ func main() {
 		IdleTimeout:   *idle,
 	}
 	store := content.NewStore(*contentPath, log)
+	// Détection au démarrage d'un applet référencé mais non enregistré (S11.7).
+	if err := bbs.ValidateSiteApplets(store.Site()); err != nil {
+		log.Error("contenu : applet référencé introuvable", "err", err)
+		os.Exit(1)
+	}
 
 	users, err := user.Open(*usersPath)
 	if err != nil {

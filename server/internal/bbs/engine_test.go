@@ -17,6 +17,30 @@ import (
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 )
 
+// TestValidateSiteApplets : un applet référencé mais non enregistré est détecté
+// (S11.7) ; un applet connu passe.
+func TestValidateSiteApplets(t *testing.T) {
+	good := `{"start":"a","pages":{"a":{"title":"A","entries":[
+	  {"key":"1","label":"Login","applet":"login","next":"a"}]}}}`
+	site, err := content.Parse([]byte(good))
+	if err != nil {
+		t.Fatalf("parse (bon): %v", err)
+	}
+	if err := ValidateSiteApplets(site); err != nil {
+		t.Errorf("un applet connu ne doit pas être refusé : %v", err)
+	}
+
+	bad := `{"start":"a","pages":{"a":{"title":"A","entries":[
+	  {"key":"1","label":"X","applet":"nexistepas","next":"a"}]}}}`
+	site2, err := content.Parse([]byte(bad))
+	if err != nil {
+		t.Fatalf("parse (mauvais): %v", err)
+	}
+	if err := ValidateSiteApplets(site2); err == nil {
+		t.Error("un applet inconnu aurait dû être détecté au chargement")
+	}
+}
+
 // startServerWithStore démarre un BBS avec un Store de contenu donné.
 func startServerWithStore(t *testing.T, store *content.Store) (addr string, stop func()) {
 	t.Helper()

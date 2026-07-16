@@ -63,6 +63,27 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
+// requirePOST rejette (405) toute méthode autre que POST sur un endpoint mutant.
+func requirePOST(w http.ResponseWriter, r *http.Request) bool {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", "POST")
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{"ok": false, "error": "méthode non autorisée : " + r.Method})
+		return false
+	}
+	return true
+}
+
+// bodyOrError lit le corps de la requête ; en cas d'erreur de lecture, répond
+// 400 et renvoie false (au lieu de traiter un corps tronqué comme du JSON vide).
+func bodyOrError(w http.ResponseWriter, r *http.Request) ([]byte, bool) {
+	body, err := readBody(r)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"ok": false, "error": "lecture du corps : " + err.Error()})
+		return nil, false
+	}
+	return body, true
+}
+
 // handleSites : GET /api/sites -> liste des fichiers .json.
 func (s *server) handleSites(w http.ResponseWriter, r *http.Request) {
 	names, err := s.store.List()
@@ -89,7 +110,13 @@ func (s *server) handleSite(w http.ResponseWriter, r *http.Request) {
 
 // handleValidate : POST /api/validate (corps = site JSON) -> {ok, error}.
 func (s *server) handleValidate(w http.ResponseWriter, r *http.Request) {
-	body, _ := readBody(r)
+	if !requirePOST(w, r) {
+		return
+	}
+	body, ok := bodyOrError(w, r)
+	if !ok {
+		return
+	}
 	if _, err := content.Parse(body); err != nil {
 		writeJSON(w, http.StatusOK, map[string]any{"ok": false, "error": err.Error()})
 		return
@@ -100,9 +127,16 @@ func (s *server) handleValidate(w http.ResponseWriter, r *http.Request) {
 // handleSave : POST /api/save?name= (corps = site JSON) -> {ok, error}.
 // Valide avant d'écrire (refuse un contenu invalide).
 func (s *server) handleSave(w http.ResponseWriter, r *http.Request) {
-	body, _ := readBody(r)
+	if !requirePOST(w, r) {
+		return
+	}
+	body, ok := bodyOrError(w, r)
+	if !ok {
+		return
+	}
 	if err := s.store.Save(r.URL.Query().Get("name"), body); err != nil {
-		writeJSON(w, http.StatusOK, map[string]any{"ok": false, "error": err.Error()})
+		// Contenu/nom invalide : erreur du client, code 400 (le corps porte le détail).
+		writeJSON(w, http.StatusBadRequest, map[string]any{"ok": false, "error": err.Error()})
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
@@ -113,7 +147,16 @@ func (s *server) handleSave(w http.ResponseWriter, r *http.Request) {
 // internal/render). Lecture tolérante (pas de validation des cibles) pour
 // prévisualiser en cours d'édition. Le client (simulateur ULA) rend ces octets.
 func (s *server) handleScreen(w http.ResponseWriter, r *http.Request) {
-	body, _ := readBody(r)
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", "POST")
+		http.Error(w, "méthode non autorisée", http.StatusMethodNotAllowed)
+		return
+	}
+	body, err := readBody(r)
+	if err != nil {
+		http.Error(w, "lecture du corps : "+err.Error(), http.StatusBadRequest)
+		return
+	}
 	var site content.Site
 	if err := json.Unmarshal(body, &site); err != nil {
 		http.Error(w, "JSON invalide : "+err.Error(), http.StatusBadRequest)
@@ -153,7 +196,10 @@ func (s *server) handleProfile(w http.ResponseWriter, r *http.Request) {
 		env = r.URL.Query().Get("env")
 	}
 	if r.Method == http.MethodPost {
-		body, _ := readBody(r)
+		body, ok := bodyOrError(w, r)
+		if !ok {
+			return
+		}
 		var p deploy.Profile
 		if err := json.Unmarshal(body, &p); err != nil {
 			writeJSON(w, http.StatusOK, map[string]any{"ok": false, "error": "JSON invalide : " + err.Error()})
@@ -179,7 +225,13 @@ func (s *server) handleProfile(w http.ResponseWriter, r *http.Request) {
 // Le profil est résolu DANS le site (dev/int/prod propres à ce site).
 // dryRun par défaut TRUE ; passer dryRun=false pour exécuter réellement.
 func (s *server) handleDeploy(w http.ResponseWriter, r *http.Request) {
-	body, _ := readBody(r)
+	if !requirePOST(w, r) {
+		return
+	}
+	body, ok := bodyOrError(w, r)
+	if !ok {
+		return
+	}
 	site := r.URL.Query().Get("site")
 	env := r.URL.Query().Get("profile")
 	profs, err := deploy.LoadSiteProfiles(s.profilesDir, site)

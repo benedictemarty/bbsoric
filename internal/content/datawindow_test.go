@@ -60,6 +60,27 @@ func TestValidateSourceAPI(t *testing.T) {
 	}
 }
 
+// TestValidateColumnPattern : un motif de validation (regex) invalide est refusé
+// au chargement, pas à l'exécution (S11.7).
+func TestValidateColumnPattern(t *testing.T) {
+	ok := siteAvecDW(func(s *Site) {
+		src := s.SourcesDonnees["rep"]
+		src.Colonnes["nom"] = ColonneDef{Type: "TEXT", Pattern: `^[A-Z]+$`}
+		s.SourcesDonnees["rep"] = src
+	})
+	if err := ok.Validate(); err != nil {
+		t.Errorf("un motif valide ne doit pas être refusé : %v", err)
+	}
+	ko := siteAvecDW(func(s *Site) {
+		src := s.SourcesDonnees["rep"]
+		src.Colonnes["nom"] = ColonneDef{Type: "TEXT", Pattern: `[A-Z`} // regex invalide
+		s.SourcesDonnees["rep"] = src
+	})
+	if err := ko.Validate(); err == nil {
+		t.Error("un motif regex invalide aurait dû échouer")
+	}
+}
+
 func TestValidateDataWindowErreurs(t *testing.T) {
 	cas := []struct {
 		nom string

@@ -6,6 +6,25 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Changed (Sprint 11 slice 3 — robustesse & tests, 16/07/2026)
+- **S11.6 — XMODEM durci et testé.** `internal/xmodem` distingue désormais un dépassement
+  d'échéance (transitoire → ré-essai) d'une vraie erreur d'E/S (connexion fermée → remontée
+  immédiate, plus de boucle jusqu'à `ErrTooManyNAK`) ; émet `CAN` au pair en cas d'abandon ;
+  borne `Receive` à `maxReceiveBytes` (1 Mio, garde-fou mémoire, `ErrTooLarge`). Tests ajoutés
+  couvrant la **branche somme de contrôle** (jamais exercée) : `TestSendChecksumMode`,
+  `TestReadBlockChecksum`, plus `TestSendSurfacesIOError`, `TestReceiveRejectsOversize`.
+- **S11.7 — Validation de contenu plus stricte au chargement.** Les motifs regex de colonne
+  (`pattern`) sont compilés à la validation (`internal/content`) ; nouvelle
+  `bbs.ValidateSiteApplets` détecte au démarrage un applet référencé mais non enregistré
+  (appelée dans `main`) ; largeur de colonne par défaut dédupliquée via
+  `content.DefaultColWidth` (validation ⇄ rendu). Tests `TestValidateColumnPattern`,
+  `TestValidateSiteApplets`.
+- **S11.8 — Couche HTTP de la Forge durcie.** Les endpoints mutants (`/api/validate`,
+  `/api/save`, `/api/screen`, `/api/deploy`) exigent POST (405 + en-tête `Allow` sinon) ;
+  les erreurs de lecture du corps ne sont plus ignorées (400) ; une sauvegarde invalide
+  renvoie 400 (le détail reste dans le corps). Tests `TestMutatingEndpointsRequirePOST`,
+  `TestHandleSaveInvalidReturns400`.
+
 ### Security (Sprint 11 slice 2 — 16/07/2026)
 - **S11.3 — Déploiement studio à l'épreuve de l'injection shell.** `deployRemote`
   (`studio/internal/deploy`) interpolait `CONTENT_PATH`/`SERVICE` dans des commandes

@@ -126,20 +126,19 @@
   open to all, write requires admin, and the grid legend hides `N/E/D` from non-admins.
   Tests `TestFirstAccountIsAdmin`, `TestAdminFlagPersists`, `TestDataWindowGuestCannotCreate`.
 
-### Slice 3 — Robustness & tests (I6, I7, I8)
-- [ ] **S11.6 — XMODEM checksum-path tests** (I6a): add `xmodem_test.go` cases driving the
-  **checksum** branch (receiver starts with NAK), NAK re-send, repeated-block re-ACK.
-- [ ] **S11.7 — XMODEM error handling** (I6b): distinguish timeout from real I/O error
-  (`xmodem.go:131-133,162-165,197-207`) — surface I/O errors immediately; emit `CAN` on
-  abort; bound `Receive` growth with a max-blocks limit. *Test*: closed-conn surfaces an
-  I/O error, not `ErrTooManyNAK`; oversized transfer is refused.
-- [ ] **S11.8 — Stronger `content.Validate`** (I7): check referenced-applet existence
-  (`content.go:158-177`), compile column `Pattern` regexes at validation, and dedupe the
-  hard-coded default width (`datawindow.go:153`) with the renderer's value. *Test*: unknown
-  applet name and an invalid `Pattern` both fail `Site.Validate()`.
-- [ ] **S11.9 — Forge HTTP hardening** (I8): require POST where mutating
-  (`main.go:181` etc.), return real 4xx/5xx status codes, and stop ignoring `readBody`
-  errors. *Test*: `main_test.go` — GET on a mutating endpoint → 405; malformed body → 400.
+### Slice 3 — Robustness & tests (I6, I7, I8) — ✅ done (16/07/2026)
+- [x] **S11.6 — XMODEM hardened + checksum tests** (I6): distinguish timeout from real I/O
+  error (surface immediately, no spin to `ErrTooManyNAK`); emit `CAN` on abort; bound
+  `Receive` (`maxReceiveBytes`, `ErrTooLarge`). Checksum branch now exercised
+  (`TestSendChecksumMode`, `TestReadBlockChecksum`) + `TestSendSurfacesIOError`,
+  `TestReceiveRejectsOversize`.
+- [x] **S11.7 — Stronger validation** (I7): column `Pattern` regexes compiled in `content`
+  validation; `bbs.ValidateSiteApplets` flags an unknown referenced applet at startup (wired
+  in `main`); default column width deduped via `content.DefaultColWidth` (validation ⇄ render).
+  Tests `TestValidateColumnPattern`, `TestValidateSiteApplets`.
+- [x] **S11.8 — Forge HTTP hardening** (I8): mutating endpoints require POST (405 + `Allow`);
+  `readBody` errors → 400; invalid save → 400 (detail in body). Tests
+  `TestMutatingEndpointsRequirePOST`, `TestHandleSaveInvalidReturns400`.
 
 ### Slice 4 — Hygiene (I9, I10, I11)
 - [ ] **S11.10 — Remove phantom `"type"` field** (I9): drop `"type":…` from the `content`

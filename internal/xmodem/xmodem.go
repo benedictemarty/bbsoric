@@ -15,6 +15,8 @@ package xmodem
 import (
 	"errors"
 	"io"
+	"net"
+	"os"
 	"time"
 )
 
@@ -39,10 +41,28 @@ const (
 
 // Erreurs renvoyées par Send/Receive.
 var (
-	ErrTimeout   = errors.New("xmodem : délai dépassé")
-	ErrCanceled  = errors.New("xmodem : transfert annulé")
+	ErrTimeout    = errors.New("xmodem : délai dépassé")
+	ErrCanceled   = errors.New("xmodem : transfert annulé")
 	ErrTooManyNAK = errors.New("xmodem : trop d'erreurs de transmission")
+	ErrTooLarge   = errors.New("xmodem : fichier trop volumineux")
 )
+
+// maxReceiveBytes borne la taille d'un fichier reçu (garde-fou mémoire face à un
+// émetteur bogué ou malveillant). Variable pour permettre des tests déterministes.
+var maxReceiveBytes = 1 << 20 // 1 Mio
+
+// isTimeout distingue un dépassement d'échéance de lecture (transitoire, on
+// ré-essaie) d'une vraie erreur d'E/S (connexion fermée : on remonte aussitôt).
+func isTimeout(err error) bool {
+	if errors.Is(err, os.ErrDeadlineExceeded) {
+		return true
+	}
+	var ne net.Error
+	return errors.As(err, &ne) && ne.Timeout()
+}
+
+// sendCan signale l'annulation au pair (2 CAN, convention XMODEM). Best-effort.
+func sendCan(c Conn) { _, _ = c.Write([]byte{can, can}) }
 
 // Conn est un canal d'octets bidirectionnel avec échéance de lecture
 // (satisfait par net.Conn).
@@ -117,10 +137,18 @@ func Send(c Conn, data []byte) error {
 		if _, err := c.Write([]byte{eot}); err != nil {
 			return err
 		}
-		if resp, err := readByte(c, ackTimeout); err == nil && resp == ack {
+		resp, err := readByte(c, ackTimeout)
+		if err != nil {
+			if isTimeout(err) {
+				continue // pas d'ACK à temps → ré-émettre EOT
+			}
+			return err // erreur d'E/S réelle : inutile d'insister
+		}
+		if resp == ack {
 			return nil
 		}
 	}
+	sendCan(c)
 	return ErrTooManyNAK
 }
 
@@ -130,7 +158,10 @@ func waitStart(c Conn) (crc bool, err error) {
 	for i := 0; i < startRetries; i++ {
 		b, e := readByte(c, startTimeout)
 		if e != nil {
-			continue
+			if isTimeout(e) {
+				continue
+			}
+			return false, e // erreur d'E/S réelle : remonter
 		}
 		switch b {
 		case crcChar:
@@ -161,7 +192,10 @@ func sendBlock(c Conn, blk byte, data []byte, crc bool) error {
 		}
 		resp, err := readByte(c, ackTimeout)
 		if err != nil {
-			continue // timeout → ré-émettre
+			if isTimeout(err) {
+				continue // timeout → ré-émettre
+			}
+			return err // erreur d'E/S réelle : remonter
 		}
 		switch resp {
 		case ack:
@@ -171,6 +205,7 @@ func sendBlock(c Conn, blk byte, data []byte, crc bool) error {
 		}
 		// NAK ou autre → ré-émettre
 	}
+	sendCan(c)
 	return ErrTooManyNAK
 }
 
@@ -196,8 +231,12 @@ func Receive(c Conn) ([]byte, error) {
 		}
 		b, err := readByte(c, startTimeout)
 		if err != nil {
+			if !isTimeout(err) {
+				return nil, err // erreur d'E/S réelle : remonter tout de suite
+			}
 			errCount++
 			if errCount > startRetries {
+				sendCan(c)
 				return nil, ErrTimeout
 			}
 			if crc && errCount >= 4 { // bascule en somme de contrôle
@@ -222,6 +261,10 @@ func Receive(c Conn) ([]byte, error) {
 			case blkNum == expected:
 				out = append(out, block...)
 				expected++
+				if len(out) > maxReceiveBytes {
+					sendCan(c)
+					return nil, ErrTooLarge
+				}
 				_, _ = c.Write([]byte{ack})
 			case blkNum == expected-1:
 				_, _ = c.Write([]byte{ack}) // bloc répété → ré-ACK

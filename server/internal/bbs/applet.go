@@ -2,6 +2,7 @@ package bbs
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/benedictemarty/bbsoric/internal/content"
 	"github.com/benedictemarty/bbsoric/server/internal/datawindow"
@@ -71,6 +72,35 @@ var applets = map[string]Applet{}
 
 // Register enregistre un applet sous un nom. Un nom déjà présent est remplacé.
 func Register(name string, a Applet) { applets[name] = a }
+
+// ValidateSiteApplets vérifie que tout applet référencé par le contenu
+// (Page.Applet auto-lancé, Entry.Applet) est bien enregistré. À appeler au
+// démarrage : une coquille dans un nom d'applet est ainsi détectée au chargement,
+// et non seulement à l'exécution (S11.7). Les applets implicites (« form » via
+// Page.Form, « datawindow » via Page.DataWindow) sont toujours enregistrés.
+func ValidateSiteApplets(site *content.Site) error {
+	if site == nil {
+		return nil
+	}
+	for id, p := range site.Pages {
+		if p == nil {
+			continue
+		}
+		if p.Applet != "" {
+			if _, ok := lookupApplet(p.Applet); !ok {
+				return fmt.Errorf("page %q : applet inconnu %q", id, p.Applet)
+			}
+		}
+		for _, e := range p.Entries {
+			if e.Applet != "" {
+				if _, ok := lookupApplet(e.Applet); !ok {
+					return fmt.Errorf("page %q : entrée %q référence un applet inconnu %q", id, e.Key, e.Applet)
+				}
+			}
+		}
+	}
+	return nil
+}
 
 // lookupApplet résout un applet par son nom.
 func lookupApplet(name string) (Applet, bool) {
