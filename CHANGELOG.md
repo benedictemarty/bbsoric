@@ -6,6 +6,14 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Changed (DataWindow — glyphes flèches dans la légende, 17/07/2026)
+- **La légende affiche de VRAIS glyphes flèches** (▲▼◄►) au lieu de l'ASCII `^v<>`, à la
+  manière d'ATASCII/PETSCII. La police BBS (charset alternatif, `tools/genfont`) contenait
+  déjà ces glyphes (`^`=▲ `v`=▼ `<`=◄ `>`=►) ; la légende les rend en encadrant `^v<>` de
+  l'attribut altCharset (`$09`/`$08`). Aucune modif de police ni de firmware — le terminal
+  charge déjà la police en $B800 et gère les attributs sériels ; le studio gère l'altCharset
+  (`renderScreenBuf`). Validé dans `oric1-emu` et le studio (`docs/img/legend-arrows.png`).
+
 ### Changed (DataWindow — légende, 17/07/2026)
 - **Légende de grille plus complète** : affiche désormais la touche `C` (effacer le filtre,
   `F/C`) et fait apparaître les flèches en ASCII sûr — `^v` (sélection haut/bas, aussi `+/-`)

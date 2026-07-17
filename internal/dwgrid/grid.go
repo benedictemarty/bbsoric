@@ -168,10 +168,13 @@ func RenderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 	}
 	putLigne(scr, footerRow, oascii.Green, false, cell(pied, oascii.Cols-contentX))
 
-	// Légende des touches. Flèches en ASCII (le charset Oric n'a pas de glyphes
-	// flèches) : ^v = sélection haut/bas (aussi +/-), <> = scroll horizontal de la
-	// ligne. F/C = filtrer/effacer le filtre.
-	legende := "+-^v S/R <> V=fiche"
+	// Légende des touches. Les flèches ^v<> sont rendues en VRAIS GLYPHES de la
+	// police BBS (charset alternatif : ^=▲ v=▼ <=◄ >=►, cf. tools/genfont) en les
+	// encadrant de l'attribut altCharset ($09 = ON, $08 = OFF) ; le reste de la
+	// légende reste en charset standard. ▲▼ = sélection (aussi +/-), ◄► = scroll.
+	// F/C = filtrer / effacer le filtre.
+	const altOn, altOff = "\x09", "\x08"
+	legende := altOn + "^v<>" + altOff + " S/R V=fiche"
 	if editable {
 		legende += " N/E/D"
 	}
