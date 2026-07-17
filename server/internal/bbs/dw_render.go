@@ -111,14 +111,18 @@ func renderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 	})
 	putLigne(scr, gridHeaderRow, inkEntete, false, entete)
 
-	// Lignes de données.
+	// Lignes de données. Le numéro « No » est la position SUR LA PAGE (1..parPage),
+	// pas l'index absolu : la colonne ne fait que GridIndexWidth (3) cases, or un
+	// index absolu de grande table (100+, jusqu'à des milliers) collerait le titre
+	// (plus d'espace séparateur) voire serait tronqué. Le contexte global est donné
+	// par le pied « Page X/Y  N enreg. ».
 	for i, r := range rows {
 		row := gridDataTop + i
 		if row >= gridFooterRow {
 			break
 		}
-		numAbs := (page-1)*parPage + i + 1
-		texte := ligneGrille(dw, fmt.Sprintf("%d", numAbs), func(col string) string { return r[col] })
+		numPage := i + 1
+		texte := ligneGrille(dw, fmt.Sprintf("%d", numPage), func(col string) string { return r[col] })
 		putLigne(scr, row, inkLignes, i == sel, texte)
 	}
 

@@ -6,6 +6,14 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Fixed (DataWindow — numérotation de grille, 17/07/2026)
+- **Colonne « No » lisible sur les grandes tables.** L'index de ligne était absolu et
+  tenait dans une colonne de 3 cases (`GridIndexWidth`) : au-delà de la ligne 99 le titre
+  était **collé** au numéro (plus d'espace), et au-delà de 999 le numéro était **tronqué**
+  (faux). Sur le catalogue (2604 entrées), très visible. La colonne numérote désormais **par
+  page** (1..lignes_par_page ; le pied « Page X/Y  N enreg. » donne le contexte global).
+  Test de régression `TestRenderGridPerPageNumbering` (vérifié en échec avec l'index absolu).
+
 ### Fixed (Catalogue prod — re-semis, 17/07/2026)
 - **Données du catalogue de prod rafraîchies** : certains gros fichiers (ex. `1337.dsk`,
   205 Ko) restaient annoncés `téléchargeables` car la table SQLite `catalogue`, semée une
