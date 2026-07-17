@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/benedictemarty/bbsoric/internal/atomicfile"
 )
 
 // Store persiste les comptes dans un fichier JSON, avec verrou (accès
@@ -137,32 +138,5 @@ func (s *Store) saveLocked() error {
 	sort.Slice(list, func(i, j int) bool {
 		return NormalizeHandle(list[i].Handle) < NormalizeHandle(list[j].Handle)
 	})
-	b, err := json.MarshalIndent(list, "", "  ")
-	if err != nil {
-		return fmt.Errorf("serialisation utilisateurs : %w", err)
-	}
-
-	dir := filepath.Dir(s.path)
-	tmp, err := os.CreateTemp(dir, ".users-*.json.tmp")
-	if err != nil {
-		return fmt.Errorf("fichier temporaire : %w", err)
-	}
-	tmpName := tmp.Name()
-	defer os.Remove(tmpName) // no-op après rename réussi
-
-	if _, err := tmp.Write(b); err != nil {
-		tmp.Close()
-		return fmt.Errorf("ecriture temporaire : %w", err)
-	}
-	if err := tmp.Sync(); err != nil {
-		tmp.Close()
-		return fmt.Errorf("sync temporaire : %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("fermeture temporaire : %w", err)
-	}
-	if err := os.Rename(tmpName, s.path); err != nil {
-		return fmt.Errorf("rename atomique : %w", err)
-	}
-	return nil
+	return atomicfile.WriteJSON(s.path, list)
 }

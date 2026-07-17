@@ -6,6 +6,15 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Changed (Consolidation — écriture atomique partagée, 17/07/2026)
+- **Dédoublonnage de la persistance des stores JSON.** Le bloc d'écriture atomique
+  (fichier temporaire → `Sync` → `Rename`) était recopié à l'identique dans 4 stores
+  (`user`, `wall`, `forum`, `pm`). Extrait dans un paquet unique **`internal/atomicfile`**
+  (`Write`, `WriteJSON`) ; les 4 `saveLocked` délèguent désormais (source unique de vérité).
+  Aucun changement de comportement (mêmes garanties, même format indenté 2 espaces).
+  Mesures : 4 blocs de persistance dupliqués → 1 helper ; les tests des 4 stores + un test
+  dédié `atomicfile` passent, y compris sous `-race`. `make test` + `make vet` verts.
+
 ### Added (Communication — messagerie privée, Sprint 7 #4, 17/07/2026)
 - **Messagerie privée entre membres.** Nouvel applet `pm` : boîte de réception paginée
   (expéditeur, date, marqueur `*` non-lu), lecture d'un message (marquage « lu » automatique),

@@ -17,11 +17,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/benedictemarty/bbsoric/internal/atomicfile"
 	"github.com/benedictemarty/bbsoric/internal/oascii"
 )
 
@@ -144,31 +144,5 @@ func (s *Store) saveLocked() error {
 	if s.path == "" {
 		return nil
 	}
-	b, err := json.MarshalIndent(s.msgs, "", "  ")
-	if err != nil {
-		return fmt.Errorf("serialisation du mur : %w", err)
-	}
-	dir := filepath.Dir(s.path)
-	tmp, err := os.CreateTemp(dir, ".wall-*.json.tmp")
-	if err != nil {
-		return fmt.Errorf("fichier temporaire : %w", err)
-	}
-	tmpName := tmp.Name()
-	defer os.Remove(tmpName) // no-op après rename réussi
-
-	if _, err := tmp.Write(b); err != nil {
-		tmp.Close()
-		return fmt.Errorf("ecriture temporaire : %w", err)
-	}
-	if err := tmp.Sync(); err != nil {
-		tmp.Close()
-		return fmt.Errorf("sync temporaire : %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("fermeture temporaire : %w", err)
-	}
-	if err := os.Rename(tmpName, s.path); err != nil {
-		return fmt.Errorf("rename atomique : %w", err)
-	}
-	return nil
+	return atomicfile.WriteJSON(s.path, s.msgs)
 }

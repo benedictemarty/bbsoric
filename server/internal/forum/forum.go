@@ -12,12 +12,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/benedictemarty/bbsoric/internal/atomicfile"
 	"github.com/benedictemarty/bbsoric/internal/oascii"
 )
 
@@ -252,31 +252,5 @@ func (s *Store) saveLocked() error {
 	if s.path == "" {
 		return nil
 	}
-	b, err := json.MarshalIndent(persisted{NextID: s.nextID, Threads: s.threads}, "", "  ")
-	if err != nil {
-		return fmt.Errorf("serialisation du forum : %w", err)
-	}
-	dir := filepath.Dir(s.path)
-	tmp, err := os.CreateTemp(dir, ".forum-*.json.tmp")
-	if err != nil {
-		return fmt.Errorf("fichier temporaire : %w", err)
-	}
-	tmpName := tmp.Name()
-	defer os.Remove(tmpName)
-
-	if _, err := tmp.Write(b); err != nil {
-		tmp.Close()
-		return fmt.Errorf("ecriture temporaire : %w", err)
-	}
-	if err := tmp.Sync(); err != nil {
-		tmp.Close()
-		return fmt.Errorf("sync temporaire : %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("fermeture temporaire : %w", err)
-	}
-	if err := os.Rename(tmpName, s.path); err != nil {
-		return fmt.Errorf("rename atomique : %w", err)
-	}
-	return nil
+	return atomicfile.WriteJSON(s.path, persisted{NextID: s.nextID, Threads: s.threads})
 }
