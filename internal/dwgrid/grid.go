@@ -1,4 +1,7 @@
-package bbs
+// Package dwgrid produit le rendu OASCII d'une grille DataWindow (source unique,
+// partagée par le serveur — applet interactif — et le studio Forge — aperçu de
+// grille). Le rendu s'appuie sur le buffer différentiel oascii.Screen.
+package dwgrid
 
 import (
 	"fmt"
@@ -10,18 +13,18 @@ import (
 
 // Disposition de la grille DataWindow (lignes 0..27 de l'écran Oric).
 const (
-	gridTitleRow  = 0 // bandeau titre
-	gridHeaderRow = 2 // entête des colonnes
-	gridDataTop   = 3 // première ligne de données
-	gridFooterRow = 24
-	gridLegendRow = 26
-	gridContentX  = 1 // les colonnes 1..39 portent le texte (col 0 = attribut couleur)
+	titleRow  = 0 // bandeau titre
+	headerRow = 2 // entête des colonnes
+	dataTop   = 3 // première ligne de données
+	footerRow = 24
+	legendRow = 26
+	contentX  = 1 // les colonnes 1..39 portent le texte (col 0 = attribut couleur)
 )
 
-// gridLignesMax renvoie le nombre de lignes de données affichables.
-func gridLignesMax(dw *content.DataWindow) int {
+// GridLignesMax renvoie le nombre de lignes de données affichables sur un écran.
+func GridLignesMax(dw *content.DataWindow) int {
 	n := dw.LignesMax
-	max := gridFooterRow - gridDataTop - 1
+	max := footerRow - dataTop - 1
 	if n <= 0 || n > max {
 		n = max
 	}
@@ -57,14 +60,14 @@ func ligneGrille(dw *content.DataWindow, index string, valeurs func(col string) 
 		b.WriteByte(' ')
 	}
 	s := b.String()
-	if len(s) > oascii.Cols-gridContentX {
-		s = s[:oascii.Cols-gridContentX]
+	if len(s) > oascii.Cols-contentX {
+		s = s[:oascii.Cols-contentX]
 	}
 	return s
 }
 
-// putLigne pose une ligne de texte à partir de gridContentX, avec une couleur
-// d'encre (attribut en col 0) et, si inverse, le bit 7 sur chaque caractère.
+// putLigne pose une ligne de texte à partir de contentX, avec une couleur d'encre
+// (attribut en col 0) et, si inverse, le bit 7 sur chaque caractère.
 func putLigne(scr *oascii.Screen, row int, ink oascii.Color, inverse bool, texte string) {
 	scr.Put(0, row, oascii.InkAttr(ink))
 	if inverse {
@@ -74,15 +77,15 @@ func putLigne(scr *oascii.Screen, row int, ink oascii.Color, inverse bool, texte
 		}
 		texte = string(bs)
 	}
-	scr.PutText(gridContentX, row, texte)
+	scr.PutText(contentX, row, texte)
 }
 
-// renderGrid compose la grille dans le buffer écran différentiel.
+// RenderGrid compose la grille dans le buffer écran différentiel.
 //   - rows      : lignes de la page courante (map colonne→texte)
 //   - sel       : index de la ligne sélectionnée (0-based) dans rows
 //   - page,total: pagination ; parPage = taille de page
 //   - filtre    : filtre LIKE courant (affiché s'il est posé)
-func renderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDonnees,
+func RenderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDonnees,
 	rows []map[string]string, sel, page, parPage, total int, filtre, triLabel string, editable, downloadable bool) {
 
 	scr.Clear()
@@ -100,7 +103,7 @@ func renderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 	if filtre != "" {
 		titre += " /" + filtre
 	}
-	putLigne(scr, gridTitleRow, oascii.Cyan, true, cell(titre, oascii.Cols-gridContentX))
+	putLigne(scr, titleRow, oascii.Cyan, true, cell(titre, oascii.Cols-contentX))
 
 	// Entête des colonnes.
 	entete := ligneGrille(dw, "No", func(col string) string {
@@ -109,7 +112,7 @@ func renderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 		}
 		return col
 	})
-	putLigne(scr, gridHeaderRow, inkEntete, false, entete)
+	putLigne(scr, headerRow, inkEntete, false, entete)
 
 	// Lignes de données. Le numéro « No » est la position SUR LA PAGE (1..parPage),
 	// pas l'index absolu : la colonne ne fait que GridIndexWidth (3) cases, or un
@@ -117,8 +120,8 @@ func renderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 	// (plus d'espace séparateur) voire serait tronqué. Le contexte global est donné
 	// par le pied « Page X/Y  N enreg. ».
 	for i, r := range rows {
-		row := gridDataTop + i
-		if row >= gridFooterRow {
+		row := dataTop + i
+		if row >= footerRow {
 			break
 		}
 		numPage := i + 1
@@ -135,7 +138,7 @@ func renderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 	if triLabel != "" {
 		pied += "  " + triLabel
 	}
-	putLigne(scr, gridFooterRow, oascii.Green, false, cell(pied, oascii.Cols-gridContentX))
+	putLigne(scr, footerRow, oascii.Green, false, cell(pied, oascii.Cols-contentX))
 
 	// Légende des touches.
 	legende := "+/- S/R V=fiche"
@@ -146,5 +149,5 @@ func renderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 		legende += " X=DL"
 	}
 	legende += " F/T Q"
-	putLigne(scr, gridLegendRow, oascii.Cyan, false, cell(legende, oascii.Cols-gridContentX))
+	putLigne(scr, legendRow, oascii.Cyan, false, cell(legende, oascii.Cols-contentX))
 }

@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benedictemarty/bbsoric/internal/content"
-	"github.com/benedictemarty/bbsoric/internal/oascii"
 	"github.com/benedictemarty/bbsoric/internal/xmodem"
 	"github.com/benedictemarty/bbsoric/server/internal/datawindow"
 	"github.com/benedictemarty/bbsoric/server/internal/files"
@@ -257,23 +255,6 @@ func bytesRepeat(c byte, n int) string {
 		b[i] = c
 	}
 	return string(b)
-}
-
-// TestRenderGridPerPageNumbering : la colonne « No » numérote PAR PAGE (1..parPage),
-// pas en absolu — sinon, sur une grande table, un index ≥ 100 collerait le titre
-// (colonne de 3) et ≥ 1000 serait tronqué.
-func TestRenderGridPerPageNumbering(t *testing.T) {
-	scr := oascii.NewScreen()
-	dw := &content.DataWindow{ColonnesAffichees: []string{"nom"}, Largeurs: []int{20}}
-	src := content.SourceDonnees{Colonnes: map[string]content.ColonneDef{"nom": {Type: "TEXT"}}}
-	rows := []map[string]string{{"nom": "X"}, {"nom": "Y"}, {"nom": "Z"}}
-	// Page 2, 10 par page : un index absolu vaudrait 11,12,13 ; par page = 1,2,3.
-	renderGrid(scr, dw, src, rows, -1, 2, 10, 23, "", "", false, false)
-	c1 := scr.At(gridContentX, gridDataTop) & 0x7F   // 1er caractère du « No »
-	c2 := scr.At(gridContentX+1, gridDataTop) & 0x7F // 2e (espace si « 1  », chiffre si « 11 »)
-	if c1 != '1' || c2 != ' ' {
-		t.Errorf("numérotation par page attendue (« 1  »), lu %q%q (index absolu ?)", string(rune(c1)), string(rune(c2)))
-	}
 }
 
 func TestDataWindowGrille(t *testing.T) {

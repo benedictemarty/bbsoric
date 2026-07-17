@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/benedictemarty/bbsoric/internal/content"
+	"github.com/benedictemarty/bbsoric/internal/dwgrid"
 	"github.com/benedictemarty/bbsoric/internal/oascii"
 	"github.com/benedictemarty/bbsoric/server/internal/datawindow"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
@@ -50,7 +51,7 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 		return Outcome{}
 	}
 
-	parPage := gridLignesMax(dw)
+	parPage := dwgrid.GridLignesMax(dw)
 	page, sel := 1, 0
 	filtre := ""
 	triEtat := 0 // 0 = tri par défaut ; sinon paires (colonne, ASC/DESC) cyclées par T
@@ -94,7 +95,7 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 
 	scr := oascii.NewScreen()
 	draw := func() bool {
-		renderGrid(scr, dw, src, rows, sel, page, parPage, total, filtre, triLabel(src, dw, triEtat), editable, downloadable)
+		dwgrid.RenderGrid(scr, dw, src, rows, sel, page, parPage, total, filtre, triLabel(src, dw, triEtat), editable, downloadable)
 		return s.Write(string(scr.Render())) == nil
 	}
 	// Recharge complète de l'écran (après une saisie plein écran qui a brouillé
