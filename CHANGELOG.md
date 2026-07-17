@@ -6,6 +6,25 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (Communication — mur de messages écrivable, Sprint 7 #2, 17/07/2026)
+- **Le « Livre d'or » statique devient un vrai mur de messages persisté.** Nouvel applet
+  `wall` : l'appelant lit les derniers messages (antéchronologique, pseudo + date + texte
+  encadré) puis peut en laisser un (RETURN seul = retour au menu). Premier applet à
+  **écriture persistée** — le patron (store JSON atomique modelé sur `internal/user`) sera
+  réutilisé par le forum (Sprint 7 #1).
+  - Nouveau paquet **`server/internal/wall`** : store à verrou + écriture atomique
+    (temp+rename) + horloge injectable. Entrées **bornées** (message ≤ 78 car., ≤ 200
+    messages conservés, plus anciens évincés) et **nettoyées** en ASCII imprimable
+    (`Sanitize` : blancs de contrôle → espace unique, non-ASCII écartés) — garde-fous
+    serveur public.
+  - Câblage : `SessionState.Wall` + `WelcomeHandler.Wall` (nil = mur en mémoire non
+    persisté), flag serveur **`-wall <fichier.json>`**. La page `guestbook` (menu principal,
+    entrée « Mur de messages ») lance l'applet `wall` (`content/site.json` + `DefaultSite`).
+  - Studio Forge : `wall` ajouté à la liste d'applets câblables (infobulle).
+  - Tests : `server/internal/wall` (post/sanitize/ordre/plafond/persistance/rechargement) et
+    intégration TCP `TestWallPostAndPersist` (invité poste → persisté + réaffiché) /
+    `TestWallEmptyReturns`. `make test` + `make vet` verts.
+
 ### Changed (DataWindow — glyphes flèches dans la légende, 17/07/2026)
 - **La légende affiche de VRAIS glyphes flèches** (▲▼◄►) au lieu de l'ASCII `^v<>`, à la
   manière d'ATASCII/PETSCII. La police BBS (charset alternatif, `tools/genfont`) contenait

@@ -284,7 +284,7 @@ func DefaultSite() *Site {
 			"main": {Title: "MENU PRINCIPAL", Entries: []Entry{
 				{Key: "1", Label: "Informations systeme", Target: "info"},
 				{Key: "2", Label: "A propos du BBS", Target: "about"},
-				{Key: "3", Label: "Livre d'or", Target: "guestbook"},
+				{Key: "3", Label: "Mur de messages", Target: "guestbook"},
 				{Key: "Q", Label: "Quitter", Target: TargetQuit},
 			}},
 			"info": {Title: "INFORMATIONS SYSTEME", Lines: []Line{
@@ -301,10 +301,7 @@ func DefaultSite() *Site {
 				{Text: " Contenu pilote par un fichier JSON", Style: Style{Ink: "cyan"}},
 				{Text: " modifiable a chaud.", Style: Style{Ink: "cyan"}},
 			}},
-			"guestbook": {Title: "LIVRE D'OR", Lines: []Line{
-				{Text: " (bientot disponible)", Style: Style{Ink: "magenta"}},
-				{Text: " La messagerie arrive au Sprint 3."},
-			}},
+			"guestbook": {Title: "MUR DE MESSAGES", Applet: "wall"},
 		},
 	}
 }

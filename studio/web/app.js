@@ -63,7 +63,7 @@ const entryIsApplet = (e) => Object.prototype.hasOwnProperty.call(e, 'applet');
 // Applets autonomes proposés pour une entrée de menu (enregistrés côté serveur).
 // « form » est volontairement exclu : il se gère via le formulaire d'une page.
 // Doit rester aligné sur les applets enregistrés via bbs.Register (server).
-const KNOWN_APPLETS = ['login', 'register', 'guest', 'download', 'upload', 'who', 'chat'];
+const KNOWN_APPLETS = ['login', 'register', 'guest', 'download', 'upload', 'who', 'chat', 'wall'];
 
 // APPLET_DESC : libellé d'aide (infobulle) par applet, pour guider le câblage.
 const APPLET_DESC = {
@@ -74,6 +74,7 @@ const APPLET_DESC = {
   upload: 'téléversement de fichier (XMODEM)',
   who: 'qui est en ligne (liste des connectés)',
   chat: 'salon de discussion temps réel',
+  wall: 'mur de messages persisté (livre d\'or)',
 };
 
 // appletSelect : liste déroulante des applets connus (+ la valeur courante si

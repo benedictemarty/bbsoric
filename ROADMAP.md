@@ -269,8 +269,12 @@ profiles. See `docs/adr/0003-studio-forge.md`.
   (`server/internal/presence`) + `who` and `chat` applets (real-time room,
   non-blocking broadcast, **Community** menu). Unit tests + two-client integration,
   `-race` clean. *(leverages the multi-session engine)*
-- [ ] **Writable one-liner wall** (#2) — turns the Guestbook into a persisted message
-  wall; establishes the "persisted-write applet" pattern.
+- [x] **Writable one-liner wall** (#2, 17/07/2026) — the static Guestbook becomes a
+  persisted message wall (applet `wall`, package `server/internal/wall`: atomic JSON store
+  modelled on `internal/user`, bounded ≤ 78 chars / ≤ 200 messages, ASCII-sanitised).
+  Server flag `-wall`; menu entry « Mur de messages ». **Establishes the "persisted-write
+  applet" pattern** reused by the forum (#1). Tests: store unit + TCP integration
+  (`TestWallPostAndPersist`/`TestWallEmptyReturns`). Studio applet list updated.
 - [ ] **Message base / forums** (#1) — read + post in threads, paginated reading via
   the differential buffer. *The* feature that moves from "menus" to "BBS".
 - [ ] **Private messaging** (#4), **RSS→OASCII news** (#5), **door game** (#6).

@@ -27,6 +27,7 @@ import (
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/throttle"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
+	"github.com/benedictemarty/bbsoric/server/internal/wall"
 )
 
 func main() {
@@ -44,6 +45,7 @@ func main() {
 	idle := flag.Duration("idle", 5*time.Minute, "délai d'inactivité avant déconnexion (0 = aucun)")
 	contentPath := flag.String("content", "", "fichier JSON du flux de pages (vide = contenu par défaut ; rechargé à chaud)")
 	usersPath := flag.String("users", "", "fichier JSON des comptes (vide = comptes en mémoire, non persistés)")
+	wallPath := flag.String("wall", "", "fichier JSON du mur de messages (vide = mur en mémoire, non persisté)")
 	filesDir := flag.String("files", "", "répertoire de la bibliothèque de fichiers (download/upload XMODEM ; vide = désactivé)")
 	maxUpload := flag.Int64("max-upload", 64*1024, "taille max d'un téléversement en octets (0 = illimité)")
 	dataDir := flag.String("data", "", "répertoire des bases SQLite DataWindow (vide = désactivé)")
@@ -74,6 +76,15 @@ func main() {
 		log.Info("comptes chargés", "path", *usersPath, "comptes", users.Count())
 	}
 
+	messages, err := wall.Open(*wallPath)
+	if err != nil {
+		log.Error("mur de messages : ouverture impossible", "path", *wallPath, "err", err)
+		os.Exit(1)
+	}
+	if *wallPath != "" {
+		log.Info("mur de messages chargé", "path", *wallPath, "messages", messages.Count())
+	}
+
 	var lib *files.Library
 	if *filesDir != "" {
 		lib, err = files.Open(*filesDir, *maxUpload)
@@ -102,7 +113,7 @@ func main() {
 	// Garde-fou anti brute-force : au plus 5 échecs d'auth par IP sur 5 minutes,
 	// en complément du plafond de 3 essais par passage d'applet (S11.4).
 	loginLimiter := throttle.New(5, 5*time.Minute)
-	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users, Files: lib, Presence: online, Data: dwEngine, Login: loginLimiter}, log)
+	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users, Files: lib, Presence: online, Data: dwEngine, Wall: messages, Login: loginLimiter}, log)
 
 	// Arrêt propre sur SIGINT/SIGTERM.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

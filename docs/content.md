@@ -91,9 +91,16 @@ Applet entry:
 ```json
 { "key": "1", "label": "Se connecter", "applet": "login", "next": "main" }
 ```
-- `applet`: name of the applet to launch when the entry is chosen (`login`, `register`,
-  `guest`…). **Adding an applet** = writing a small Go function and registering it.
+- `applet`: name of the applet to launch when the entry is chosen. Registered applets:
+  `login`, `register`, `guest`, `download`, `upload`, `who`, `chat`, `wall`, `datawindow`.
+  **Adding an applet** = writing a small Go function and registering it.
 - `next` (optional): page to go to **after the applet succeeds** (empty = stay).
+
+> **`wall`** (mur de messages) — persisted one-liner wall (the historic "guestbook"):
+> reads the latest messages then lets the caller post one. Backed by `server/internal/wall`
+> (atomic JSON store), enabled for persistence by the server flag `-wall <file.json>`
+> (without it, the wall lives in memory only). Messages are bounded (≤ 78 chars, ≤ 200
+> kept) and ASCII-sanitised server-side.
 
 > Compat: a page can also carry `applet` (+ `next`) at the **page** level (applet
 > auto-launched on arrival). A historical mechanism kept for hand-written JSON;

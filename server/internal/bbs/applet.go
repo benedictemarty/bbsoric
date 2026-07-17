@@ -11,6 +11,7 @@ import (
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/throttle"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
+	"github.com/benedictemarty/bbsoric/server/internal/wall"
 )
 
 // SessionState porte l'état d'une session : utilisateur connecté (nil si pas
@@ -23,6 +24,7 @@ type SessionState struct {
 	Files    *files.Library     // bibliothèque de fichiers (peut être nil)
 	Presence *presence.Registry // registre « qui est en ligne » + chat (peut être nil)
 	Data     *datawindow.Engine // moteur DataWindow SQLite (peut être nil)
+	Wall     *wall.Store        // mur de messages persisté (peut être nil)
 	MemberID uint64             // identifiant de la session dans le registre de présence
 	Handle   string             // pseudo affiché (compte ou « Invité-N »)
 	IP       string             // adresse IP du client (clé de rate-limiting)

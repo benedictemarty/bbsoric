@@ -15,6 +15,7 @@ import (
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/throttle"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
+	"github.com/benedictemarty/bbsoric/server/internal/wall"
 )
 
 // WelcomeHandler affiche la bannière d'accueil puis déroule le flux de pages
@@ -27,6 +28,7 @@ type WelcomeHandler struct {
 	Files    *files.Library     // bibliothèque de fichiers (download/upload ; peut être nil)
 	Presence *presence.Registry // registre « qui est en ligne » + chat (peut être nil)
 	Data     *datawindow.Engine // moteur DataWindow SQLite (peut être nil)
+	Wall     *wall.Store        // mur de messages persisté (peut être nil)
 	Login    *throttle.Limiter  // limiteur anti brute-force sur l'auth (peut être nil)
 }
 
@@ -38,7 +40,7 @@ func (h WelcomeHandler) Handle(ctx context.Context, s *server.Session) {
 		return
 	}
 	state := &SessionState{Files: h.Files, Presence: h.Presence, Data: h.Data,
-		Login: h.Login, IP: s.RemoteIP()}
+		Wall: h.Wall, Login: h.Login, IP: s.RemoteIP()}
 	if h.Presence != nil {
 		// Pseudo provisoire jusqu'à l'identification (login/invité le fixe).
 		state.MemberID = h.Presence.Join("connexion...", s.RemoteIP())
