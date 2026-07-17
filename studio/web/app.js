@@ -9,6 +9,8 @@ const INKS = ['white', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'bla
 let siteName = null;
 let site = { start: '', pages: {} };
 let current = null;
+// État de navigation de l'aperçu de grille DataWindow (par page).
+let gridNav = { page: null, n: 1, sel: 0, filtre: '' };
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, children = []) => {
@@ -689,10 +691,27 @@ async function doPreview() {
   if (!current) return;
   const p = site.pages[current];
   if (p && p.hires) { lastScreen = null; renderHiresPreview(p); return; } // aperçu graphique local
+  if (p && p.datawindow) { await doGridPreview(); return; }               // aperçu de grille interactif
   const r = await fetch('/api/screen?page=' + encodeURIComponent(current), { method: 'POST', body: JSON.stringify(site) });
   if (!r.ok) return;
   lastScreen = layoutScreen(new Uint8Array(await r.arrayBuffer()));
   drawScreen(lastScreen);
+}
+
+// doGridPreview : rend la grille de la page datawindow courante via /api/grid
+// (MÊME rendu que le serveur, depuis les données seed de la source) et l'affiche.
+// L'état de navigation (page, sélection, filtre) est repris à chaque changement de page.
+async function doGridPreview() {
+  if (gridNav.page !== current) gridNav = { page: current, n: 1, sel: 0, filtre: '' };
+  const q = '?page=' + encodeURIComponent(current) + '&n=' + gridNav.n +
+    '&sel=' + gridNav.sel + '&filtre=' + encodeURIComponent(gridNav.filtre);
+  let buf;
+  try {
+    const r = await fetch('/api/grid' + q, { method: 'POST', body: JSON.stringify(site) });
+    buf = r.ok ? new Uint8Array(await r.arrayBuffer()) : new Uint8Array(COLS * ROWS).fill(0x20);
+  } catch { buf = new Uint8Array(COLS * ROWS).fill(0x20); }
+  lastScreen = buf;
+  drawScreen(buf);
 }
 // clignotement : ré-affiche périodiquement le dernier écran.
 setInterval(() => {
@@ -1034,6 +1053,7 @@ function dataWindowEditor(p) {
   // Budget de largeur : col attribut + index + Σ(largeur+1) ≤ 40 (cf. content.validate).
   const total = 1 + 3 + dw.largeurs.reduce((s, w) => s + (w || 0) + 1, 0);
   wrap.append(el('p', { className: 'hint' + (total > 40 ? ' err' : ''), textContent: 'Largeur grille : ' + total + '/40 cases' + (total > 40 ? ' — trop large !' : '') }));
+  wrap.append(el('p', { className: 'hint', textContent: 'Aperçu interactif (à droite) : clique l’aperçu puis ↑/↓ = sélection, S/R = pages, F = filtre. Données de l’onglet Données.' }));
 
   wrap.append(field('Couleur entête', inkSelect(dw, 'couleur_entete')));
   wrap.append(field('Couleur lignes', inkSelect(dw, 'couleur_lignes')));
@@ -1308,6 +1328,25 @@ scv.addEventListener('keydown', (e) => {
   else return;
   e.preventDefault(); drawGrid();
 });
+// Aperçu de grille DataWindow navigable au clavier (onglet Édition). Le canvas
+// d'aperçu prend le focus au clic ; flèches ↑/↓ = sélection, S/R = pages, F = filtre.
+const oscv = $('oric-screen');
+if (oscv) {
+  oscv.tabIndex = 0;
+  oscv.addEventListener('keydown', (e) => {
+    const p = current && site.pages[current];
+    if (!p || !p.datawindow) return; // uniquement pour une page grille
+    let handled = true;
+    const k = e.key;
+    if (k === 'ArrowDown') gridNav.sel++;
+    else if (k === 'ArrowUp') gridNav.sel--;
+    else if (k === 'PageDown' || k === 's' || k === 'S') { gridNav.n++; gridNav.sel = 0; }
+    else if (k === 'PageUp' || k === 'r' || k === 'R') { gridNav.n = Math.max(1, gridNav.n - 1); gridNav.sel = 0; }
+    else if (k === 'f' || k === 'F') { const f = prompt('Filtre LIKE (vide = tout)', gridNav.filtre); if (f !== null) { gridNav.filtre = f.trim(); gridNav.n = 1; gridNav.sel = 0; } }
+    else handled = false;
+    if (handled) { e.preventDefault(); gridNav.sel = Math.max(0, Math.min(19, gridNav.sel)); doGridPreview(); }
+  });
+}
 $('screen-load').onclick = () => screenLoad($('screen-page').value);
 $('screen-new').onclick = screenNew;
 $('screen-save').onclick = screenSave;

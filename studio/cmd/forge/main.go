@@ -38,6 +38,7 @@ func main() {
 	mux.HandleFunc("/api/validate", srv.handleValidate)
 	mux.HandleFunc("/api/save", srv.handleSave)
 	mux.HandleFunc("/api/screen", srv.handleScreen)
+	mux.HandleFunc("/api/grid", srv.handleGrid)
 	mux.HandleFunc("/api/profiles", srv.handleProfiles)
 	mux.HandleFunc("/api/profile", srv.handleProfile)
 	mux.HandleFunc("/api/deploy", srv.handleDeploy)

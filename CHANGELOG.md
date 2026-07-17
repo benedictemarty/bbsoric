@@ -6,6 +6,17 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (Studio — aperçu de grille interactif, tranche B, 17/07/2026)
+- **Aperçu de grille DataWindow navigable dans le studio Forge.** Le rendu de grille est
+  extrait dans un paquet partagé **`internal/dwgrid`** (`RenderGrid`/`GridLignesMax`), utilisé
+  à la fois par le serveur (applet) et le studio — source unique de rendu, aucune duplication.
+  Nouvel endpoint **`/api/grid`** (forge) : rend la grille de la page depuis les **données seed**
+  de la source (filtre fixe + filtre LIKE + tri + pagination en mémoire) et renvoie le buffer
+  40×28. Le studio affiche cet aperçu dans le canvas et le rend **navigable au clavier** :
+  flèches **↑/↓** (sélection), **S/R** (pages), **F** (filtre). Vérifié via Chromium/CDP
+  (3 flèches bas → ligne 4 sélectionnée, `docs/img/studio-grid-preview.png`). Tests
+  `TestHandleGrid`, `TestHandleGridFilter`, `TestHandleGridRequiresPost`, `internal/dwgrid`.
+
 ### Added (DataWindow — navigation aux flèches, tranche A, 17/07/2026)
 - **Flèches ↑/↓ du clavier Oric pour la sélection dans les grilles.** Le terminal
   (`client/term.s`) mappe désormais les 4 touches flèches (auparavant non mappées dans
