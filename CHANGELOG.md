@@ -6,6 +6,28 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (Communication — messagerie privée, Sprint 7 #4, 17/07/2026)
+- **Messagerie privée entre membres.** Nouvel applet `pm` : boîte de réception paginée
+  (expéditeur, date, marqueur `*` non-lu), lecture d'un message (marquage « lu » automatique),
+  réponse et rédaction d'un nouveau message. **Réservé aux comptes identifiés** (les invités
+  sont éconduits). Troisième applet à écriture persistée (après `wall` et `forum`).
+  - Nouveau paquet **`server/internal/pm`** : store JSON atomique (verrou, temp+rename,
+    horloge injectable) avec compteur d'ID persistant, marqueur lu/non-lu, correspondance
+    destinataire **insensible à la casse** (`user.NormalizeHandle`, comme les comptes).
+    Entrées bornées (message ≤ 200, ≤ 1000 messages conservés) et nettoyées ASCII
+    (`oascii.SanitizeText`). Le destinataire doit être un **compte existant** (validé côté
+    applet via le magasin de comptes).
+  - Câblage : `SessionState.PM` + `WelcomeHandler.PM` (nil = messagerie en mémoire), flag
+    serveur **`-pm <fichier.json>`**. Entrée « Messagerie privee » du menu Communauté
+    (`content/site.json`). Studio : `pm` ajouté à la liste d'applets câblables.
+  - Tests : `server/internal/pm` (envoi/réception insensible à la casse/isolation des boîtes/
+    non-lus/marquage/persistance+ID/plafond) et intégration TCP `TestPMReadAndReply`
+    (Bob lit un message d'Alice puis répond → réponse persistée) + `TestPMRequiresAccount`
+    (invité éconduit). `make test` + `make vet` verts.
+  - Validé de bout en bout sur le vrai serveur (driver run-bbsoric) : Alice inscrite envoie
+    un MP à bob ; bob connecté voit « 1 reçu, 1 non lu », ouvre le message (passe `read:true`
+    sur disque).
+
 ### Added (Communication — forum de discussion, Sprint 7 #1 / D1, 17/07/2026)
 - **Forum de discussion (fils + messages), lecture paginée et réponse.** Nouvel applet
   `forum` : liste des fils (triés par activité, paginée `S/P`, touches `1-8` pour ouvrir,

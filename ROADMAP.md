@@ -284,7 +284,14 @@ profiles. See `docs/adr/0003-studio-forge.md`.
   `oascii.SanitizeText`. Store unit tests + TCP integration (`TestForumCreateReadReply`).
   *Full-redraw pagination (not the differential buffer), consistent with the wall/menu
   applets.* *The* feature that moves from "menus" to "BBS".
-- [ ] **Private messaging** (#4), **RSS→OASCII news** (#5), **door game** (#6).
+- [x] **Private messaging** (#4, 17/07/2026) — member-to-member private messages. Applet `pm`
+  + package `server/internal/pm` (atomic JSON store, persistent ID, read/unread flag,
+  case-insensitive recipient via `user.NormalizeHandle`, bounded ≤ 200-char / ≤ 1000 kept,
+  ASCII-sanitised). Paginated inbox (`1-8` read, `N` new), read marks-as-read, reply.
+  Members-only (guests refused); recipient must be an existing account. Server flag `-pm`;
+  « Messagerie privee » in the Community menu. Store unit tests + TCP integration
+  (`TestPMReadAndReply`, `TestPMRequiresAccount`); verified in the real server.
+- [ ] **RSS→OASCII news** (#5), **door game** (#6).
 
 ---
 

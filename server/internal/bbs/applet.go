@@ -8,6 +8,7 @@ import (
 	"github.com/benedictemarty/bbsoric/server/internal/datawindow"
 	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/forum"
+	"github.com/benedictemarty/bbsoric/server/internal/pm"
 	"github.com/benedictemarty/bbsoric/server/internal/presence"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/throttle"
@@ -27,6 +28,7 @@ type SessionState struct {
 	Data     *datawindow.Engine // moteur DataWindow SQLite (peut être nil)
 	Wall     *wall.Store        // mur de messages persisté (peut être nil)
 	Forum    *forum.Store       // forum de discussion persisté (peut être nil)
+	PM       *pm.Store          // messagerie privée persistée (peut être nil)
 	MemberID uint64             // identifiant de la session dans le registre de présence
 	Handle   string             // pseudo affiché (compte ou « Invité-N »)
 	IP       string             // adresse IP du client (clé de rate-limiting)

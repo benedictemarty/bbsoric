@@ -93,7 +93,7 @@ Applet entry:
 ```
 - `applet`: name of the applet to launch when the entry is chosen. Registered applets:
   `login`, `register`, `guest`, `download`, `upload`, `who`, `chat`, `wall`, `forum`,
-  `datawindow`. **Adding an applet** = writing a small Go function and registering it.
+  `pm`, `datawindow`. **Adding an applet** = writing a small Go function and registering it.
 - `next` (optional): page to go to **after the applet succeeds** (empty = stay).
 
 > **`wall`** (mur de messages) — persisted one-liner wall (the historic "guestbook"):
@@ -108,6 +108,13 @@ Applet entry:
 > persistent ID counter), enabled for persistence by the server flag `-forum <file.json>`.
 > Bounded (≤ 38-char titles, ≤ 200-char posts, ≤ 100 threads, ≤ 500 posts/thread) and
 > ASCII-sanitised. Both `wall` and `forum` reuse `oascii.SanitizeText`.
+
+> **`pm`** (messagerie privée) — member-to-member private messages. Paginated inbox
+> (`1-8` to read, `N` to compose), reading marks a message read, `R` to reply. **Members
+> only** (guests are refused); the recipient must be an existing account. Backed by
+> `server/internal/pm` (atomic JSON store, persistent ID, read/unread flag, case-insensitive
+> recipient), enabled for persistence by the server flag `-pm <file.json>`. Bounded
+> (≤ 200-char messages, ≤ 1000 kept) and ASCII-sanitised.
 
 > Compat: a page can also carry `applet` (+ `next`) at the **page** level (applet
 > auto-launched on arrival). A historical mechanism kept for hand-written JSON;

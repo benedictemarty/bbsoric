@@ -1,5 +1,5 @@
 {
-  "_comment": "Flux de pages du BBS Oric. Modifiable a chaud. Une page a un titre, du texte (lines) et/ou des choix (entries). Avec entries = ecran interactif, sinon ecran de contenu. Une entree navigue (target: page ou __quit__/__back__/__home__) OU lance un applet (applet + next). Une page peut aussi porter un form (action login/register, fields key/label/secret, next, fail, retries) = ecran de saisie declaratif. Applets: login, register, guest, download, upload, who (qui est en ligne), chat (salon temps reel), wall (mur de messages persiste, flag serveur -wall), forum (fils de discussion paginee, flag serveur -forum). Une page peut porter un datawindow (grille de donnees, source dans sources_donnees) rendue par l'applet datawindow ; flag serveur -data requis. Couleurs ink: black red green yellow blue magenta cyan white.",
+  "_comment": "Flux de pages du BBS Oric. Modifiable a chaud. Une page a un titre, du texte (lines) et/ou des choix (entries). Avec entries = ecran interactif, sinon ecran de contenu. Une entree navigue (target: page ou __quit__/__back__/__home__) OU lance un applet (applet + next). Une page peut aussi porter un form (action login/register, fields key/label/secret, next, fail, retries) = ecran de saisie declaratif. Applets: login, register, guest, download, upload, who (qui est en ligne), chat (salon temps reel), wall (mur de messages persiste, flag serveur -wall), forum (fils de discussion paginee, flag serveur -forum), pm (messagerie privee entre membres, flag serveur -pm ; reserve aux comptes identifies). Une page peut porter un datawindow (grille de donnees, source dans sources_donnees) rendue par l'applet datawindow ; flag serveur -data requis. Couleurs ink: black red green yellow blue magenta cyan white.",
   "start": "accueil",
   "sources_donnees": {
     "annuaire": {
@@ -181,6 +181,12 @@
           "key": "3",
           "label": "Forum",
           "applet": "forum",
+          "next": "communaute"
+        },
+        {
+          "key": "4",
+          "label": "Messagerie privee",
+          "applet": "pm",
           "next": "communaute"
         },
         {
