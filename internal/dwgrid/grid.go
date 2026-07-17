@@ -169,18 +169,19 @@ func RenderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 	putLigne(scr, footerRow, oascii.Green, false, cell(pied, oascii.Cols-contentX))
 
 	// Légende des touches. Les flèches ^v<> sont rendues en VRAIS GLYPHES de la
-	// police BBS (charset alternatif : ^=▲ v=▼ <=◄ >=►, cf. tools/genfont) en les
-	// encadrant de l'attribut altCharset ($09 = ON, $08 = OFF) ; le reste de la
-	// légende reste en charset standard. ▲▼ = sélection (aussi +/-), ◄► = scroll.
-	// F/C = filtrer / effacer le filtre.
-	const altOn, altOff = "\x09", "\x08"
-	legende := altOn + "^v<>" + altOff + " S/R V=fiche"
+	// police BBS (charset alternatif : ^=▲ v=▼ <=◄ >=►, cf. tools/genfont) via
+	// l'attribut altCharset ($09). Elles sont placées EN FIN de ligne : le terminal
+	// ne peut pas désactiver l'attribut en milieu de ligne (il traite $08 = attr
+	// texte OFF comme un BACKSPACE) ; en fin de ligne, l'ULA réinitialise le charset
+	// à la ligne suivante. ▲▼ = sélection (aussi +/-), ◄► = scroll ; F/C = filtre/effacer.
+	const altOn = "\x09"
+	legende := "S/R V=fiche"
 	if editable {
 		legende += " N/E/D"
 	}
 	if downloadable {
 		legende += " X=DL"
 	}
-	legende += " F/C T Q"
+	legende += " F/C T Q " + altOn + "^v<>"
 	putLigne(scr, legendRow, oascii.Cyan, false, cell(legende, oascii.Cols-contentX))
 }
