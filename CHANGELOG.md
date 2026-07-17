@@ -6,6 +6,16 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (Contenu — actualités / annonces, D2 / Sprint 8 S2, 17/07/2026)
+- **Page d'actualités datées et persistées.** Nouvel applet `news` : liste antéchronologique
+  d'annonces (date + titre + corps), paginée. **Lecture pour tous**, **publication réservée
+  à l'admin** (sysop) via la touche `N` (masquée aux non-admins). Nouveau paquet
+  `server/internal/news` (store JSON via `internal/atomicfile`, bornes : titre ≤ 38, corps
+  ≤ 400, ≤ 200 annonces, nettoyage ASCII). Câblage `SessionState.News`/`WelcomeHandler.News`,
+  flag serveur `-news`. Entrée « Actualites » du menu Services (`content/site.json`). Studio :
+  `news` ajouté. Tests : store (`server/internal/news`) + intégration TCP `TestNewsAdminPublishes`
+  / `TestNewsGuestReadsNoPublish`. `make test` + `make vet` verts.
+
 ### Changed (Consolidation — persistance JSON partagée, 17/07/2026)
 - **Dédoublonnage de la persistance des stores JSON.** Écriture ET lecture atomiques
   extraites dans un paquet unique **`internal/atomicfile`** (`Write`, `WriteJSON`, `ReadJSON`).

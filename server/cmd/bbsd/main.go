@@ -24,6 +24,7 @@ import (
 	"github.com/benedictemarty/bbsoric/server/internal/datawindow"
 	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/forum"
+	"github.com/benedictemarty/bbsoric/server/internal/news"
 	"github.com/benedictemarty/bbsoric/server/internal/pm"
 	"github.com/benedictemarty/bbsoric/server/internal/presence"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
@@ -50,6 +51,7 @@ func main() {
 	wallPath := flag.String("wall", "", "fichier JSON du mur de messages (vide = mur en mémoire, non persisté)")
 	forumPath := flag.String("forum", "", "fichier JSON du forum (vide = forum en mémoire, non persisté)")
 	pmPath := flag.String("pm", "", "fichier JSON de la messagerie privée (vide = en mémoire, non persisté)")
+	newsPath := flag.String("news", "", "fichier JSON des actualités / annonces (vide = en mémoire, non persisté)")
 	filesDir := flag.String("files", "", "répertoire de la bibliothèque de fichiers (download/upload XMODEM ; vide = désactivé)")
 	maxUpload := flag.Int64("max-upload", 64*1024, "taille max d'un téléversement en octets (0 = illimité)")
 	dataDir := flag.String("data", "", "répertoire des bases SQLite DataWindow (vide = désactivé)")
@@ -107,6 +109,15 @@ func main() {
 		log.Info("messagerie privée chargée", "path", *pmPath, "messages", mailbox.Count())
 	}
 
+	annonces, err := news.Open(*newsPath)
+	if err != nil {
+		log.Error("actualités : ouverture impossible", "path", *newsPath, "err", err)
+		os.Exit(1)
+	}
+	if *newsPath != "" {
+		log.Info("actualités chargées", "path", *newsPath, "annonces", annonces.Count())
+	}
+
 	var lib *files.Library
 	if *filesDir != "" {
 		lib, err = files.Open(*filesDir, *maxUpload)
@@ -135,7 +146,7 @@ func main() {
 	// Garde-fou anti brute-force : au plus 5 échecs d'auth par IP sur 5 minutes,
 	// en complément du plafond de 3 essais par passage d'applet (S11.4).
 	loginLimiter := throttle.New(5, 5*time.Minute)
-	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users, Files: lib, Presence: online, Data: dwEngine, Wall: messages, Forum: forums, PM: mailbox, Login: loginLimiter}, log)
+	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users, Files: lib, Presence: online, Data: dwEngine, Wall: messages, Forum: forums, PM: mailbox, News: annonces, Login: loginLimiter}, log)
 
 	// Arrêt propre sur SIGINT/SIGTERM.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

@@ -12,6 +12,7 @@ import (
 	"github.com/benedictemarty/bbsoric/server/internal/datawindow"
 	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/forum"
+	"github.com/benedictemarty/bbsoric/server/internal/news"
 	"github.com/benedictemarty/bbsoric/server/internal/pm"
 	"github.com/benedictemarty/bbsoric/server/internal/presence"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
@@ -33,6 +34,7 @@ type WelcomeHandler struct {
 	Wall     *wall.Store        // mur de messages persisté (peut être nil)
 	Forum    *forum.Store       // forum de discussion persisté (peut être nil)
 	PM       *pm.Store          // messagerie privée persistée (peut être nil)
+	News     *news.Store        // actualités / annonces persistées (peut être nil)
 	Login    *throttle.Limiter  // limiteur anti brute-force sur l'auth (peut être nil)
 }
 
@@ -44,7 +46,7 @@ func (h WelcomeHandler) Handle(ctx context.Context, s *server.Session) {
 		return
 	}
 	state := &SessionState{Files: h.Files, Presence: h.Presence, Data: h.Data,
-		Wall: h.Wall, Forum: h.Forum, PM: h.PM, Login: h.Login, IP: s.RemoteIP()}
+		Wall: h.Wall, Forum: h.Forum, PM: h.PM, News: h.News, Login: h.Login, IP: s.RemoteIP()}
 	if h.Presence != nil {
 		// Pseudo provisoire jusqu'à l'identification (login/invité le fixe).
 		state.MemberID = h.Presence.Join("connexion...", s.RemoteIP())

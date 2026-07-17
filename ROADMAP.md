@@ -157,8 +157,11 @@
   received file's proposed Sedoric name can be edited at the keyboard, then it is
   saved (Sedoric/LOCI) under the edited name. Reuses `input_line`; validated in
   `oric1-emu` via `--type-keys`.
-- [ ] **S2 — News / announcements page** (server): not started. Dated, persisted
-  news applet (store pattern à la `internal/user`), Go-tested + driver. (D2.)
+- [x] **S2 — News / announcements page** (server, 17/07/2026): applet `news` + package
+  `server/internal/news` (atomic JSON store, dated, bounded ≤ 38-char title / ≤ 400-char body /
+  ≤ 200 items). Read-only for all, admin-only publish (`N`). Server flag `-news`; « Actualites »
+  in the Services menu. Store tests + TCP integration (`TestNewsAdminPublishes`,
+  `TestNewsGuestReadsNoPublish`). (D2.)
 - [x] **S3 — Cassette (.TAP) save spike** ✅ (27/06): **feasible** (`oric1-emu`
   captures ROM CSAVE to a host `.tap`; Atmos hooks `$E607/$E75A/$E65E/$E93C`,
   buffers `$027F`/`$02A8`) but **deferred** — ML CSAVE recipe ≈ the Sedoric R&E
@@ -166,7 +169,7 @@
 
 ## Sprint 3 — Content modules
 - [x] Messaging / forum (read, post) — done 17/07/2026 (applet `forum`, cf. Sprint 7 #1)
-- [ ] News / announcements page
+- [x] News / announcements page — done 17/07/2026 (applet `news`, cf. Sprint 8 S2)
 - [ ] Interactive mini-game (e.g. Connect Four / tic-tac-toe) to validate interactivity
 - [~] **File transfer (XMODEM)**: **server side done** (`internal/xmodem`,
   `server/internal/files` library, `download`/`upload` applets, `-files`/

@@ -44,7 +44,10 @@
   and thread view (`R` reply). Server flag `-forum`; « Forum » in the Community menu. Reuses
   the wall's persisted-write pattern; `oascii.SanitizeText` shared. Store tests + TCP
   integration `TestForumCreateReadReply`; verified in the real server. Cf. ROADMAP Sprint 7 #1.)*
-- [ ] **D2** (2) As a user, I want to see **news / announcements**.
+- [x] **D2** (2) As a user, I want to see **news / announcements**.
+  *(Done 17/07/2026 — applet `news` + package `server/internal/news` (atomic JSON store,
+  dated, bounded, ASCII-sanitised). Read for all, admin-only publish. Server flag `-news`;
+  « Actualites » in the Services menu. Store tests + TCP integration. Cf. ROADMAP Sprint 8 S2.)*
 - [ ] **D3** (3) As a user, I want to play a **mini-game** (e.g. Connect Four).
 
 ## Epic E — Real hardware & deployment (Sprint 4–5)
