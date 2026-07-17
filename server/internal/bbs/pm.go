@@ -42,12 +42,7 @@ func pmInbox(s *server.Session, ac *AppContext, store *pm.Store, me string) Outc
 	for {
 		box := store.Inbox(me)
 		nbPages := pageCount(len(box), pmPerPage)
-		if page >= nbPages {
-			page = nbPages - 1
-		}
-		if page < 0 {
-			page = 0
-		}
+		page = clampPage(page, nbPages)
 		if err := writePMInbox(s, store, me, box, page, nbPages); err != nil {
 			return Outcome{Quit: true}
 		}

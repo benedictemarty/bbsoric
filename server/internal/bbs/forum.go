@@ -41,12 +41,7 @@ func forumList(s *server.Session, ac *AppContext, store *forum.Store) Outcome {
 	for {
 		infos := store.List()
 		nbPages := pageCount(len(infos), forumThreadsPerPage)
-		if page >= nbPages {
-			page = nbPages - 1
-		}
-		if page < 0 {
-			page = 0
-		}
+		page = clampPage(page, nbPages)
 		if err := writeForumList(s, infos, page, nbPages); err != nil {
 			return Outcome{Quit: true}
 		}
@@ -120,12 +115,7 @@ func forumThread(s *server.Session, ac *AppContext, store *forum.Store, id uint6
 			return Outcome{} // fil disparu : retour à la liste
 		}
 		nbPages := pageCount(len(th.Posts), forumPostsPerPage)
-		if page >= nbPages {
-			page = nbPages - 1
-		}
-		if page < 0 {
-			page = 0
-		}
+		page = clampPage(page, nbPages)
 		if err := writeForumThread(s, th, page, nbPages); err != nil {
 			return Outcome{Quit: true}
 		}
@@ -212,4 +202,15 @@ func pageCount(n, perPage int) int {
 		return 1
 	}
 	return (n + perPage - 1) / perPage
+}
+
+// clampPage borne un numéro de page dans [0, nbPages-1].
+func clampPage(page, nbPages int) int {
+	if page >= nbPages {
+		page = nbPages - 1
+	}
+	if page < 0 {
+		page = 0
+	}
+	return page
 }

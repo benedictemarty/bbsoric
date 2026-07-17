@@ -14,9 +14,7 @@
 package wall
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -60,15 +58,8 @@ func Open(path string) (*Store, error) {
 	if path == "" {
 		return s, nil
 	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return s, nil
-		}
-		return nil, fmt.Errorf("lecture %s : %w", path, err)
-	}
-	if err := json.Unmarshal(b, &s.msgs); err != nil {
-		return nil, fmt.Errorf("JSON du mur invalide (%s) : %w", path, err)
+	if _, err := atomicfile.ReadJSON(path, &s.msgs); err != nil {
+		return nil, err
 	}
 	// Applique le plafond même si le fichier en contenait davantage (borne dure).
 	if len(s.msgs) > MaxMessages {

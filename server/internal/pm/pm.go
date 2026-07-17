@@ -10,9 +10,7 @@
 package pm
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -59,16 +57,9 @@ func Open(path string) (*Store, error) {
 	if path == "" {
 		return s, nil
 	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return s, nil
-		}
-		return nil, fmt.Errorf("lecture %s : %w", path, err)
-	}
 	var p persisted
-	if err := json.Unmarshal(b, &p); err != nil {
-		return nil, fmt.Errorf("JSON de la messagerie invalide (%s) : %w", path, err)
+	if _, err := atomicfile.ReadJSON(path, &p); err != nil {
+		return nil, err
 	}
 	s.msgs = p.Messages
 	s.nextID = p.NextID

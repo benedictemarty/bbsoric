@@ -1,9 +1,7 @@
 package user
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"sort"
 	"sync"
 	"time"
@@ -35,16 +33,9 @@ func Open(path string) (*Store, error) {
 	if path == "" {
 		return s, nil
 	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return s, nil
-		}
-		return nil, fmt.Errorf("lecture %s : %w", path, err)
-	}
 	var list []*User
-	if err := json.Unmarshal(b, &list); err != nil {
-		return nil, fmt.Errorf("JSON utilisateurs invalide (%s) : %w", path, err)
+	if _, err := atomicfile.ReadJSON(path, &list); err != nil {
+		return nil, err
 	}
 	for _, u := range list {
 		s.users[NormalizeHandle(u.Handle)] = u

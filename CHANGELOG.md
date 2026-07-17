@@ -6,14 +6,17 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
-### Changed (Consolidation — écriture atomique partagée, 17/07/2026)
-- **Dédoublonnage de la persistance des stores JSON.** Le bloc d'écriture atomique
-  (fichier temporaire → `Sync` → `Rename`) était recopié à l'identique dans 4 stores
-  (`user`, `wall`, `forum`, `pm`). Extrait dans un paquet unique **`internal/atomicfile`**
-  (`Write`, `WriteJSON`) ; les 4 `saveLocked` délèguent désormais (source unique de vérité).
-  Aucun changement de comportement (mêmes garanties, même format indenté 2 espaces).
-  Mesures : 4 blocs de persistance dupliqués → 1 helper ; les tests des 4 stores + un test
-  dédié `atomicfile` passent, y compris sous `-race`. `make test` + `make vet` verts.
+### Changed (Consolidation — persistance JSON partagée, 17/07/2026)
+- **Dédoublonnage de la persistance des stores JSON.** Écriture ET lecture atomiques
+  extraites dans un paquet unique **`internal/atomicfile`** (`Write`, `WriteJSON`, `ReadJSON`).
+  Les 4 stores (`user`, `wall`, `forum`, `pm`) délèguent désormais leur `saveLocked` (bloc
+  temp → `Sync` → `Rename`, dupliqué ×4) et leur `Open` (lecture + `IsNotExist` + `Unmarshal`,
+  dupliqué ×4). Aucun changement de comportement (mêmes garanties, format indenté 2 espaces).
+- **Pagination** : le bornage de page des applets (`clampPage`, dupliqué ×3 dans `forum`/`pm`)
+  factorisé en un seul helper.
+- Mesures : 4 blocs d'écriture + 4 blocs de lecture + 3 clamps → 3 helpers. Tests : paquet
+  `atomicfile` (5 fonctions), 4 stores et applets verts, y compris sous `-race`.
+  `go test ./...` = 19 ok / 0 FAIL ; `go vet ./...` = 0.
 
 ### Added (Communication — messagerie privée, Sprint 7 #4, 17/07/2026)
 - **Messagerie privée entre membres.** Nouvel applet `pm` : boîte de réception paginée

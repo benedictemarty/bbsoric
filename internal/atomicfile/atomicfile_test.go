@@ -48,6 +48,37 @@ func TestWriteJSONRoundTrip(t *testing.T) {
 	}
 }
 
+func TestReadJSON(t *testing.T) {
+	type rec struct {
+		A int `json:"a"`
+	}
+	path := filepath.Join(t.TempDir(), "r.json")
+
+	// Fichier absent → (false, nil), v inchangé.
+	var out rec
+	exists, err := ReadJSON(path, &out)
+	if exists || err != nil {
+		t.Fatalf("absent : exists=%v err=%v", exists, err)
+	}
+
+	// Écrit puis relit → (true, nil).
+	if err := WriteJSON(path, rec{A: 42}); err != nil {
+		t.Fatalf("WriteJSON: %v", err)
+	}
+	exists, err = ReadJSON(path, &out)
+	if !exists || err != nil || out.A != 42 {
+		t.Fatalf("présent : exists=%v err=%v out=%+v", exists, err, out)
+	}
+
+	// JSON invalide → (true, err).
+	if err := Write(path, []byte("{ pas du json")); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if exists, err := ReadJSON(path, &out); !exists || err == nil {
+		t.Fatalf("invalide : exists=%v err=%v", exists, err)
+	}
+}
+
 func TestWriteFailsOnBadDir(t *testing.T) {
 	if err := Write(filepath.Join(t.TempDir(), "absent", "f.txt"), []byte("x")); err == nil {
 		t.Error("écriture dans un répertoire inexistant devrait échouer")

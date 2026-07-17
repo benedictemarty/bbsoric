@@ -51,3 +51,20 @@ func WriteJSON(path string, v any) error {
 	}
 	return Write(path, b)
 }
+
+// ReadJSON lit path et le désérialise dans v. Renvoie (false, nil) si le fichier
+// n'existe pas (cas d'un store neuf : v reste inchangé), (true, nil) en cas de
+// succès, (true, err) si la lecture ou le JSON échoue. Symétrique de WriteJSON.
+func ReadJSON(path string, v any) (bool, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return true, fmt.Errorf("lecture %s : %w", path, err)
+	}
+	if err := json.Unmarshal(b, v); err != nil {
+		return true, fmt.Errorf("JSON invalide (%s) : %w", path, err)
+	}
+	return true, nil
+}
