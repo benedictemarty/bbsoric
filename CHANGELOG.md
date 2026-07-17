@@ -6,6 +6,17 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (DataWindow — navigation aux flèches, tranche A, 17/07/2026)
+- **Flèches ↑/↓ du clavier Oric pour la sélection dans les grilles.** Le terminal
+  (`client/term.s`) mappe désormais les 4 touches flèches (auparavant non mappées dans
+  `asciitab`, col 4) vers des codes de contrôle (↑=$0B, ↓=$0C, ←=$0E, →=$0F ; choisis hors
+  des octets ignorés par `ReadKey` et du backspace) et **n'échote pas les codes de contrôle**
+  (pas de glyphe parasite). Le serveur (`datawindow.go`) traite ↑/↓ comme `-`/`+`. `+/-`
+  marchent toujours. Validé dans `oric1-emu` (3 flèches bas → sélection ligne 4) ; test serveur
+  `TestDataWindowArrowDownSelects` (vérifié en échec sans la gestion serveur). Firmware
+  réassemblé. ←/→ réservés au scroll horizontal (tranche B). *(Studio : aperçu de grille
+  interactif à venir — tranche B.)*
+
 ### Fixed (DataWindow — numérotation de grille, 17/07/2026)
 - **Colonne « No » lisible sur les grandes tables.** L'index de ligne était absolu et
   tenait dans une colonne de 3 cases (`GridIndexWidth`) : au-delà de la ligne 99 le titre

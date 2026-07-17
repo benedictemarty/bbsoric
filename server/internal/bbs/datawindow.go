@@ -13,6 +13,16 @@ import (
 
 func init() { Register("datawindow", dataWindowApplet) }
 
+// Codes envoyés par les touches flèches du terminal Oric (cf. client/term.s,
+// asciitab col 4). Choisis hors des octets ignorés par ReadKey ($0A/$0D/$00) et
+// du backspace ($08). keyLeft/keyRight sont réservés au scroll horizontal.
+const (
+	keyUp    = 0x0B // flèche haut
+	keyDown  = 0x0C // flèche bas
+	keyLeft  = 0x0E // flèche gauche
+	keyRight = 0x0F // flèche droite
+)
+
 // dataWindowApplet présente une source de données en grille paginée navigable
 // au clavier, avec CRUD si la page est éditable. Touches :
 //
@@ -102,7 +112,7 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 			return Outcome{Quit: true}
 		}
 		switch key {
-		case '+': // descendre la sélection
+		case '+', keyDown: // descendre la sélection ('+' ou flèche bas)
 			if sel < len(rows)-1 {
 				sel++
 			} else if page < nbPages() {
@@ -113,7 +123,7 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 			if !draw() {
 				return Outcome{Quit: true}
 			}
-		case '-': // monter la sélection
+		case '-', keyUp: // monter la sélection ('-' ou flèche haut)
 			if sel > 0 {
 				sel--
 			} else if page > 1 {

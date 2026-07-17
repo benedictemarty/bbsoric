@@ -101,7 +101,7 @@ différentiel laisse apparaître le pied de la grille au-dessus).*
 
 | Touche | Action |
 |--------|--------|
-| `+` / `-` | descendre / monter la sélection (déborde sur la page voisine) |
+| `+` / `-` ou **flèches ↓ / ↑** | descendre / monter la sélection (déborde sur la page voisine) |
 | `S` / `R` | page suivante / précédente |
 | `V` | fiche détail de la ligne sélectionnée |
 | `F` / `C` | poser un filtre LIKE / l'effacer |

@@ -304,6 +304,17 @@ do_keyscan:
         beq ks_ret
         sta LASTKEY
         jsr ser_tx
+        ; Echo local uniquement pour les caracteres imprimables (>= $20) et
+        ; BACKSPACE/CR ; les codes de controle (fleches $0B/$0C/$0E/$0F...) ne sont
+        ; PAS echotes (sinon glyphe parasite a la position courante du curseur).
+        cmp #$20
+        bcs ks_echo
+        cmp #$08
+        beq ks_echo
+        cmp #$0D
+        beq ks_echo
+        jmp main
+ks_echo:
         jsr putbyte              ; echo local
         jmp main
 ks_release:
@@ -984,7 +995,7 @@ asciitab:
         .byt $6A,$74,$72,$66,$00,$00,$71,$64
         .byt $6D,$36,$62,$34,$00,$7A,$32,$63
         .byt $6B,$39,$3B,$2D,$00,$00,$5C,$27
-        .byt $20,$2C,$2E,$00,$00,$00,$00,$00
+        .byt $20,$2C,$2E,$0B,$00,$0E,$0C,$0F   ; col4 espace virgule point fleche HAUT 0B GAUCHE 0E BAS 0C DROITE 0F
         .byt $75,$69,$6F,$70,$00,$08,$5D,$5B   ; ...FUNCT(44) DEL=$08(45) ] [
         .byt $79,$68,$67,$65,$00,$61,$73,$77
         .byt $38,$6C,$30,$2F,$00,$0D,$00,$3D

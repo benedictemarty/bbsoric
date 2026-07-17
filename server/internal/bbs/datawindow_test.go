@@ -364,6 +364,54 @@ func TestDataWindowCreer(t *testing.T) {
 	}
 }
 
+// TestDataWindowArrowDownSelects : la flèche bas (code keyDown) déplace la
+// sélection ; on le prouve en supprimant la ligne sélectionnée après une flèche bas
+// (Alice, Bob ; flèche bas -> Bob ; suppression -> Bob/Paris disparaît).
+func TestDataWindowArrowDownSelects(t *testing.T) {
+	addr, users, stop := startBBSDataAuth(t, dwAuthSiteJSON)
+	defer stop()
+	if _, err := users.Register("Sysop", "pw1234"); err != nil { // 1er compte = admin
+		t.Fatalf("register admin: %v", err)
+	}
+	r, conn := dialAuth(t, addr)
+	defer conn.Close()
+	readUntil(t, r, conn, "Votre choix")
+	conn.Write([]byte("3"))
+	readUntil(t, r, conn, "Pseudo")
+	conn.Write([]byte("Sysop\r"))
+	readUntil(t, r, conn, "Mot de passe")
+	conn.Write([]byte("pw1234\r"))
+	readUntil(t, r, conn, "Bonjour")
+	conn.Write([]byte(" "))
+	readUntil(t, r, conn, "Votre choix")
+
+	conn.Write([]byte("2")) // grille (Alice, Bob ; sélection = Alice)
+	readFor(t, r, conn, "Page 1/1", time.Second)
+	conn.Write([]byte{keyDown}) // flèche bas -> sélectionne Bob
+	time.Sleep(200 * time.Millisecond)
+	conn.Write([]byte("D")) // supprimer la ligne sélectionnée
+	readFor(t, r, conn, "Supprimer", time.Second)
+	conn.Write([]byte("O\r")) // confirmer
+
+	out, ok := readFor(t, r, conn, "1 enreg", 2*time.Second)
+	if !ok {
+		t.Fatalf("grille non rechargée après suppression ; vu : %q", out)
+	}
+	// La ligne restante est SÉLECTIONNÉE donc en vidéo inverse (bit 7) : on masque
+	// le bit 7 avant de chercher le texte.
+	masked := []byte(out)
+	for i := range masked {
+		masked[i] &= 0x7F
+	}
+	m := string(masked)
+	if contains(m, "Paris") {
+		t.Errorf("Bob (Paris) aurait dû être supprimé — la flèche bas n'a pas déplacé la sélection ; vu : %q", out)
+	}
+	if !contains(m, "Lyon") {
+		t.Errorf("Alice (Lyon) aurait dû rester ; vu : %q", m)
+	}
+}
+
 // TestDataWindowGuestCannotCreate : un invité (non admin) n'a pas les touches
 // d'écriture et « N » ne crée rien (régression S11.5 — l'écriture DataWindow
 // était ouverte à tout utilisateur connecté, invité compris).
