@@ -66,6 +66,28 @@ func ligneGrille(dw *content.DataWindow, index string, valeurs func(col string) 
 	return s
 }
 
+// ligneScroll rend la ligne sélectionnée avec un décalage horizontal : le contenu
+// COMPLET (toutes les colonnes affichées, non tronqué, séparé par un espace) est
+// décalé de scroll caractères pour révéler le texte coupé par les largeurs.
+func ligneScroll(dw *content.DataWindow, index string, valeurs func(col string) string, scroll int) string {
+	var full strings.Builder
+	for i, col := range dw.ColonnesAffichees {
+		if i > 0 {
+			full.WriteByte(' ')
+		}
+		full.WriteString(valeurs(col))
+	}
+	data := full.String()
+	if scroll > len(data) {
+		scroll = len(data)
+	}
+	line := cell(index, content.GridIndexWidth) + data[scroll:]
+	if len(line) > oascii.Cols-contentX {
+		line = line[:oascii.Cols-contentX]
+	}
+	return line
+}
+
 // putLigne pose une ligne de texte à partir de contentX, avec une couleur d'encre
 // (attribut en col 0) et, si inverse, le bit 7 sur chaque caractère.
 func putLigne(scr *oascii.Screen, row int, ink oascii.Color, inverse bool, texte string) {
@@ -86,7 +108,7 @@ func putLigne(scr *oascii.Screen, row int, ink oascii.Color, inverse bool, texte
 //   - page,total: pagination ; parPage = taille de page
 //   - filtre    : filtre LIKE courant (affiché s'il est posé)
 func RenderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDonnees,
-	rows []map[string]string, sel, page, parPage, total int, filtre, triLabel string, editable, downloadable bool) {
+	rows []map[string]string, sel, page, parPage, total int, filtre, triLabel string, editable, downloadable bool, scroll int) {
 
 	scr.Clear()
 	inkEntete := content.Ink(dw.CouleurEntete)
@@ -125,7 +147,13 @@ func RenderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 			break
 		}
 		numPage := i + 1
-		texte := ligneGrille(dw, fmt.Sprintf("%d", numPage), func(col string) string { return r[col] })
+		vals := func(col string) string { return r[col] }
+		var texte string
+		if i == sel && scroll > 0 { // ligne sélectionnée : scroll horizontal (texte complet décalé)
+			texte = ligneScroll(dw, fmt.Sprintf("%d", numPage), vals, scroll)
+		} else {
+			texte = ligneGrille(dw, fmt.Sprintf("%d", numPage), vals)
+		}
 		putLigne(scr, row, inkLignes, i == sel, texte)
 	}
 

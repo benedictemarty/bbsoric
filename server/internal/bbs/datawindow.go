@@ -24,6 +24,9 @@ const (
 	keyRight = 0x0F // flèche droite
 )
 
+// scrollStep est le nombre de caractères de décalage par appui sur ←/→.
+const scrollStep = 8
+
 // dataWindowApplet présente une source de données en grille paginée navigable
 // au clavier, avec CRUD si la page est éditable. Touches :
 //
@@ -93,9 +96,10 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 	// Catalogue : une colonne peut porter un nom de fichier téléchargeable (touche X).
 	downloadable := dw.FichierColonne != "" && ac.State.Files != nil
 
+	scroll := 0 // décalage horizontal de la ligne sélectionnée (flèches ←/→)
 	scr := oascii.NewScreen()
 	draw := func() bool {
-		dwgrid.RenderGrid(scr, dw, src, rows, sel, page, parPage, total, filtre, triLabel(src, dw, triEtat), editable, downloadable)
+		dwgrid.RenderGrid(scr, dw, src, rows, sel, page, parPage, total, filtre, triLabel(src, dw, triEtat), editable, downloadable, scroll)
 		return s.Write(string(scr.Render())) == nil
 	}
 	// Recharge complète de l'écran (après une saisie plein écran qui a brouillé
@@ -111,6 +115,9 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 		key, err := s.ReadKey()
 		if err != nil {
 			return Outcome{Quit: true}
+		}
+		if key != keyLeft && key != keyRight {
+			scroll = 0 // toute action autre que le scroll horizontal réinitialise le décalage
 		}
 		switch key {
 		case '+', keyDown: // descendre la sélection ('+' ou flèche bas)
@@ -223,6 +230,19 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 				if !redrawAll() {
 					return Outcome{Quit: true}
 				}
+			}
+		case keyRight: // scroll horizontal droite : révèle le texte tronqué de la ligne
+			scroll += scrollStep
+			if !draw() {
+				return Outcome{Quit: true}
+			}
+		case keyLeft: // scroll horizontal gauche
+			scroll -= scrollStep
+			if scroll < 0 {
+				scroll = 0
+			}
+			if !draw() {
+				return Outcome{Quit: true}
 			}
 		case 'Q', 'q', 27: // quitter
 			return Outcome{Done: true}

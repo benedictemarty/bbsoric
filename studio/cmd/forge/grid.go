@@ -50,6 +50,7 @@ func (s *server) handleGrid(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	pageNum := atoiDefault(q.Get("n"), 1)
 	sel := atoiDefault(q.Get("sel"), 0)
+	scroll := atoiDefault(q.Get("scroll"), 0)
 	filtre := strings.TrimSpace(q.Get("filtre"))
 
 	rows, total := previewLister(src, dw, filtre, pageNum)
@@ -63,7 +64,7 @@ func (s *server) handleGrid(w http.ResponseWriter, r *http.Request) {
 
 	scr := oascii.NewScreen()
 	dwgrid.RenderGrid(scr, dw, src, rows, sel, pageNum, parPage, total, filtre,
-		"", dw.Editable, dw.FichierColonne != "")
+		"", dw.Editable, dw.FichierColonne != "", scroll)
 	w.Header().Set("Content-Type", "application/octet-stream")
 	_, _ = w.Write(scr.Buffer())
 }
