@@ -6,6 +6,12 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Changed (DataWindow — légende, 17/07/2026)
+- **Légende de grille plus complète** : affiche désormais la touche `C` (effacer le filtre,
+  `F/C`) et fait apparaître les flèches en ASCII sûr — `^v` (sélection haut/bas, aussi `+/-`)
+  et `<>` (scroll horizontal). Nouvelle légende type : `+-^v S/R <> V=fiche [N/E/D] [X=DL] F/C T Q`.
+  Partagée serveur + aperçu studio (via internal/dwgrid). Le studio gère aussi `C`.
+
 ### Added (Studio — aperçu de grille interactif, tranche B, 17/07/2026)
 - **Aperçu de grille DataWindow navigable dans le studio Forge.** Le rendu de grille est
   extrait dans un paquet partagé **`internal/dwgrid`** (`RenderGrid`/`GridLignesMax`), utilisé

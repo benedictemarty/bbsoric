@@ -1053,7 +1053,7 @@ function dataWindowEditor(p) {
   // Budget de largeur : col attribut + index + Σ(largeur+1) ≤ 40 (cf. content.validate).
   const total = 1 + 3 + dw.largeurs.reduce((s, w) => s + (w || 0) + 1, 0);
   wrap.append(el('p', { className: 'hint' + (total > 40 ? ' err' : ''), textContent: 'Largeur grille : ' + total + '/40 cases' + (total > 40 ? ' — trop large !' : '') }));
-  wrap.append(el('p', { className: 'hint', textContent: 'Aperçu interactif (à droite) : clique l’aperçu puis ↑/↓ = sélection, →/← = scroll de la ligne, S/R = pages, F = filtre. Données de l’onglet Données.' }));
+  wrap.append(el('p', { className: 'hint', textContent: 'Aperçu interactif (à droite) : clique l’aperçu puis ↑/↓ = sélection, →/← = scroll de la ligne, S/R = pages, F = filtre, C = effacer le filtre. Données de l’onglet Données.' }));
 
   wrap.append(field('Couleur entête', inkSelect(dw, 'couleur_entete')));
   wrap.append(field('Couleur lignes', inkSelect(dw, 'couleur_lignes')));
@@ -1345,6 +1345,7 @@ if (oscv) {
     else if (k === 'PageDown' || k === 's' || k === 'S') { gridNav.n++; gridNav.sel = 0; gridNav.scroll = 0; }
     else if (k === 'PageUp' || k === 'r' || k === 'R') { gridNav.n = Math.max(1, gridNav.n - 1); gridNav.sel = 0; gridNav.scroll = 0; }
     else if (k === 'f' || k === 'F') { const f = prompt('Filtre LIKE (vide = tout)', gridNav.filtre); if (f !== null) { gridNav.filtre = f.trim(); gridNav.n = 1; gridNav.sel = 0; gridNav.scroll = 0; } }
+    else if (k === 'c' || k === 'C') { gridNav.filtre = ''; gridNav.n = 1; gridNav.sel = 0; gridNav.scroll = 0; } // effacer le filtre
     else handled = false;
     if (handled) { e.preventDefault(); gridNav.sel = Math.max(0, Math.min(19, gridNav.sel)); doGridPreview(); }
   });

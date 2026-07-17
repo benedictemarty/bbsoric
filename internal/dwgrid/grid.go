@@ -168,14 +168,16 @@ func RenderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 	}
 	putLigne(scr, footerRow, oascii.Green, false, cell(pied, oascii.Cols-contentX))
 
-	// Légende des touches.
-	legende := "+/- S/R V=fiche"
+	// Légende des touches. Flèches en ASCII (le charset Oric n'a pas de glyphes
+	// flèches) : ^v = sélection haut/bas (aussi +/-), <> = scroll horizontal de la
+	// ligne. F/C = filtrer/effacer le filtre.
+	legende := "+-^v S/R <> V=fiche"
 	if editable {
 		legende += " N/E/D"
 	}
 	if downloadable {
 		legende += " X=DL"
 	}
-	legende += " F/T Q"
+	legende += " F/C T Q"
 	putLigne(scr, legendRow, oascii.Cyan, false, cell(legende, oascii.Cols-contentX))
 }

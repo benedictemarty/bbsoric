@@ -211,7 +211,7 @@ func TestDataWindowDownloadFromRow(t *testing.T) {
 	defer conn.Close()
 
 	conn.Write([]byte("2")) // -> catalogue
-	if out, ok := readFor(t, r, conn, "F/T Q", time.Second); !ok || !contains(out, "X=DL") {
+	if out, ok := readFor(t, r, conn, "F/C T Q", time.Second); !ok || !contains(out, "X=DL") {
 		t.Fatalf("légende de téléchargement absente ; vu : %q", out)
 	}
 	conn.Write([]byte("X")) // télécharge la ligne sélectionnée (Demo -> demo.tap)
@@ -403,8 +403,8 @@ func TestDataWindowGuestCannotCreate(t *testing.T) {
 	defer conn.Close()
 
 	conn.Write([]byte("2")) // grille
-	// Lire tout l'écran jusqu'à la fin de la légende ("F/T Q").
-	out, ok := readFor(t, r, conn, "F/T Q", time.Second)
+	// Lire tout l'écran jusqu'à la fin de la légende ("F/C T Q").
+	out, ok := readFor(t, r, conn, "F/C T Q", time.Second)
 	if !ok {
 		t.Fatalf("légende non reçue ; vu : %q", out)
 	}
