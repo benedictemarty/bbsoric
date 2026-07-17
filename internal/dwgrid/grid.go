@@ -182,6 +182,6 @@ func RenderGrid(scr *oascii.Screen, dw *content.DataWindow, src content.SourceDo
 	if downloadable {
 		legende += " X=DL"
 	}
-	legende += " F/C T Q " + altOn + "^v<>"
+	legende += " F/P/C T Q " + altOn + "^v<>"
 	putLigne(scr, legendRow, oascii.Cyan, false, cell(legende, oascii.Cols-contentX))
 }

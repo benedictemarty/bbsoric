@@ -41,7 +41,7 @@ func TestInitialiserEtSeed(t *testing.T) {
 	if err := e.InitialiserSource(src); err != nil {
 		t.Fatalf("init: %v", err)
 	}
-	rows, total, err := e.Lister(src, "", "", 1, 10)
+	rows, total, err := e.Lister(src, "", false, "", 1, 10)
 	if err != nil {
 		t.Fatalf("lister: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestInitialiserEtSeed(t *testing.T) {
 	if err := e.InitialiserSource(src); err != nil {
 		t.Fatalf("ré-init: %v", err)
 	}
-	if _, total, _ := e.Lister(src, "", "", 1, 10); total != 3 {
+	if _, total, _ := e.Lister(src, "", false, "", 1, 10); total != 3 {
 		t.Errorf("ré-init a dupliqué les données : total=%d", total)
 	}
 }
@@ -64,25 +64,48 @@ func TestListerTriPaginationFiltre(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Tri par défaut nom ASC -> Alice en premier.
-	rows, _, _ := e.Lister(src, "", "", 1, 10)
+	rows, _, _ := e.Lister(src, "", false, "", 1, 10)
 	if rows[0]["nom"] != "Alice" {
 		t.Errorf("tri ASC : premier=%q, attendu Alice", rows[0]["nom"])
 	}
 	// Tri descendant.
-	rows, _, _ = e.Lister(src, "", "nom DESC", 1, 10)
+	rows, _, _ = e.Lister(src, "", false, "nom DESC", 1, 10)
 	if rows[0]["nom"] != "Charlie" {
 		t.Errorf("tri DESC : premier=%q, attendu Charlie", rows[0]["nom"])
 	}
 	// Pagination : 2 par page.
-	p1, total, _ := e.Lister(src, "", "nom ASC", 1, 2)
-	p2, _, _ := e.Lister(src, "", "nom ASC", 2, 2)
+	p1, total, _ := e.Lister(src, "", false, "nom ASC", 1, 2)
+	p2, _, _ := e.Lister(src, "", false, "nom ASC", 2, 2)
 	if total != 3 || len(p1) != 2 || len(p2) != 1 {
 		t.Errorf("pagination : total=%d p1=%d p2=%d", total, len(p1), len(p2))
 	}
 	// Filtre LIKE global sur les colonnes TEXT.
-	f, ftotal, _ := e.Lister(src, "Lyon", "nom ASC", 1, 10)
+	f, ftotal, _ := e.Lister(src, "Lyon", false, "nom ASC", 1, 10)
 	if ftotal != 2 || len(f) != 2 {
 		t.Errorf("filtre Lyon : total=%d len=%d (attendu 2)", ftotal, len(f))
+	}
+}
+
+// TestListerPrefixe : la recherche par préfixe (H2) ne matche qu'en début de
+// valeur, contrairement à la recherche sous-chaîne.
+func TestListerPrefixe(t *testing.T) {
+	e := testEngine(t)
+	src := repertoire()
+	if err := e.InitialiserSource(src); err != nil {
+		t.Fatal(err)
+	}
+	// Sous-chaîne "li" : Alice + Charlie (Al*li*ce, Char*li*e).
+	if _, total, _ := e.Lister(src, "li", false, "nom ASC", 1, 10); total != 2 {
+		t.Errorf("sous-chaîne \"li\" : total=%d (attendu 2)", total)
+	}
+	// Préfixe "li" : aucun nom/ville ne commence par « li ».
+	if _, total, _ := e.Lister(src, "li", true, "nom ASC", 1, 10); total != 0 {
+		t.Errorf("préfixe \"li\" : total=%d (attendu 0)", total)
+	}
+	// Préfixe "Char" : Charlie seul.
+	rows, total, _ := e.Lister(src, "Char", true, "nom ASC", 1, 10)
+	if total != 1 || len(rows) != 1 || rows[0]["nom"] != "Charlie" {
+		t.Errorf("préfixe \"Char\" : total=%d rows=%+v (attendu Charlie)", total, rows)
 	}
 }
 
@@ -97,17 +120,17 @@ func TestListerFiltreFixe(t *testing.T) {
 	ffLyon := content.FiltreFixe{Colonne: "ville", Valeur: "Lyon"}
 
 	// Filtre fixe seul : Lyon -> Alice + Charlie (2).
-	rows, total, _ := e.Lister(src, "", "nom ASC", 1, 10, ffLyon)
+	rows, total, _ := e.Lister(src, "", false, "nom ASC", 1, 10, ffLyon)
 	if total != 2 || len(rows) != 2 {
 		t.Fatalf("filtre fixe Lyon : total=%d len=%d (attendu 2)", total, len(rows))
 	}
 	// Combiné au filtre utilisateur (AND) : Lyon + "Alice" -> Alice seule.
-	rows, total, _ = e.Lister(src, "Alice", "", 1, 10, ffLyon)
+	rows, total, _ = e.Lister(src, "Alice", false, "", 1, 10, ffLyon)
 	if total != 1 || len(rows) != 1 || rows[0]["nom"] != "Alice" {
 		t.Errorf("filtre fixe + recherche : total=%d rows=%v", total, rows)
 	}
 	// Le filtre fixe exclut bien les autres (Bob/Paris n'apparaît jamais).
-	rows, _, _ = e.Lister(src, "Bob", "", 1, 10, ffLyon)
+	rows, _, _ = e.Lister(src, "Bob", false, "", 1, 10, ffLyon)
 	if len(rows) != 0 {
 		t.Errorf("Bob (Paris) ne doit pas passer le filtre fixe Lyon : %v", rows)
 	}
@@ -193,7 +216,7 @@ func TestAutoMigration(t *testing.T) {
 	if err := e.InitialiserSource(src); err != nil {
 		t.Fatalf("ré-init migration: %v", err)
 	}
-	rows, _, err := e.Lister(src, "", "nom ASC", 1, 10)
+	rows, _, err := e.Lister(src, "", false, "nom ASC", 1, 10)
 	if err != nil {
 		t.Fatalf("lister après migration: %v", err)
 	}

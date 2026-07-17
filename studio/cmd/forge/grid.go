@@ -52,8 +52,9 @@ func (s *server) handleGrid(w http.ResponseWriter, r *http.Request) {
 	sel := atoiDefault(q.Get("sel"), 0)
 	scroll := atoiDefault(q.Get("scroll"), 0)
 	filtre := strings.TrimSpace(q.Get("filtre"))
+	prefixe := q.Get("prefixe") == "1"
 
-	rows, total := previewLister(src, dw, filtre, pageNum)
+	rows, total := previewLister(src, dw, filtre, prefixe, pageNum)
 	parPage := dwgrid.GridLignesMax(dw)
 	if sel < 0 {
 		sel = 0
@@ -71,7 +72,7 @@ func (s *server) handleGrid(w http.ResponseWriter, r *http.Request) {
 
 // previewLister applique en mémoire filtre fixe + filtre utilisateur (LIKE) + tri
 // par défaut + pagination aux données seed de la source.
-func previewLister(src content.SourceDonnees, dw *content.DataWindow, filtre string, pageNum int) (rows []map[string]string, total int) {
+func previewLister(src content.SourceDonnees, dw *content.DataWindow, filtre string, prefixe bool, pageNum int) (rows []map[string]string, total int) {
 	parPage := dwgrid.GridLignesMax(dw)
 	all := make([]map[string]string, 0, len(src.Donnees))
 	for _, d := range src.Donnees {
@@ -91,14 +92,16 @@ func previewLister(src content.SourceDonnees, dw *content.DataWindow, filtre str
 		}
 		all = kept
 	}
-	// Filtre utilisateur : sous-chaîne (insensible à la casse) sur colonnes TEXT.
+	// Filtre utilisateur sur colonnes TEXT : sous-chaîne, ou préfixe (H2),
+	// insensible à la casse.
 	if filtre != "" {
 		f := strings.ToLower(filtre)
 		var kept []map[string]string
 		for _, m := range all {
 			for col, cd := range src.Colonnes {
 				if cd.Type == "TEXT" || cd.Type == "" {
-					if strings.Contains(strings.ToLower(m[col]), f) {
+					lv := strings.ToLower(m[col])
+					if (prefixe && strings.HasPrefix(lv, f)) || (!prefixe && strings.Contains(lv, f)) {
 						kept = append(kept, m)
 						break
 					}

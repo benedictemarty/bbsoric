@@ -57,7 +57,8 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 	parPage := dwgrid.GridLignesMax(dw)
 	page, sel := 1, 0
 	filtre := ""
-	triEtat := 0 // 0 = tri par défaut ; sinon paires (colonne, ASC/DESC) cyclées par T
+	prefixe := false // recherche par préfixe (touche P) au lieu de sous-chaîne (touche F)
+	triEtat := 0     // 0 = tri par défaut ; sinon paires (colonne, ASC/DESC) cyclées par T
 	var rows []map[string]string
 	var total int
 
@@ -69,10 +70,10 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 	load := func() {
 		tri := triString(dw, triEtat)
 		var err error
-		rows, total, err = eng.Lister(src, filtre, tri, page, parPage, ff...)
+		rows, total, err = eng.Lister(src, filtre, prefixe, tri, page, parPage, ff...)
 		if err == nil && len(rows) == 0 && total > 0 && page > 1 {
 			page = 1
-			rows, total, err = eng.Lister(src, filtre, tri, page, parPage, ff...)
+			rows, total, err = eng.Lister(src, filtre, prefixe, tri, page, parPage, ff...)
 		}
 		if err != nil {
 			rows, total = nil, 0
@@ -160,12 +161,25 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 					return Outcome{Quit: true}
 				}
 			}
-		case 'F', 'f': // poser un filtre LIKE
+		case 'F', 'f': // poser un filtre LIKE (sous-chaîne)
 			val, err := prompt(s, "Filtre (vide=tout)")
 			if err != nil {
 				return Outcome{Quit: true}
 			}
 			filtre = strings.TrimSpace(val)
+			prefixe = false
+			page, sel = 1, 0
+			load()
+			if !redrawAll() {
+				return Outcome{Quit: true}
+			}
+		case 'P', 'p': // recherche par préfixe (H2)
+			val, err := prompt(s, "Prefixe (vide=tout)")
+			if err != nil {
+				return Outcome{Quit: true}
+			}
+			filtre = strings.TrimSpace(val)
+			prefixe = true
 			page, sel = 1, 0
 			load()
 			if !redrawAll() {
@@ -174,6 +188,7 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 		case 'C', 'c': // effacer le filtre
 			if filtre != "" {
 				filtre = ""
+				prefixe = false
 				page, sel = 1, 0
 				load()
 				if !redrawAll() {

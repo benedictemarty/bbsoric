@@ -40,7 +40,7 @@ func TestAPISourceListeFiltreTri(t *testing.T) {
 	src := apiSource(srv.URL, "")
 
 	// Tri par défaut nom ASC -> Alice, Bob, Charlie.
-	rows, total, err := e.Lister(src, "", "", 1, 10)
+	rows, total, err := e.Lister(src, "", false, "", 1, 10)
 	if err != nil {
 		t.Fatalf("lister api: %v", err)
 	}
@@ -55,18 +55,18 @@ func TestAPISourceListeFiltreTri(t *testing.T) {
 		t.Errorf("id Alice = %q, attendu 2", rows[0]["id"])
 	}
 	// Tri numérique DESC sur note -> 5,4,3.
-	rows, _, _ = e.Lister(src, "", "note DESC", 1, 10)
+	rows, _, _ = e.Lister(src, "", false, "note DESC", 1, 10)
 	if rows[0]["note"] != "5" || rows[2]["note"] != "3" {
 		t.Errorf("tri note DESC inattendu : %v", []string{rows[0]["note"], rows[1]["note"], rows[2]["note"]})
 	}
 	// Filtre sous-chaîne.
-	rows, total, _ = e.Lister(src, "ali", "", 1, 10)
+	rows, total, _ = e.Lister(src, "ali", false, "", 1, 10)
 	if total != 1 || rows[0]["nom"] != "Alice" {
 		t.Errorf("filtre 'ali' inattendu : total=%d %v", total, rows)
 	}
 	// Pagination.
-	p1, total, _ := e.Lister(src, "", "nom ASC", 1, 2)
-	p2, _, _ := e.Lister(src, "", "nom ASC", 2, 2)
+	p1, total, _ := e.Lister(src, "", false, "nom ASC", 1, 2)
+	p2, _, _ := e.Lister(src, "", false, "nom ASC", 2, 2)
 	if total != 3 || len(p1) != 2 || len(p2) != 1 {
 		t.Errorf("pagination api : total=%d p1=%d p2=%d", total, len(p1), len(p2))
 	}
@@ -79,7 +79,7 @@ func TestAPISourceRacine(t *testing.T) {
 	defer srv.Close()
 	e := testEngine(t)
 	src := apiSource(srv.URL, "results")
-	rows, total, err := e.Lister(src, "", "", 1, 10)
+	rows, total, err := e.Lister(src, "", false, "", 1, 10)
 	if err != nil || total != 1 || rows[0]["nom"] != "X" {
 		t.Fatalf("racine: err=%v total=%d rows=%v", err, total, rows)
 	}
@@ -96,7 +96,7 @@ func TestAPISourceCache(t *testing.T) {
 	src := apiSource(srv.URL, "")
 	src.API.TTL = 60
 	for i := 0; i < 3; i++ {
-		if _, _, err := e.Lister(src, "", "", 1, 10); err != nil {
+		if _, _, err := e.Lister(src, "", false, "", 1, 10); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -105,7 +105,7 @@ func TestAPISourceCache(t *testing.T) {
 	}
 	// Avance l'horloge au-delà du TTL -> nouvelle requête.
 	e.now = func() time.Time { return time.Now().Add(2 * time.Minute) }
-	if _, _, err := e.Lister(src, "", "", 1, 10); err != nil {
+	if _, _, err := e.Lister(src, "", false, "", 1, 10); err != nil {
 		t.Fatal(err)
 	}
 	if got := atomic.LoadInt32(&hits); got != 2 {
@@ -140,7 +140,7 @@ func TestAPISourceErreurHTTP(t *testing.T) {
 	}))
 	defer srv.Close()
 	e := testEngine(t)
-	if _, _, err := e.Lister(apiSource(srv.URL, ""), "", "", 1, 10); err == nil {
+	if _, _, err := e.Lister(apiSource(srv.URL, ""), "", false, "", 1, 10); err == nil {
 		t.Error("statut 500 devrait remonter une erreur")
 	}
 }

@@ -390,9 +390,9 @@ func (e *Engine) importerDonnees(tx *sql.Tx, srcDef content.SourceDonnees, donne
 
 // Lister retourne les enregistrements (map colonne→texte), avec pagination,
 // recherche globale LIKE (sur les colonnes TEXT) et tri, plus le total.
-func (e *Engine) Lister(srcDef content.SourceDonnees, recherche, tri string, page, parPage int, filtreFixe ...content.FiltreFixe) ([]map[string]string, int, error) {
+func (e *Engine) Lister(srcDef content.SourceDonnees, recherche string, prefixe bool, tri string, page, parPage int, filtreFixe ...content.FiltreFixe) ([]map[string]string, int, error) {
 	if srcDef.EstAPI() {
-		return e.listerAPI(srcDef, recherche, tri, page, parPage, filtreFixe...)
+		return e.listerAPI(srcDef, recherche, prefixe, tri, page, parPage, filtreFixe...)
 	}
 	table := srcDef.Table
 	if err := content.ValiderNomSQL(table); err != nil {
@@ -411,11 +411,17 @@ func (e *Engine) Lister(srcDef content.SourceDonnees, recherche, tri string, pag
 	var whereParts []string
 	var params []any
 	if recherche != "" {
+		// Motif LIKE : sous-chaîne (%v%) par défaut, ou préfixe (v%) en mode
+		// recherche par préfixe (H2).
+		motif := "%" + recherche + "%"
+		if prefixe {
+			motif = recherche + "%"
+		}
 		var likeParts []string
 		for nomCol, colDef := range srcDef.Colonnes {
 			if colDef.Type == "TEXT" || colDef.Type == "" {
 				likeParts = append(likeParts, fmt.Sprintf(`"%s" LIKE ?`, nomCol))
-				params = append(params, "%"+recherche+"%")
+				params = append(params, motif)
 			}
 		}
 		if len(likeParts) > 0 {

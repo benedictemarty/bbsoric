@@ -67,7 +67,9 @@
 - [x] **Studio editor for sources/data** (27/06): « Données » tab (sources: SQLite/API,
   typed columns, seed) + grid descriptor editor (columns/order/widths/colours/editable,
   live /40 budget) in « Édition ». Round-trip test extended. Docs updated.
-- [ ] **Increment 2** (later): prefix search, input masks, API auth/headers.
+- [~] **Increment 2**: **prefix search done 17/07/2026** (`Engine.Lister` `prefixe` param,
+  applet key `P`, studio `/api/grid?prefixe=1`, legend `F/P/C`; test `TestListerPrefixe`).
+  Remaining: input masks, API auth/headers.
 
 ## Sprint 10 — HIRES pages (240×200 graphics) — ⏳ slice 1 (27/06/2026)
 > Graphics pages over the serial link: **both** a bitmap model (logo/splash) and a

@@ -120,7 +120,9 @@
 - [~] **H2** (5) As an editor, I want to **manage sources and data from the studio**
   (Forge), and interactive column sort / prefix search / REST sources (telenet parity).
   *(Interactive column sort (key `T`) + REST API sources (`type_source:"api"`,
-  read-only) done 27/06. Remaining: studio editor, prefix search.)*
+  read-only) done 27/06. Studio editor done (Sprint 9). **Prefix search done 17/07/2026**
+  (`Engine.Lister` `prefixe` param, applet key `P`, studio `/api/grid`, legend `F/P/C`;
+  test `TestListerPrefixe`). Remaining: input masks, API auth/headers.)*
 
 ## Epic I — Code quality & hardening (post-analysis, 16/07/2026)
 

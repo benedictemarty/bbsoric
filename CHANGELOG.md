@@ -6,6 +6,16 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (DataWindow — recherche par préfixe, H2 / Sprint 9 inc.2, 17/07/2026)
+- **Recherche par préfixe dans les grilles** (en plus du filtre sous-chaîne). Nouveau
+  paramètre `prefixe` de `Engine.Lister` : motif SQL `valeur%` (préfixe) au lieu de `%valeur%`
+  (sous-chaîne) ; même distinction pour les sources API (filtrage mémoire `HasPrefix`). Applet
+  DataWindow : nouvelle touche **`P`** (« Prefixe (vide=tout) »), en parallèle de `F`
+  (sous-chaîne) et `C` (effacer) ; légende passée à `F/P/C`. Aperçu de grille du studio Forge :
+  touche `P` + paramètre `/api/grid?prefixe=1` (parité). Tests : `TestListerPrefixe` (sous-chaîne
+  « li » = 2, préfixe « li » = 0, préfixe « Char » = 1). `make test` + `make vet` verts.
+  *(Reste de H2/inc.2 non traité : masques de saisie, auth/headers des sources API.)*
+
 ### Added (Contenu — mini-jeu Puissance 4, D3, 17/07/2026)
 - **Jeu de Puissance 4 (Connect Four) contre l'ordinateur.** Nouvel applet `connect4` :
   plateau 7×6 rendu en OASCII (jetons colorés), le joueur dépose avec les touches 1..7,
