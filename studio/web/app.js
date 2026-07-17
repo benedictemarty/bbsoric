@@ -63,7 +63,7 @@ const entryIsApplet = (e) => Object.prototype.hasOwnProperty.call(e, 'applet');
 // Applets autonomes proposés pour une entrée de menu (enregistrés côté serveur).
 // « form » est volontairement exclu : il se gère via le formulaire d'une page.
 // Doit rester aligné sur les applets enregistrés via bbs.Register (server).
-const KNOWN_APPLETS = ['login', 'register', 'guest', 'download', 'upload', 'who', 'chat', 'wall', 'forum', 'pm', 'news'];
+const KNOWN_APPLETS = ['login', 'register', 'guest', 'download', 'upload', 'who', 'chat', 'wall', 'forum', 'pm', 'news', 'connect4'];
 
 // APPLET_DESC : libellé d'aide (infobulle) par applet, pour guider le câblage.
 const APPLET_DESC = {
@@ -78,6 +78,7 @@ const APPLET_DESC = {
   forum: 'forum : fils de discussion (lecture paginée + réponse)',
   pm: 'messagerie privée entre membres (réservé aux comptes)',
   news: 'actualités / annonces datées (publication sysop, lecture tous)',
+  connect4: 'jeu Puissance 4 contre l\'ordinateur (sans persistance)',
 };
 
 // appletSelect : liste déroulante des applets connus (+ la valeur courante si

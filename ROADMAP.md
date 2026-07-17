@@ -170,7 +170,9 @@
 ## Sprint 3 — Content modules
 - [x] Messaging / forum (read, post) — done 17/07/2026 (applet `forum`, cf. Sprint 7 #1)
 - [x] News / announcements page — done 17/07/2026 (applet `news`, cf. Sprint 8 S2)
-- [ ] Interactive mini-game (e.g. Connect Four / tic-tac-toe) to validate interactivity
+- [x] Interactive mini-game (Connect Four) — done 17/07/2026 (applet `connect4` + package
+  `server/internal/connect4`: 7×6 board, deterministic AI win/block/center, win + draw
+  detection). Services menu « Puissance 4 ». Logic unit tests + TCP integration. (D3.)
 - [~] **File transfer (XMODEM)**: **server side done** (`internal/xmodem`,
   `server/internal/files` library, `download`/`upload` applets, `-files`/
   `-max-upload` flags, studio, doc `docs/transfer.md`); **remaining is the Oric terminal**

@@ -6,6 +6,18 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (Contenu — mini-jeu Puissance 4, D3, 17/07/2026)
+- **Jeu de Puissance 4 (Connect Four) contre l'ordinateur.** Nouvel applet `connect4` :
+  plateau 7×6 rendu en OASCII (jetons colorés), le joueur dépose avec les touches 1..7,
+  l'ordinateur répond (heuristique **déterministe** : gagner si possible → sinon bloquer une
+  victoire adverse → sinon préférer le centre). Détection de victoire (horizontale/verticale/
+  deux diagonales) et de match nul. Logique pure et testée dans **`server/internal/connect4`**
+  (sans I/O, sans persistance) ; applet d'affichage/saisie dans `bbs`. Entrée « Puissance 4 »
+  du menu Services (`content/site.json`). Studio : `connect4` ajouté. Tests : logique
+  (`server/internal/connect4` : empilement/pleine/victoires/IA gagne-bloque-centre) +
+  intégration TCP `TestConnect4PlayAndComputerResponds`. Validé sur le vrai serveur (driver :
+  dépôt joueur `O`, réponse `X` empilée, message d'état mis à jour). `make test` + `make vet` verts.
+
 ### Added (Contenu — actualités / annonces, D2 / Sprint 8 S2, 17/07/2026)
 - **Page d'actualités datées et persistées.** Nouvel applet `news` : liste antéchronologique
   d'annonces (date + titre + corps), paginée. **Lecture pour tous**, **publication réservée

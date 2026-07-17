@@ -48,7 +48,10 @@
   *(Done 17/07/2026 — applet `news` + package `server/internal/news` (atomic JSON store,
   dated, bounded, ASCII-sanitised). Read for all, admin-only publish. Server flag `-news`;
   « Actualites » in the Services menu. Store tests + TCP integration. Cf. ROADMAP Sprint 8 S2.)*
-- [ ] **D3** (3) As a user, I want to play a **mini-game** (e.g. Connect Four).
+- [x] **D3** (3) As a user, I want to play a **mini-game** (e.g. Connect Four).
+  *(Done 17/07/2026 — applet `connect4` + package `server/internal/connect4` (pure logic,
+  7×6 board, deterministic AI: win→block→center, win/draw detection). Services menu
+  « Puissance 4 ». Logic unit tests + TCP integration; verified in the real server.)*
 
 ## Epic E — Real hardware & deployment (Sprint 4–5)
 
