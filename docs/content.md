@@ -92,8 +92,8 @@ Applet entry:
 { "key": "1", "label": "Se connecter", "applet": "login", "next": "main" }
 ```
 - `applet`: name of the applet to launch when the entry is chosen. Registered applets:
-  `login`, `register`, `guest`, `download`, `upload`, `who`, `chat`, `wall`, `datawindow`.
-  **Adding an applet** = writing a small Go function and registering it.
+  `login`, `register`, `guest`, `download`, `upload`, `who`, `chat`, `wall`, `forum`,
+  `datawindow`. **Adding an applet** = writing a small Go function and registering it.
 - `next` (optional): page to go to **after the applet succeeds** (empty = stay).
 
 > **`wall`** (mur de messages) — persisted one-liner wall (the historic "guestbook"):
@@ -101,6 +101,13 @@ Applet entry:
 > (atomic JSON store), enabled for persistence by the server flag `-wall <file.json>`
 > (without it, the wall lives in memory only). Messages are bounded (≤ 78 chars, ≤ 200
 > kept) and ASCII-sanitised server-side.
+
+> **`forum`** (fils de discussion) — threaded message base: a paginated list of threads
+> (`S/P` to page, `1-8` to open, `N` to start a thread) and a paginated thread view
+> (`R` to reply). Backed by `server/internal/forum` (atomic JSON store, thread→posts,
+> persistent ID counter), enabled for persistence by the server flag `-forum <file.json>`.
+> Bounded (≤ 38-char titles, ≤ 200-char posts, ≤ 100 threads, ≤ 500 posts/thread) and
+> ASCII-sanitised. Both `wall` and `forum` reuse `oascii.SanitizeText`.
 
 > Compat: a page can also carry `applet` (+ `next`) at the **page** level (applet
 > auto-launched on arrival). A historical mechanism kept for hand-written JSON;

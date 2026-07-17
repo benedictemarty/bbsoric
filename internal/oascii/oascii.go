@@ -22,7 +22,10 @@
 // attributs courants après un saut de ligne (mode « sticky »).
 package oascii
 
-import "bytes"
+import (
+	"bytes"
+	"strings"
+)
 
 // Color est une couleur Oric (0–7).
 type Color uint8
@@ -197,6 +200,32 @@ func (b *Builder) Text(s string) *Builder {
 		b.buf.WriteByte(c)
 	}
 	return b
+}
+
+// SanitizeText nettoie une saisie utilisateur pour l'affichage Oric : ne garde
+// que l'ASCII imprimable (32..126), réduit toute suite de blancs (espace,
+// tabulation, saut de ligne) à une seule espace, et coupe les bords. Les
+// octets de contrôle et non-ASCII (qui casseraient le rendu OASCII ou seraient
+// pris pour des attributs) sont écartés. Aucune borne de longueur : à
+// l'appelant de la fixer selon son contexte (mur, forum…).
+func SanitizeText(s string) string {
+	var b strings.Builder
+	prevSpace := false
+	for _, r := range s {
+		switch {
+		case r == ' ' || r == '\t' || r == '\n' || r == '\r':
+			if !prevSpace {
+				b.WriteByte(' ')
+				prevSpace = true
+			}
+		case r >= 32 && r < 127:
+			b.WriteByte(byte(r))
+			prevSpace = false
+		default:
+			// octet de contrôle / non-ASCII : écarté
+		}
+	}
+	return strings.TrimSpace(b.String())
 }
 
 // ReemitAttrs ré-émet sur b les attributs non-défaut fournis (l'ULA réinitialise

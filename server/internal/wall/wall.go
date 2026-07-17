@@ -21,6 +21,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/benedictemarty/bbsoric/internal/oascii"
 )
 
 // Bornes appliquées à chaque message et au mur entier.
@@ -75,29 +77,10 @@ func Open(path string) (*Store, error) {
 	return s, nil
 }
 
-// Sanitize nettoie un texte de message : retire les octets non-ASCII-imprimables,
-// compacte les espaces, coupe les bords et borne la longueur. Renvoie le texte
-// nettoyé, éventuellement vide.
+// Sanitize nettoie un texte de message (ASCII imprimable, blancs compactés, bords
+// coupés — cf. oascii.SanitizeText) puis borne sa longueur à MaxText.
 func Sanitize(text string) string {
-	var b strings.Builder
-	prevSpace := false
-	for _, r := range text {
-		switch {
-		case r == ' ' || r == '\t' || r == '\n' || r == '\r':
-			// tout blanc (espace, tabulation, saut de ligne) → une seule espace,
-			// pour ne pas coller les mots d'un message multi-lignes.
-			if !prevSpace {
-				b.WriteByte(' ')
-				prevSpace = true
-			}
-		case r >= 32 && r < 127: // ASCII imprimable
-			b.WriteByte(byte(r))
-			prevSpace = false
-		default:
-			// octet de contrôle / non-ASCII : écarté (l'Oric ne l'affiche pas)
-		}
-	}
-	out := strings.TrimSpace(b.String())
+	out := oascii.SanitizeText(text)
 	if len(out) > MaxText {
 		out = strings.TrimSpace(out[:MaxText])
 	}

@@ -165,7 +165,7 @@
   effort for low value (Sedoric/LOCI already cover storage). See `docs/transfer.md`.
 
 ## Sprint 3 — Content modules
-- [ ] Messaging / forum (read, post)
+- [x] Messaging / forum (read, post) — done 17/07/2026 (applet `forum`, cf. Sprint 7 #1)
 - [ ] News / announcements page
 - [ ] Interactive mini-game (e.g. Connect Four / tic-tac-toe) to validate interactivity
 - [~] **File transfer (XMODEM)**: **server side done** (`internal/xmodem`,
@@ -275,8 +275,15 @@ profiles. See `docs/adr/0003-studio-forge.md`.
   Server flag `-wall`; menu entry « Mur de messages ». **Establishes the "persisted-write
   applet" pattern** reused by the forum (#1). Tests: store unit + TCP integration
   (`TestWallPostAndPersist`/`TestWallEmptyReturns`). Studio applet list updated.
-- [ ] **Message base / forums** (#1) — read + post in threads, paginated reading via
-  the differential buffer. *The* feature that moves from "menus" to "BBS".
+- [x] **Message base / forums** (#1, 17/07/2026) — read + post in threads with pagination.
+  Applet `forum` + package `server/internal/forum` (atomic JSON store, thread→posts,
+  persistent ID counter, bounded ≤ 38-char titles / ≤ 200-char posts / ≤ 100 threads /
+  ≤ 500 posts-per-thread, ASCII-sanitised). List paged (`S/P`, `1-8` to open, `N` new),
+  thread view paged (`R` reply). Server flag `-forum`; « Forum » entry in the Community
+  menu. Reuses the wall's persisted-write pattern; sanitisation shared via
+  `oascii.SanitizeText`. Store unit tests + TCP integration (`TestForumCreateReadReply`).
+  *Full-redraw pagination (not the differential buffer), consistent with the wall/menu
+  applets.* *The* feature that moves from "menus" to "BBS".
 - [ ] **Private messaging** (#4), **RSS→OASCII news** (#5), **door game** (#6).
 
 ---

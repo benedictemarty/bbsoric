@@ -6,6 +6,28 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (Communication — forum de discussion, Sprint 7 #1 / D1, 17/07/2026)
+- **Forum de discussion (fils + messages), lecture paginée et réponse.** Nouvel applet
+  `forum` : liste des fils (triés par activité, paginée `S/P`, touches `1-8` pour ouvrir,
+  `N` nouveau fil), vue d'un fil (messages paginés, `R` répondre), création de fil
+  (titre + premier message). *La* fonctionnalité qui fait passer de « menus » à « BBS ».
+  - Nouveau paquet **`server/internal/forum`** : store JSON atomique (verrou, temp+rename,
+    horloge injectable) à deux niveaux (fil → messages), reprenant le patron du mur
+    (`server/internal/wall`). Compteur d'ID persistant. Entrées **bornées** (titre ≤ 38,
+    message ≤ 200, ≤ 100 fils, ≤ 500 messages/fil ; éviction du fil le moins actif) et
+    **nettoyées** ASCII.
+  - Refactor **`oascii.SanitizeText`** : primitive de nettoyage ASCII partagée (blancs
+    compactés, non-ASCII écartés, sans borne de longueur) désormais utilisée par `wall` et
+    `forum` — dédoublonnage (une seule source de vérité pour « ce que l'Oric affiche »).
+  - Câblage : `SessionState.Forum` + `WelcomeHandler.Forum` (nil = forum en mémoire), flag
+    serveur **`-forum <fichier.json>`**. Entrée « Forum » du menu Communauté
+    (`content/site.json`). Studio : `forum` ajouté à la liste d'applets câblables.
+  - Tests : `server/internal/forum` (création/réponse/tri par activité/copie isolée/bornes/
+    plafonds/persistance+ID) et intégration TCP `TestForumCreateReadReply` (invité crée un
+    fil, le lit, y répond → 2 messages persistés). `make test` + `make vet` verts.
+  - Validé de bout en bout sur le vrai serveur (driver run-bbsoric) : menu Communauté →
+    Forum, création de fil, lecture paginée, réponse, persistance disque (`next_id`).
+
 ### Added (Communication — mur de messages écrivable, Sprint 7 #2, 17/07/2026)
 - **Le « Livre d'or » statique devient un vrai mur de messages persisté.** Nouvel applet
   `wall` : l'appelant lit les derniers messages (antéchronologique, pseudo + date + texte

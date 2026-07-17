@@ -38,7 +38,12 @@
 
 ## Epic D — Content (Sprint 3)
 
-- [ ] **D1** (5) As a user, I want to **read and post messages** (forum).
+- [x] **D1** (5) As a user, I want to **read and post messages** (forum).
+  *(Done 17/07/2026 — applet `forum` + package `server/internal/forum` (atomic JSON store,
+  thread→posts, persistent ID, bounded, ASCII-sanitised). Paginated list (`S/P`, `1-8`, `N`)
+  and thread view (`R` reply). Server flag `-forum`; « Forum » in the Community menu. Reuses
+  the wall's persisted-write pattern; `oascii.SanitizeText` shared. Store tests + TCP
+  integration `TestForumCreateReadReply`; verified in the real server. Cf. ROADMAP Sprint 7 #1.)*
 - [ ] **D2** (2) As a user, I want to see **news / announcements**.
 - [ ] **D3** (3) As a user, I want to play a **mini-game** (e.g. Connect Four).
 
