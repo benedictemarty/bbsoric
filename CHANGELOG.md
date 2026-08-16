@@ -25,8 +25,13 @@ versioning [SemVer](https://semver.org/lang/en/).
   d'orientation du joueur, contacts radar par NodeID, HUD (énergie, frags,
   regard, bouclier) et aide-mémoire clavier. Mapping des touches **identique au
   client Oric** (réutilise `proto.ParseAction` : w/x/q/d/a/e/f/s/espace).
-  *Simplification v1 : la mini-carte n'affiche pas encore les murs (positions
-  seulement).*
+- **Vue tactique locale murée** (S5.5) : la carte affiche désormais les **murs**
+  du labyrinthe (`engine.Maze.HasWall`) en ASCII classique (`+`/`-`/`|`). Une
+  carte globale 16×16 murée ferait 33 lignes (> 28) : on rend donc une **fenêtre
+  murée centrée sur le joueur** (rayon 4 → 9×9 cellules, 19×19 caractères) ; les
+  contacts hors fenêtre restent listés par la ligne radar (cap + distance). Reste
+  à valider le rendu sur terminal Oric réel/émulé (le positionnement curseur
+  `oascii.At` / `0x1F` est ignoré par un client telnet PC).
 - **Entrée de menu** dans `content/site.json` (page `services`, touche 4).
 - **Dépendance de module** : `go.mod` `require` netmaze + `replace` local vers
   `../NetMaze` (développement, tant que le module n'est pas publié).

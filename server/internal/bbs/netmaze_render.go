@@ -83,31 +83,74 @@ func energyBar(cur, max int) string {
 	return "[" + strings.Repeat("#", filled) + strings.Repeat("-", width-filled) + "]"
 }
 
-// mazeGrid construit la mini-carte : une grille W×H où '.' est un couloir, le
-// glyphe d'orientation marque le joueur et le NodeID (2..9) marque un contact
-// radar. Renvoie une ligne de texte par rangée du labyrinthe (sans bordure).
-func mazeGrid(g *engine.GameState, v *arena.StateView) []string {
-	m := g.Maze
-	rows := make([]string, m.H)
-	for y := 0; y < m.H; y++ {
-		var b strings.Builder
-		for x := 0; x < m.W; x++ {
-			c := byte('.')
-			for _, ct := range v.Contacts {
-				if ct.X == x && ct.Y == y {
-					if ct.NodeID >= 2 && ct.NodeID <= 9 {
-						c = byte('0' + ct.NodeID)
-					} else {
-						c = '*'
-					}
-				}
+// netmazeViewRadius est le rayon (en cellules) de la vue tactique locale. Une
+// carte globale 16×16 avec murs complets ferait 33 lignes (> 28) : on affiche
+// donc une fenêtre murée centrée sur le joueur (les contacts lointains restent
+// listés par la ligne radar). 9×9 cellules → 19×19 caractères, compatible 40×28.
+const netmazeViewRadius = 4
+
+// cellGlyph rend le contenu d'une cellule : joueur (prioritaire), contact radar
+// par NodeID (2..9, sinon '*'), ou couloir '.'.
+func cellGlyph(v *arena.StateView, x, y int) byte {
+	c := byte('.')
+	for _, ct := range v.Contacts {
+		if ct.X == x && ct.Y == y {
+			if ct.NodeID >= 2 && ct.NodeID <= 9 {
+				c = byte('0' + ct.NodeID)
+			} else {
+				c = '*'
 			}
-			if v.Self.Alive && v.Self.X == x && v.Self.Y == y {
-				c = facingGlyph(v.Self.Facing)
-			}
-			b.WriteByte(c)
 		}
-		rows[y] = b.String()
+	}
+	if v.Self.Alive && v.Self.X == x && v.Self.Y == y {
+		c = facingGlyph(v.Self.Facing)
+	}
+	return c
+}
+
+// mazeWindow rend une vue tactique locale murée centrée sur le joueur, en ASCII
+// classique de labyrinthe : '+' aux coins, '-'/'|' aux murs (bord de cellule où
+// engine.Maze.HasWall est vrai), espace pour un passage ouvert, contenu de
+// cellule au centre. Renvoie une ligne de texte par rangée de la trame.
+func mazeWindow(g *engine.GameState, v *arena.StateView) []string {
+	m := g.Maze
+	cx, cy := v.Self.X, v.Self.Y
+	n := 2*netmazeViewRadius + 1 // cellules par côté
+	h, w := 2*n+1, 2*n+1         // caractères
+	buf := make([][]byte, h)
+	for i := range buf {
+		buf[i] = make([]byte, w)
+		for j := range buf[i] {
+			buf[i][j] = ' '
+		}
+	}
+	for i := 0; i < n; i++ {
+		for j := 0; j < n; j++ {
+			mx, my := cx-netmazeViewRadius+j, cy-netmazeViewRadius+i
+			if !m.In(mx, my) {
+				continue // hors labyrinthe : laissé vide (pas de coins flottants)
+			}
+			r, c := 2*i, 2*j
+			// Coins de la cellule (les cellules de bord dessinent ainsi le contour).
+			buf[r][c], buf[r][c+2], buf[r+2][c], buf[r+2][c+2] = '+', '+', '+', '+'
+			if m.HasWall(mx, my, engine.North) {
+				buf[r][c+1] = '-'
+			}
+			if m.HasWall(mx, my, engine.South) {
+				buf[r+2][c+1] = '-'
+			}
+			if m.HasWall(mx, my, engine.West) {
+				buf[r+1][c] = '|'
+			}
+			if m.HasWall(mx, my, engine.East) {
+				buf[r+1][c+2] = '|'
+			}
+			buf[r+1][c+1] = cellGlyph(v, mx, my)
+		}
+	}
+	rows := make([]string, h)
+	for i := range buf {
+		rows[i] = string(buf[i])
 	}
 	return rows
 }
@@ -132,16 +175,13 @@ func renderNetmaze(g *engine.GameState, v *arena.StateView) string {
 
 	paint(b, 0, oascii.Cyan, fmt.Sprintf("NETMAZE   tick %d", v.Tick))
 
-	// Mini-carte encadrée.
-	grid := mazeGrid(g, v)
-	border := "+" + strings.Repeat("-", g.Maze.W) + "+"
-	paint(b, 2, oascii.Green, border)
+	// Vue tactique locale murée (déjà bordée par ses '+'/'-'/'|').
+	grid := mazeWindow(g, v)
 	for i, r := range grid {
-		paint(b, 3+i, oascii.Green, "|"+r+"|")
+		paint(b, 2+i, oascii.Green, r)
 	}
-	paint(b, 3+len(grid), oascii.Green, border)
 
-	hud := 4 + len(grid) + 1
+	hud := 2 + len(grid) + 1
 	paint(b, hud, oascii.White,
 		fmt.Sprintf("Energie %s %3d/%d", energyBar(self.Energy, g.Cfg.MaxEnergy), self.Energy, g.Cfg.MaxEnergy))
 

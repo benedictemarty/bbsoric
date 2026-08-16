@@ -30,28 +30,45 @@ func viewAt(x, y int, facing engine.Dir, contacts []engine.Contact) (*engine.Gam
 	return g, v
 }
 
-// TestRenderNetmazeContenu : la trame contient l'en-tête, le glyphe du joueur à
-// sa position et les rubriques du HUD, sans paniquer.
+// viewCenter est l'indice (ligne/colonne) du joueur au centre de la vue fenêtrée.
+const viewCenter = 2*netmazeViewRadius + 1
+
+// TestRenderNetmazeContenu : la trame contient l'en-tête, le glyphe du joueur au
+// centre de la vue tactique et les rubriques du HUD, sans paniquer.
 func TestRenderNetmazeContenu(t *testing.T) {
-	g, v := viewAt(3, 4, engine.East, nil)
+	g, v := viewAt(8, 8, engine.East, nil)
 	out := renderNetmaze(g, v)
 	for _, want := range []string{"NETMAZE", "Energie", "Radar", "quit"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("la trame devrait contenir %q", want)
 		}
 	}
-	rows := mazeGrid(g, v)
-	if got := rows[4][3]; got != '>' {
-		t.Errorf("le joueur tourné vers l'Est devrait s'afficher '>' en (3,4), obtenu %q", string(got))
+	rows := mazeWindow(g, v)
+	if got := rows[viewCenter][viewCenter]; got != '>' {
+		t.Errorf("le joueur tourné vers l'Est devrait s'afficher '>' au centre, obtenu %q", string(got))
 	}
 }
 
-// TestMazeGridContact : un contact radar apparaît par son NodeID sur la carte.
-func TestMazeGridContact(t *testing.T) {
-	g, v := viewAt(0, 0, engine.North, []engine.Contact{{NodeID: 3, X: 5, Y: 6, Dist: 4}})
-	rows := mazeGrid(g, v)
-	if got := rows[6][5]; got != '3' {
-		t.Errorf("le contact #3 devrait s'afficher '3' en (5,6), obtenu %q", string(got))
+// TestMazeWindowMurs : la vue tactique dessine des murs (au moins un '|' ou '-'),
+// preuve que le labyrinthe est bien rendu et non une simple grille de positions.
+func TestMazeWindowMurs(t *testing.T) {
+	g, v := viewAt(8, 8, engine.North, nil)
+	out := strings.Join(mazeWindow(g, v), "\n")
+	if !strings.ContainsAny(out, "|-") {
+		t.Error("la vue tactique devrait comporter des murs ('|' ou '-')")
+	}
+	if !strings.Contains(out, "+") {
+		t.Error("la vue tactique devrait comporter des coins '+'")
+	}
+}
+
+// TestMazeWindowContact : un contact radar voisin apparaît par son NodeID.
+func TestMazeWindowContact(t *testing.T) {
+	// Contact une cellule au nord du joueur (8,7) : dans la fenêtre centrée (8,8).
+	g, v := viewAt(8, 8, engine.North, []engine.Contact{{NodeID: 3, X: 8, Y: 7, Dist: 1}})
+	rows := mazeWindow(g, v)
+	if got := rows[viewCenter-2][viewCenter]; got != '3' {
+		t.Errorf("le contact #3 juste au nord devrait s'afficher '3', obtenu %q", string(got))
 	}
 }
 
