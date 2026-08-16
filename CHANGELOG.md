@@ -36,7 +36,10 @@ versioning [SemVer](https://semver.org/lang/en/).
 - **Dépendance de module** : `go.mod` `require` netmaze + `replace` local vers
   `../NetMaze` (développement, tant que le module n'est pas publié).
 - Tests `server/internal/bbs/netmaze_test.go` : enregistrement de l'applet, rendu
-  (en-tête/HUD, glyphe joueur, contact radar), jauge d'énergie, caps radar.
+  (en-tête/HUD, glyphe joueur, murs, contact radar), jauge d'énergie, radar.
+- **Test d'intégration** `netmaze_integration_test.go` : sur un vrai serveur TCP,
+  lancement depuis le menu, **boucle temps réel** (les ticks avancent seuls),
+  abandon par la touche `0` et retour au menu.
 
 ### Added (DataWindow — recherche par préfixe, H2 / Sprint 9 inc.2, 17/07/2026)
 - **Recherche par préfixe dans les grilles** (en plus du filtre sous-chaîne). Nouveau
