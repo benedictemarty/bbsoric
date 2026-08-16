@@ -6,6 +6,33 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (NetMaze — applet de jeu porté depuis le module netmaze, 17/08/2026)
+- **Applet `netmaze`** (`server/internal/bbs/netmaze.go`) : deathmatch de
+  labyrinthe jouable en solo contre des bots, dans le terminal BBS. La logique de
+  jeu vient du **module externe `github.com/benedictemarty/netmaze`** (engine +
+  arena) — sens de dépendance unique bbsoric → netmaze, l'applet n'est qu'un
+  adaptateur de transport et un rendu. Enregistré via `Register("netmaze", …)`.
+- **Boucle temps réel non bloquante** : contrairement à `connect4` (tour par
+  tour), la partie est cadencée par un ticker (~3 Hz, `arena.NewSolo` +
+  `Arena.RunOnce`). À chaque tick, les touches disponibles sont drainées sans
+  bloquer via `Session.Raw()` + deadline courte (motif de `chat.go`, distinction
+  timeout/déconnexion). Aucune goroutine : les octets non consommés restent dans
+  le tampon et ne sont pas volés au menu au retour. Touche `0`/ESC pour quitter.
+- **Rendu OASCII 40×28** (`netmaze_render.go`) : trame repeinte **en place** par
+  positionnement curseur (`oascii.At`, sans défilement), une encre par ligne pour
+  préserver l'alignement des colonnes. Mini-carte vue de dessus (labyrinthe lu
+  dans le `GameState` local — non secret, régénéré depuis la graine), glyphe
+  d'orientation du joueur, contacts radar par NodeID, HUD (énergie, frags,
+  regard, bouclier) et aide-mémoire clavier. Mapping des touches **identique au
+  client Oric** (réutilise `proto.ParseAction` : w/x/q/d/a/e/f/s/espace).
+  *Simplification v1 : la mini-carte n'affiche pas encore les murs (positions
+  seulement).*
+- **Entrée de menu** dans `content/site.json` (page `services`, touche 4).
+- **Dépendance de module** : `go.mod` `require` netmaze + `replace` local vers
+  `../NetMaze` (développement, tant que le module n'est pas publié).
+- Tests `server/internal/bbs/netmaze_test.go` : enregistrement de l'applet, rendu
+  (en-tête/HUD, glyphe joueur, contact radar), jauge d'énergie, caps radar.
+
 ### Added (DataWindow — recherche par préfixe, H2 / Sprint 9 inc.2, 17/07/2026)
 - **Recherche par préfixe dans les grilles** (en plus du filtre sous-chaîne). Nouveau
   paramètre `prefixe` de `Engine.Lister` : motif SQL `valeur%` (préfixe) au lieu de `%valeur%`

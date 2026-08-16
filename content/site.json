@@ -286,6 +286,12 @@
           "next": "services"
         },
         {
+          "key": "4",
+          "label": "NetMaze (deathmatch solo)",
+          "applet": "netmaze",
+          "next": "services"
+        },
+        {
           "key": "R",
           "label": "Retour",
           "target": "__back__"
