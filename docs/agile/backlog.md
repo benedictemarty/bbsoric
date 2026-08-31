@@ -240,6 +240,24 @@
   screenshot-reference columns. Per-item download count is not in the library data → not added
   (not invented). Test `TestWrapValeur`. Verified in the real server.)*
 
+## Epic K — Portable PC terminal (oterm)
+
+> A client to use/test the BBS from a modern PC (Linux/Windows/macOS) without an Oric or
+> emulator, complementing the studio's ULA preview (browser) and the real firmware (`client/`).
+
+- [x] **K1** (5) As a user, I want a **portable terminal** that connects to `bbsd` and renders
+  the OASCII stream (TEXT 40×28, Teletext colours, inverse) in any ANSI terminal.
+  *(Done 31/08/2026 — new sub-project `pcterm/`: `internal/ula` decodes the OASCII stream into a
+  40×28 grid + cursor faithfully to `client/term.s` (chars, CR/LF+scroll, backspace, 40-col clamp,
+  `plot 1F col row`) and renders ANSI with serial attribute semantics mirroring the studio ULA sim;
+  `cmd/oterm` does TCP + raw keyboard (char-by-char, ADR-0002) via `golang.org/x/term`, quit on
+  `Ctrl-]`. HIRES (`1F FC`) and XMODEM (`1F FE/FD`) are not rendered (status message; HIRES stream
+  swallowed to `1F FB`). Cross-compiles linux/windows/darwin. Tests `pcterm/internal/ula/ula_test.go`
+  (text/scroll/clamp/backspace/plot/attributes/inverse/hires/xmodem); end-to-end smoke test against a
+  live `bbsd` (welcome + main menu decoded). `make oterm`. Docs `pcterm/README.md`.)*
+  - Not done (documented limits): pixel-accurate semigraphics/double-height (a text terminal can't
+    render the BBS font — use the studio ULA preview); HIRES/XMODEM rendering.
+
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.
 - Tests passing for the delivered feature.

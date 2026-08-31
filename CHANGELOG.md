@@ -6,6 +6,26 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (oterm — client terminal OASCII portable PC, K1, 31/08/2026)
+- **Nouveau sous-projet `pcterm/`** : **oterm**, un client terminal pour utiliser/tester le
+  BBS depuis un PC moderne (**Linux/Windows/macOS**) sans Oric ni émulateur, en binaire
+  statique unique, rendu **ANSI** (marche aussi via SSH).
+- **`pcterm/internal/ula`** (pur, testé) : décode le flux **OASCII** en une grille 40×28 +
+  curseur, **fidèle au firmware `client/term.s`** (caractères, CR/LF + défilement, backspace
+  destructif, clamp 40 colonnes, commande `plot 1F col row`) et le restitue en **ANSI** avec
+  la sémantique des **attributs sériels** (encre/fond/inverse/clignotement, réinitialisés en
+  début de ligne) reprise du simulateur ULA du studio. Réutilise `internal/oascii` → zéro
+  divergence de format. HIRES (`1F FC`) et XMODEM (`1F FE`/`FD`) non rendus (message d'état ;
+  flux HIRES avalé jusqu'à `1F FB`).
+- **`pcterm/cmd/oterm`** : connexion TCP + clavier **brut** (caractère par caractère, ADR-0002)
+  via `golang.org/x/term` (mode brut portable), quitter par `Ctrl-]`. Repli propre si stdin
+  n'est pas un terminal (smoke-test headless).
+- **Cibles Makefile** `oterm` / `oterm-run` (`ADDR=host:port`). Docs `pcterm/README.md`.
+- **Tests** `pcterm/internal/ula/ula_test.go` (texte/défilement/clamp/backspace/plot/attributs/
+  inverse/HIRES/XMODEM) + **smoke-test bout en bout** contre un `bbsd` réel (écran d'accueil +
+  menu décodés). Cross-compilation vérifiée linux/windows/darwin.
+- **Dépendance** ajoutée : `golang.org/x/term` (mode brut clavier).
+
 ### Added (DataWindow — grandes sources API : plafond de corps configurable, 31/08/2026)
 - **Plafond de corps de réponse configurable** (`APIConfig.max_octets`, défaut 1 Mo via
   `content.DefautMaxOctetsAPI`) pour les grandes sources API, avec **détection explicite
