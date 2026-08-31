@@ -6,6 +6,27 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (Forge — multi-sites & sauvegardes, F3, 31/08/2026)
+- **Création d'un nouveau site depuis l'UI** (`Store.Create`, `POST /api/site/create`) :
+  échoue si le site existe déjà ; le contenu est validé et écrit atomiquement comme par
+  `Save`. Bouton **« Nouveau site »**.
+- **Sauvegardes horodatées** (`Store.Backup`, `POST /api/backup`) : copie l'état courant du
+  site vers `<content-dir>/backups/<site>.<AAAAMMJJ-HHMMSS>.json` (sous-répertoire hors de la
+  liste des sites éditables). `now` est injectable pour des tests déterministes. Bouton
+  **« Sauvegarder »**.
+- **Liste des sauvegardes** (`Store.Backups`, `GET /api/backups`) : sauvegardes d'un site,
+  plus récentes en tête (tri décroissant sur l'horodatage du nom de fichier).
+- **Restauration** (`Store.Restore`, `POST /api/restore`) : valide le contenu, **sauvegarde
+  d'abord l'état courant** (sécurité) puis écrase atomiquement. Bouton **« Restaurer… »**.
+  Nom de sauvegarde durci contre la traversée de chemin (`/`, `\`, `..`, suffixe `.json`).
+- **Réutilisation de `internal/atomicfile`** dans `Store.Save` (remplace la logique
+  `CreateTemp`/`Rename` locale) — écriture atomique partagée.
+- Tests `studio/internal/store/store_test.go` : `TestCreateBackupRestore` (cycle complet
+  créer → modifier → sauvegarder → lister → restaurer, avec re-`Create` refusé et double
+  sauvegarde après restauration) et `TestBackupInvalidName` (rejet des noms traversants).
+- **`go.mod`** : `go mod tidy` (aligne `golang.org/x/sys` en indirect sur le graphe de
+  modules apporté par NetMaze) pour que `go test ./...` reste vert.
+
 ### Added (NetMaze — applet de jeu porté depuis le module netmaze, 17/08/2026)
 - **Applet `netmaze`** (`server/internal/bbs/netmaze.go`) : deathmatch de
   labyrinthe jouable en solo contre des bots, dans le terminal BBS. La logique de

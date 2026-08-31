@@ -4,7 +4,9 @@ import (
 	"encoding/base64"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/benedictemarty/bbsoric/internal/content"
 )
@@ -207,3 +209,68 @@ func TestSafePathRejectsTraversal(t *testing.T) {
 		}
 	}
 }
+
+// TestCreateBackupRestore : cycle F3 — créer un site, le modifier, le
+// sauvegarder, restaurer la version d'origine.
+func TestCreateBackupRestore(t *testing.T) {
+	dir := t.TempDir()
+	s := New(dir)
+	t0 := time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)
+
+	// Create : nouveau site (OK), puis re-Create -> refus (existe déjà).
+	if err := s.Create("nouveau.json", []byte(validSite)); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if err := s.Create("nouveau.json", []byte(validSite)); err == nil {
+		t.Error("Create sur un site existant devrait échouer")
+	}
+
+	// Backup de l'état d'origine.
+	bak, err := s.Backup("nouveau.json", t0)
+	if err != nil {
+		t.Fatalf("Backup: %v", err)
+	}
+	if want := "nouveau.20260717-120000.json"; bak != want {
+		t.Errorf("nom de sauvegarde = %q, veut %q", bak, want)
+	}
+
+	// Modifie le site (contenu valide différent).
+	modifie := `{"start":"main","pages":{"main":{"title":"MODIFIE","entries":[{"key":"Q","label":"Q","target":"__quit__"}]}}}`
+	if err := s.Save("nouveau.json", []byte(modifie)); err != nil {
+		t.Fatalf("Save modifié: %v", err)
+	}
+
+	// Backups : au moins la sauvegarde d'origine, récentes en tête.
+	list, err := s.Backups("nouveau.json")
+	if err != nil {
+		t.Fatalf("Backups: %v", err)
+	}
+	if len(list) < 1 || list[0] != bak {
+		t.Fatalf("Backups = %v, veut contenir %q en tête", list, bak)
+	}
+
+	// Restore de l'origine : le titre redevient "M".
+	if err := s.Restore("nouveau.json", bak, t0.Add(time.Hour)); err != nil {
+		t.Fatalf("Restore: %v", err)
+	}
+	data, _ := s.Load("nouveau.json")
+	if !bytesContains(data, "\"M\"") {
+		t.Errorf("après restauration, le titre d'origine \"M\" est absent : %s", data)
+	}
+	// La restauration a d'abord sauvegardé l'état modifié -> 2 sauvegardes.
+	if list2, _ := s.Backups("nouveau.json"); len(list2) != 2 {
+		t.Errorf("après Restore, %d sauvegardes, veut 2", len(list2))
+	}
+}
+
+func TestBackupInvalidName(t *testing.T) {
+	s := New(t.TempDir())
+	if _, err := s.Backup("../evil.json", time.Now()); err == nil {
+		t.Error("Backup d'un nom traversant devrait échouer")
+	}
+	if _, err := s.Backups("../evil.json"); err == nil {
+		t.Error("Backups d'un nom traversant devrait échouer")
+	}
+}
+
+func bytesContains(b []byte, sub string) bool { return strings.Contains(string(b), sub) }

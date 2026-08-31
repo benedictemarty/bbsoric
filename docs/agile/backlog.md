@@ -78,8 +78,12 @@
   **colour preview** and validation. *(forge web Go, internal/content reused)*
 - [x] **F2** (5) As an admin, I want to **deploy the content** to **dev/int/prod** via
   **profiles** (validate→backup→overwrite→reload, dry-run). *(validated end-to-end)*
-- [ ] **F3** (3) As an editor, I want to **create/manage several sites** and their backups
-  from the UI.
+- [x] **F3** (3) As an editor, I want to **create/manage several sites** and their backups
+  from the UI. *(done 31/08/2026: `Store.Create`/`Backup`/`Backups`/`Restore`, routes
+  `POST /api/site/create`, `POST /api/backup`, `GET /api/backups`, `POST /api/restore`,
+  boutons « Nouveau site » / « Sauvegarder » / « Restaurer… ». Sauvegardes horodatées dans
+  `<content-dir>/backups/`, restauration avec sauvegarde de sécurité préalable, noms durcis
+  contre la traversée. Tests `TestCreateBackupRestore`/`TestBackupInvalidName`.)*
 
 ## Epic G — File transfer (study, not planned)
 

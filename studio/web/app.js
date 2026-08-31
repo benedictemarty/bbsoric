@@ -738,6 +738,42 @@ async function save() {
   if (r.ok) setStatus('enregistré ✓ ' + siteName, 'ok'); else setStatus('échec : ' + r.error, 'err');
 }
 
+// --- multi-site & sauvegardes (F3) ---
+
+// newSite crée un nouveau fichier site.json (site minimal) et le charge.
+async function newSite() {
+  let name = (prompt('Nom du nouveau site (ex. mon-bbs.json)', '') || '').trim();
+  if (!name) return;
+  if (!name.endsWith('.json')) name += '.json';
+  const minimal = { start: 'main', pages: { main: { title: 'MENU PRINCIPAL', entries: [{ key: 'Q', label: 'Quitter', target: '__quit__' }] } } };
+  const r = await fetch('/api/site/create?name=' + encodeURIComponent(name), { method: 'POST', body: JSON.stringify(minimal) }).then(r => r.json());
+  if (!r.ok) { setStatus('création : ' + r.error, 'err'); return; }
+  await loadSites();
+  $('site-select').value = name;
+  await loadSite(name);
+  setStatus('site créé ✓ ' + name, 'ok');
+}
+
+// backupSite crée une sauvegarde horodatée du site courant.
+async function backupSite() {
+  if (!siteName) { setStatus('aucun site chargé', 'err'); return; }
+  const r = await fetch('/api/backup?name=' + encodeURIComponent(siteName), { method: 'POST' }).then(r => r.json());
+  if (r.ok) setStatus('sauvegarde ✓ ' + r.backup, 'ok'); else setStatus('sauvegarde : ' + r.error, 'err');
+}
+
+// restoreSite liste les sauvegardes du site et en restaure une (au choix).
+async function restoreSite() {
+  if (!siteName) { setStatus('aucun site chargé', 'err'); return; }
+  const list = await fetch('/api/backups?name=' + encodeURIComponent(siteName)).then(r => r.json()).catch(() => []);
+  if (!list.length) { setStatus('aucune sauvegarde pour ' + siteName, 'err'); return; }
+  const choix = prompt('Restaurer quelle sauvegarde ? (l\'état courant est sauvegardé avant)\n\n' + list.join('\n'), list[0]);
+  if (!choix) return;
+  const r = await fetch('/api/restore?name=' + encodeURIComponent(siteName) + '&backup=' + encodeURIComponent(choix.trim()), { method: 'POST' }).then(r => r.json());
+  if (!r.ok) { setStatus('restauration : ' + r.error, 'err'); return; }
+  await loadSite(siteName);
+  setStatus('restauré ✓ ' + choix.trim(), 'ok');
+}
+
 // --- profils & déploiement (propres au site courant) ---
 let currentProfile = null;
 
@@ -1283,6 +1319,9 @@ function renderHiresPreview(p) {
 
 // --- init ---
 $('btn-load').onclick = () => loadSite($('site-select').value);
+$('btn-new-site').onclick = newSite;
+$('btn-backup').onclick = backupSite;
+$('btn-restore').onclick = restoreSite;
 $('btn-validate').onclick = validate;
 $('btn-save').onclick = save;
 $('btn-dryrun').onclick = () => deploy(true);

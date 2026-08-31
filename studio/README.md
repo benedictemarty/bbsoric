@@ -19,6 +19,9 @@ only (not exposed, no authentication).
 ## Features
 
 - Load a site, list/add/rename/delete pages.
+- **Create a new site** and **timestamped backups / restore** from the UI (F3): buttons
+  "Nouveau site" / "Sauvegarder" / "Restaurer…". Backups live in `<content-dir>/backups/`;
+  restore takes a safety backup of the current state before overwriting.
 - Edit by form according to type: `menu` (key/label/target entries),
   `page` (text lines + ink), `applet` (applet name + `next` page + intro).
   A "▶ applet" menu entry is wired via a dropdown of known applets
@@ -63,6 +66,8 @@ studio/
 ```
 
 API: `GET /api/sites`, `GET /api/site?name=`, `POST /api/validate`,
-`POST /api/save?name=`, `POST /api/preview?page=`.
+`POST /api/save?name=`, `POST /api/preview?page=`,
+`POST /api/site/create?name=`, `POST /api/backup?name=`, `GET /api/backups?name=`,
+`POST /api/restore?name=&backup=`.
 
 Stdlib only, no external dependency.

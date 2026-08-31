@@ -11,9 +11,15 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/benedictemarty/bbsoric/internal/atomicfile"
 	"github.com/benedictemarty/bbsoric/internal/content"
 )
+
+// backupsDir est le sous-répertoire (du répertoire de contenu) où sont rangées
+// les sauvegardes horodatées, hors de la liste des sites éditables.
+const backupsDir = "backups"
 
 // Store expose les sites JSON d'un répertoire de contenu.
 type Store struct {
@@ -83,20 +89,89 @@ func (s *Store) Save(name string, data []byte) error {
 		return fmt.Errorf("formatage : %w", err)
 	}
 	pretty.WriteByte('\n')
-	data = pretty.Bytes()
+	return atomicfile.Write(path, pretty.Bytes())
+}
 
-	tmp, err := os.CreateTemp(s.dir, ".site-*.json.tmp")
+// Create crée un NOUVEAU site (échoue s'il existe déjà). data est validé et
+// écrit comme par Save. Sert au bouton « Nouveau site » du studio (F3).
+func (s *Store) Create(name string, data []byte) error {
+	path, err := s.safePath(name)
 	if err != nil {
 		return err
 	}
-	tmpName := tmp.Name()
-	defer os.Remove(tmpName)
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
+	if _, err := os.Stat(path); err == nil {
+		return fmt.Errorf("le site %q existe déjà", name)
+	}
+	return s.Save(name, data)
+}
+
+// Backup copie l'état courant d'un site vers une sauvegarde horodatée dans le
+// sous-répertoire backups/. Renvoie le nom de fichier de la sauvegarde. now est
+// injectable pour des tests déterministes.
+func (s *Store) Backup(name string, now time.Time) (string, error) {
+	data, err := s.Load(name) // valide aussi le nom (safePath)
+	if err != nil {
+		return "", err
+	}
+	dir := filepath.Join(s.dir, backupsDir)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", fmt.Errorf("répertoire de sauvegardes : %w", err)
+	}
+	stamp := now.Format("20060102-150405")
+	base := strings.TrimSuffix(name, ".json") + "." + stamp + ".json"
+	if err := atomicfile.Write(filepath.Join(dir, base), data); err != nil {
+		return "", err
+	}
+	return base, nil
+}
+
+// Backups liste les sauvegardes d'un site (plus récentes en tête), par nom de
+// fichier dans backups/ commençant par « <site>. ».
+func (s *Store) Backups(name string) ([]string, error) {
+	if _, err := s.safePath(name); err != nil {
+		return nil, err
+	}
+	entries, err := os.ReadDir(filepath.Join(s.dir, backupsDir))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []string{}, nil
+		}
+		return nil, err
+	}
+	prefix := strings.TrimSuffix(name, ".json") + "."
+	var out []string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasPrefix(e.Name(), prefix) && strings.HasSuffix(e.Name(), ".json") {
+			out = append(out, e.Name())
+		}
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(out))) // horodatage décroissant
+	if out == nil {
+		out = []string{}
+	}
+	return out, nil
+}
+
+// Restore restaure une sauvegarde sur le site. Le contenu est validé et une
+// sauvegarde de l'état courant est prise avant d'écraser (sécurité). backup est
+// un nom de fichier renvoyé par Backups.
+func (s *Store) Restore(name, backup string, now time.Time) error {
+	if _, err := s.safePath(name); err != nil {
 		return err
 	}
-	if err := tmp.Close(); err != nil {
+	if backup == "" || strings.ContainsAny(backup, `/\`) || strings.Contains(backup, "..") ||
+		!strings.HasSuffix(backup, ".json") {
+		return fmt.Errorf("nom de sauvegarde invalide : %q", backup)
+	}
+	data, err := os.ReadFile(filepath.Join(s.dir, backupsDir, backup))
+	if err != nil {
 		return err
 	}
-	return os.Rename(tmpName, path)
+	// Sauvegarde de sécurité de l'état courant (ignore l'absence du site courant).
+	if _, err := os.Stat(filepath.Join(s.dir, name)); err == nil {
+		if _, err := s.Backup(name, now); err != nil {
+			return err
+		}
+	}
+	return s.Save(name, data) // valide + écrit atomiquement
 }
