@@ -6,6 +6,18 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Changed (Analyse — requalification d'I2b « download > 64 Ko », 31/08/2026)
+- **Analyse du plafond de téléchargement** : l'en-tête de download code la taille sur
+  16 bits (`maxDownloadSize = 0xFFFF`), ce qui *ressemble* à la limite des 64 Ko mais
+  **n'en est pas** la vraie. Le terminal Oric reçoit le fichier **entièrement en RAM à
+  `$4000`** puis sauve le tampon ; sur Oric-1/Atmos la RAM s'arrête à `$BFFF` et l'écran
+  TEXT est à `$BB80`, donc le tampon plafonne à **≈ 31,6 Ko** — un fichier de 64 Ko ne
+  rentre déjà pas. Élargir le champ de taille de l'en-tête ne débloquerait **rien** et
+  fragiliserait le chemin ≤32 Ko validé sur matériel. **I2b requalifiée** de « élargir
+  l'en-tête » (3 pts) vers « réception en flux vers disque » (8 pts, bloquée émulateur).
+  Documenté dans `docs/transfer.md` §"Download size limit" et `docs/agile/backlog.md`.
+  *(Aucun changement de code : constat + requalification agile.)*
+
 ### Added (DataWindow — masques de saisie & en-têtes/auth des sources API, H2 fin, 31/08/2026)
 - **Masques de saisie** (`ColonneDef.masque`) : gabarit **position par position**
   (`#` chiffre, `A` lettre, `N` alphanumérique, `X` tout, tout autre caractère = littéral,

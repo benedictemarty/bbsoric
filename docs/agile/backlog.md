@@ -148,9 +148,14 @@
   `maxDownloadSize` (0xFFFF, the header's 16-bit size limit) with an explicit message;
   test `TestDownloadTooLarge`. Widening the header to 3 bytes needs a matching `client/xmodem.s`
   change → tracked as **I2b**.)*
-- [ ] **I2b** (3) As a user, I want to download files **larger than 64 KB** by widening the
-  download header size field, with a matching terminal firmware change. *(Requires emulator
-  validation per DoD; deferred from I2.)*
+- [ ] **I2b** (8) As a user, I want to download files **larger than 64 KB**. **Requalified
+  31/08/2026** (analysis in `docs/transfer.md` §"Download size limit"): the 16-bit header is
+  **not** the binding limit — the terminal buffers the whole file in **RAM at `$4000`**, which
+  caps at **~32 KB** on a 48 KB Oric (`$4000..$BB80`), well below 64 KB. Widening the header
+  alone unlocks nothing and risks the hardware-validated ≤32 KB path. The real enabler is
+  **streaming reception straight to disk** (write each XMODEM block to Sedoric/LOCI instead of
+  buffering `$4000`), a firmware change requiring emulator validation. Re-pointed from
+  "widen header" (3) to "streaming-to-disk receiver" (8). *(Blocked on emulator/hardware.)*
 
 ### Security
 - [x] **I3** (3) As an admin deploying content, I want the **remote backup/reload commands

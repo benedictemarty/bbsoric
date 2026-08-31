@@ -54,6 +54,24 @@ menu entries (type "▶ applet", selectable in the studio):
   for text; for a binary that truly ends with 0x1A, plan an envelope
   format (YMODEM) later.
 
+### Download size limit — the binding constraint is RAM, not the header (31/08/2026)
+
+The download **header** codes the real size on **16 bits** (`downloadHeader`, so
+`maxDownloadSize = 0xFFFF`), which *looks* like the 64 KB ceiling. It is **not** the
+real limit. The Oric terminal receives the whole file into a **RAM buffer at `$4000`**
+(`client/xmodem.s`), then saves the buffer to disk. On an Oric-1/Atmos, RAM ends at
+`$BFFF` (`$C000`+ = ROM) and the TEXT screen sits at `$BB80`, so the buffer plateaus at
+roughly **`$4000..$BB80` ≈ 31.6 KB** (48 KB at the very most). **A 64 KB file cannot fit
+in the buffer at all**, regardless of the header width.
+
+Consequence: widening the header size field (the former **I2b**) unlocks **no** real
+capacity, would push `XSIZE` to 3 bytes (touching the gauge and save paths, risking the
+**hardware-validated ≤32 KB path**), and would let the server offer a file the client
+cannot receive. The real enabler for large files is **streaming reception straight to
+disk** (write each XMODEM block to Sedoric/LOCI instead of buffering all of `$4000`),
+which is a substantial firmware change requiring emulator validation. I2b is requalified
+accordingly in `docs/agile/backlog.md`.
+
 ## Oric side
 
 - **Download: done.** `client/xmodem.s` implements the **6502 XMODEM receiver**
