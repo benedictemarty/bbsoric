@@ -12,8 +12,11 @@
 // Le décodage du flux reproduit le firmware terminal (client/term.s, handle_rx +
 // putbyte) : caractères, CR/LF avec défilement, backspace destructif, clamp à 40
 // colonnes (sans passage à la ligne), et la commande plot « 1F col row ». Les
-// commandes XMODEM (1F FE/FD) et HIRES (1F FC/FB) ne sont pas rendues par ce
-// client texte : elles positionnent seulement un message de statut.
+// attributs sériels des trois familles sont gérés (encre/fond, texte : charset
+// alternatif « police BBS » rendu en Unicode + clignotement, mode vidéo :
+// inverse ON/OFF). Le mode HIRES (1F FC) est rasterisé et rendu en demi-blocs
+// (paquet internal/hires) ; 1F FB rend la main au mode texte. Les transferts
+// XMODEM (1F FE/FD) ne sont pas pris en charge (message de statut).
 package ula
 
 import (
@@ -21,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/benedictemarty/bbsoric/internal/oascii"
+	"github.com/benedictemarty/bbsoric/pcterm/internal/hires"
 )
 
 // Cols/Rows reprennent la géométrie de l'écran Oric (40×28).
@@ -31,22 +35,29 @@ const (
 
 // États de la machine de décodage (miroir de PLOTST dans client/term.s).
 const (
-	stNormal = iota // flux normal (caractères / attributs / contrôle)
-	stAfter1F       // octet 0x1F reçu : attendre la sous-commande ou la colonne
-	stPlotRow       // colonne du plot mémorisée : attendre la ligne
-	stHires         // page HIRES en cours : octets avalés jusqu'à 1F FB
+	stNormal  = iota // flux normal (caractères / attributs / contrôle)
+	stAfter1F        // octet 0x1F reçu : attendre la sous-commande ou la colonne
+	stPlotRow        // colonne du plot mémorisée : attendre la ligne
+	stHires          // page HIRES en cours : octets avalés jusqu'à 1F FB
+)
+
+// Modes d'affichage : écran texte 40×28 ou écran graphique HIRES 240×200.
+const (
+	modeText = iota
+	modeHires
 )
 
 // Terminal porte l'état d'écran décodé. Non concurrent : sérialiser les appels
 // (le client protège Write/RenderANSI par un verrou).
 type Terminal struct {
-	grid    [Rows * Cols]byte
-	col     int
-	row     int
-	st      int
-	plotX   int
-	hprev1F bool   // en mode HIRES : dernier octet vu = 0x1F (repère 1F FB)
-	status  string // dernier message de statut (XMODEM/HIRES non rendus)
+	grid   [Rows * Cols]byte
+	col    int
+	row    int
+	st     int
+	plotX  int
+	mode   int           // modeText ou modeHires
+	hr     *hires.Raster // rasteriseur du flux HIRES courant (si mode HIRES)
+	status string        // dernier message de statut (XMODEM non rendu)
 }
 
 // New crée un terminal effacé (grille d'espaces, curseur en haut à gauche).
@@ -70,6 +81,9 @@ func (t *Terminal) Status() string { return t.status }
 // Cursor renvoie la position courante du curseur d'écriture (col, row).
 func (t *Terminal) Cursor() (int, int) { return t.col, t.row }
 
+// InHires indique si l'affichage est en mode graphique HIRES.
+func (t *Terminal) InHires() bool { return t.mode == modeHires }
+
 // Write injecte des octets reçus du BBS dans le décodeur. Ne faillit jamais
 // (implémente io.Writer pour un usage direct avec io.Copy si besoin).
 func (t *Terminal) Write(p []byte) (int, error) {
@@ -89,12 +103,15 @@ func (t *Terminal) feed(b byte) {
 		case 0xFD:
 			t.status = "XMODEM upload demandé — non pris en charge par ce client texte"
 			t.st = stNormal
-		case 0xFC:
-			t.status = "page HIRES (graphique) — non rendue par ce client texte"
-			t.hprev1F = false
+		case 0xFC: // 1F FC : ouvre un flux de commandes HIRES
+			t.hr = hires.New()
+			t.mode = modeHires
+			t.status = ""
 			t.st = stHires
-		case 0xFB:
-			t.clear() // 1F FB = retour TEXT : le firmware efface l'écran
+		case 0xFB: // 1F FB : retour TEXT (efface l'écran, comme le firmware)
+			t.clear()
+			t.mode = modeText
+			t.hr = nil
 			t.status = ""
 			t.st = stNormal
 		default:
@@ -105,18 +122,12 @@ func (t *Terminal) feed(b byte) {
 		t.setCursor(t.plotX, int(b))
 		t.st = stNormal
 	case stHires:
-		// Avale le flux HIRES jusqu'au terminateur 1F FB (best-effort : un 1F FB
-		// présent dans les données binaires sortirait prématurément — acceptable,
-		// ce client ne rend pas le HIRES).
-		if t.hprev1F {
-			t.hprev1F = false
-			if b == 0xFB {
-				t.clear()
-				t.status = ""
-				t.st = stNormal
-			}
-		} else if b == oascii.PlotByte {
-			t.hprev1F = true
+		// Rasterise le flux HIRES ; à HiEnd on repasse au traitement normal du flux
+		// tout en CONTINUANT d'afficher l'image (jusqu'à 1F FB qui rend la main au
+		// mode texte). Les octets texte éventuels reçus entre HiEnd et 1F FB sont
+		// alors posés dans la grille (mais masqués tant que mode == HIRES).
+		if t.hr.Feed(b) {
+			t.st = stNormal
 		}
 	default: // stNormal
 		if b == oascii.PlotByte {
@@ -213,19 +224,26 @@ func printable(b byte) byte {
 type cell struct {
 	fg, bg byte
 	blink  bool
-	ch     byte
+	ch     rune
 }
 
 // rowCells résout une ligne selon la sémantique sérielle de l'ULA (miroir du
 // simulateur ULA du studio, renderScreenBuf) : encre 7 / fond 0 en début de ligne,
 // les attributs modifient l'état courant et s'affichent comme un bloc de fond, les
-// caractères utilisent (encre, fond) avec inverse pour le bit 0x80.
+// caractères utilisent (encre, fond). Gère les trois familles d'attributs :
+//   - encre (0x00–0x07), texte (0x08–0x0F : bit0 charset alt, bit2 clignotement),
+//     fond (0x10–0x17) ;
+//   - mode vidéo (0x18–0x1F) : inverse OFF (28) / ON (29) en état sériel de ligne.
+//
+// Inverse combiné : bit 0x80 du caractère XOR inverse sériel courant. En charset
+// alternatif (police BBS), le glyphe est rendu par sa rune Unicode (cf. bbsRunes).
 func (t *Terminal) rowCells(row int) [Cols]cell {
 	var out [Cols]cell
 	ink, paper, attr := byte(7), byte(0), byte(0)
+	serialInv := false
 	for col := 0; col < Cols; col++ {
 		b := t.grid[row*Cols+col]
-		if b&0x60 == 0 { // attribut
+		if b&0x60 == 0 { // attribut (0x00–0x1F ou 0x80–0x9F)
 			v := b & 0x1F
 			switch v & 0x18 {
 			case 0x00:
@@ -234,20 +252,42 @@ func (t *Terminal) rowCells(row int) [Cols]cell {
 				attr = v & 7
 			case 0x10:
 				paper = v & 7
+			case 0x18: // mode vidéo : 28 = inverse off, 29 = inverse on
+				switch v {
+				case 28:
+					serialInv = false
+				case 29:
+					serialInv = true
+				}
 			}
 			// La case d'attribut s'affiche comme un bloc de la couleur de fond.
 			out[col] = cell{fg: ink, bg: paper, ch: ' '}
 			continue
 		}
-		ch := b & 0x7F
-		if ch < 0x20 || ch == 0x7F {
-			ch = ' '
+		code := b & 0x7F
+		var ru rune
+		if attr&1 != 0 { // charset alternatif (police BBS) -> rune Unicode
+			if r, ok := bbsRunes[code]; ok {
+				ru = r
+			} else if code >= 0x20 && code != 0x7F {
+				ru = rune(code)
+			} else {
+				ru = ' '
+			}
+		} else if code < 0x20 || code == 0x7F {
+			ru = ' '
+		} else {
+			ru = rune(code)
+		}
+		inv := b&0x80 != 0
+		if serialInv {
+			inv = !inv
 		}
 		fg, bg := ink, paper
-		if b&0x80 != 0 { // caractère inverse : encre/fond échangés
+		if inv { // inverse : encre/fond échangés
 			fg, bg = paper, ink
 		}
-		out[col] = cell{fg: fg, bg: bg, blink: attr&4 != 0, ch: ch}
+		out[col] = cell{fg: fg, bg: bg, blink: attr&4 != 0, ch: ru}
 	}
 	return out
 }
@@ -257,6 +297,9 @@ func (t *Terminal) rowCells(row int) [Cols]cell {
 // repositionné sur le curseur Oric et réaffiché. Les 8 couleurs Oric coïncident
 // avec l'ordre ANSI (0=noir … 7=blanc).
 func (t *Terminal) RenderANSI() string {
+	if t.mode == modeHires && t.hr != nil {
+		return t.hr.RenderANSI() // écran graphique 240×200 en demi-blocs
+	}
 	var sb strings.Builder
 	sb.WriteString("\x1b[?25l\x1b[H") // masque curseur + home
 	lastFg, lastBg, lastBlink := byte(255), byte(255), false
@@ -275,7 +318,7 @@ func (t *Terminal) RenderANSI() string {
 				sb.WriteByte('m')
 				lastFg, lastBg, lastBlink = c.fg, c.bg, c.blink
 			}
-			sb.WriteByte(c.ch)
+			sb.WriteRune(c.ch)
 		}
 		sb.WriteString("\x1b[0m")
 		lastFg, lastBg, lastBlink = 255, 255, false

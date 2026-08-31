@@ -255,8 +255,20 @@
   swallowed to `1F FB`). Cross-compiles linux/windows/darwin. Tests `pcterm/internal/ula/ula_test.go`
   (text/scroll/clamp/backspace/plot/attributes/inverse/hires/xmodem); end-to-end smoke test against a
   live `bbsd` (welcome + main menu decoded). `make oterm`. Docs `pcterm/README.md`.)*
-  - Not done (documented limits): pixel-accurate semigraphics/double-height (a text terminal can't
-    render the BBS font — use the studio ULA preview); HIRES/XMODEM rendering.
+  - Not done at K1 (later): HIRES rendering, BBS charset, video-mode attributes → done in K2.
+- [x] **K2** (5) As a user, I want oterm to render **HIRES graphics**, the **BBS alternate
+  charset** and the **full serial attributes** (TEXT/LORES/HIRES), not just plain text.
+  *(Done 01/09/2026 — new `pcterm/internal/hires`: Go rasteriser of the HIRES opcode stream
+  (ported from `client/hires.s`: VRAM 200×40, pixel = bit(5−x%6), clear 0x40, per-line serial
+  ink attribute, colour mode sacrifices x<6), rendered 240×200 as Unicode half-blocks `▀`
+  (240×100, per-pixel colour). Standard font embedded (`font.go`, from `charset.js`) for
+  `HiChar`. BBS alt charset (text attr bit0) mapped to Unicode runes (`ula/font.go`, table from
+  `tools/genfont`). Video-mode group 0x18–0x1F handled: inverse ON/OFF (29/28) serial state.
+  `1F FC`→HIRES, `1F FB`→text. Tests (rasteriser primitives + ula alt-charset/inverse/hires) +
+  e2e via `render.Hires` + visual smoke test on `docs/examples/hires-demo.json` (24000
+  half-blocks, 14 colour pairs). Docs `pcterm/README.md`.)*
+  - Not done (documented limit): pixel-accurate double-height (a text terminal has no half-height);
+    XMODEM transfer (status message only).
 
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.

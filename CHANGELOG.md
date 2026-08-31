@@ -6,6 +6,28 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (oterm — rendu HIRES réel + charset BBS + attributs sériels complets, K2, 01/09/2026)
+- **Mode HIRES rendu réellement en pixels** (`pcterm/internal/hires`, pur & testé) :
+  rasteriseur Go du flux d'opcodes HIRES (`HiOn/Ink/Curset/Point/Line/Box/FillBox/Circle/
+  Char/Blit RLE`) porté fidèlement de `client/hires.s` — VRAM 200×40, pixel = bit (5−x%6),
+  effacement `0x40`, **attribut d'encre sériel par ligne** (col 0 sacrifiée, x<6 ignoré en
+  mode couleur). L'image 240×200 est restituée en **demi-blocs Unicode `▀`** (240×100
+  caractères, couleur par pixel : avant-plan = pixel haut, arrière-plan = pixel bas).
+  `1F FC` bascule oterm en HIRES, `1F FB` rend la main au texte.
+- **Police standard** embarquée (`pcterm/internal/hires/font.go`, 768 o extraits de
+  `studio/web/charset.js`) pour l'opcode `HiChar`.
+- **Charset alternatif « police BBS » rendu en Unicode** (`pcterm/internal/ula/font.go`) :
+  une cellule texte en charset alt (attribut 0x08 bit0) est mappée vers sa **rune Unicode**
+  (filets `┌─┐│`, blocs `█▌▐▀▄░▒▓`, symboles `•►◄▲▼★…`) — table dérivée de `tools/genfont`
+  (source unique). Fidèle sans rasterisation pixel.
+- **Groupe d'attributs « mode vidéo » 0x18–0x1F** géré : **inverse ON (29) / OFF (28)** en
+  état sériel de ligne, combiné (XOR) au bit inverse 0x80 par caractère.
+- **Tests** : `pcterm/internal/hires/hires_test.go` (point/curset/ligne/box/fillbox/circle/
+  mode couleur/blit RLE/clamp/flux HiEnd) ; `pcterm/internal/ula/ula_test.go` étendu
+  (charset alt→Unicode, inverse sériel, bascule HIRES) + **e2e** avec l'encodeur serveur
+  réel (`render.Hires`). **Smoke-test visuel** contre `docs/examples/hires-demo.json` :
+  24000 demi-blocs (240×100), 14 combinaisons de couleurs — logo HIRES affiché en couleur.
+
 ### Added (oterm — client terminal OASCII portable PC, K1, 31/08/2026)
 - **Nouveau sous-projet `pcterm/`** : **oterm**, un client terminal pour utiliser/tester le
   BBS depuis un PC moderne (**Linux/Windows/macOS**) sans Oric ni émulateur, en binaire

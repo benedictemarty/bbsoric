@@ -25,23 +25,31 @@ Raccourci : `make oterm-run ADDR=host:port`.
 Le clavier est transmis **caractère par caractère** (modèle d'entrée du BBS, ADR-0002 :
 une touche = un choix dans les menus, pas de `Entrée`).
 
-## Portée et limites
+## Portée
 
 - **TEXT complet** : caractères, CR/LF avec défilement, backspace, clamp 40 colonnes,
-  commande de positionnement `plot` (`1F col row`), attributs sériels encre/fond/inverse
-  et clignotement — décodés fidèlement au firmware `client/term.s` et à l'ULA.
-- **Semi-graphiques / double hauteur** : approximés (un terminal texte ne rend pas la
-  police BBS ni les demi-hauteurs pixel — pour un rendu pixel exact, voir le simulateur
-  ULA du studio).
-- **HIRES** (`1F FC`) et **XMODEM** (`1F FE`/`FD`) : **non rendus** par un client texte ;
-  `oterm` affiche un message d'état et poursuit (le flux HIRES est avalé jusqu'à `1F FB`).
+  commande de positionnement `plot` (`1F col row`) — décodés fidèlement au firmware
+  `client/term.s`.
+- **Attributs sériels des trois familles** : encre/fond, **texte** (charset alternatif
+  « police BBS » + clignotement) et **mode vidéo** (inverse ON/OFF `28`/`29`). Le charset
+  BBS (filets `┌─┐│`, blocs `█▌▐▀▄░▒▓`, symboles `•►◄▲▼★…`) est rendu par ses **runes
+  Unicode** — fidèle sans rasterisation.
+- **HIRES** (`1F FC`) : **rendu réel** en pixels. Le flux d'opcodes (`point/line/box/
+  fillbox/circle/char/blit RLE`) est rasterisé dans une VRAM 200×40 puis affiché 240×200
+  en **demi-blocs Unicode `▀`** (1 pixel/colonne, 2 pixels/ligne, couleur par pixel via
+  les attributs sériels HIRES). `1F FB` rend la main au mode texte.
+- **Double hauteur** : approximée (un terminal ne fait pas de demi-hauteur pixel).
+- **XMODEM** (`1F FE`/`FD`) : non pris en charge (message d'état) — un client texte ne
+  fait pas de transfert de fichiers.
 
 ## Architecture
 
 ```
 pcterm/
   cmd/oterm/          client : connexion TCP + clavier brut + boucle de rendu ANSI
-  internal/ula/       décodeur OASCII -> grille 40×28 + curseur, rendu ANSI (pur, testé)
+  internal/ula/       décodeur OASCII -> grille 40×28 + curseur, rendu ANSI (pur, testé),
+                      charset BBS -> Unicode, bascule mode HIRES
+  internal/hires/     rasteriseur du flux HIRES -> image 240×200 couleur, rendu demi-blocs
 ```
 
 Le décodeur `internal/ula` réutilise les constantes et la sémantique de
