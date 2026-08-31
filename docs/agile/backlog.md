@@ -279,6 +279,15 @@
   file byte-identical, 90 o).)*
   - Not done (documented limit): pixel-accurate double-height (a text terminal has no half-height);
     client-initiated upload (needs local file selection UX).
+- [x] **K4** (2) As a user, I want the HIRES screen rendered **identically to the Oric client**:
+  240×200 graphics **plus the 3 bottom TEXT lines** (rows 25–27), not graphics only.
+  *(Done 01/09/2026 — `ula.renderHires` composes `hires.HalfBlockFrame(Image())` (100 half-block
+  rows) followed by grid rows 25–27 as ANSI text, mirroring the Oric HIRES layout (`$BF40–$BFDF`).
+  `1F FC` clears the grid (firmware `hires_on` clears the bottom text lines); rows 0–24 stay hidden
+  under the graphics. Refactor: `hires.Image()`/`HalfBlockFrame()`, `ula.appendTextRow()`. Test
+  `TestHiresComposeLignesTexteBas`. Honest note: prod content does not yet emit a bottom-line menu
+  in HIRES pages — oterm composes them empty, like the firmware, ready to show them if a page fills
+  rows 25–27.)*
 
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.

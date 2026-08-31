@@ -6,6 +6,23 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Changed (oterm — écran HIRES composé à l'identique de l'Oric, K4, 01/09/2026)
+- **Composition graphique + 3 lignes texte** en mode HIRES, comme le vrai client Oric :
+  l'écran HIRES de l'Oric = 240×200 pixels graphiques **+ 3 lignes de TEXTE** en bas (rows
+  25–27, VRAM `$BF40–$BFDF`). `oterm` affiche désormais l'image 240×200 (100 lignes de
+  demi-blocs) **suivie des rows 25–27 de la grille texte** rendues en ANSI — au lieu du seul
+  graphique. Le curseur matériel est placé dans ces lignes si le curseur Oric y est.
+- **Effacement des lignes du bas à l'entrée HIRES** (`1F FC` → `t.clear()`), fidèle au
+  firmware (`hires_on` efface `$BF40–$BFDF`). Le texte des rows 0–24 (sous le décor) n'est
+  pas affiché en HIRES, exactement comme sur l'Oric.
+- **Refactor** : `hires.Raster.Image()` (image 240×200 couleurs) + `hires.HalfBlockFrame()`
+  réutilisable ; `ula.appendTextRow()` factorisé, partagé entre le rendu texte et la
+  composition HIRES.
+- Test `pcterm/internal/ula/ula_test.go` : `TestHiresComposeLignesTexteBas` (un menu écrit
+  en row 25 apparaît sous le graphique ; un texte en row 3 reste masqué). Smoke-test visuel
+  inchangé (24000 demi-blocs). *(Constat honnête : le contenu de prod n'émet pas encore de
+  menu dans ces 3 lignes — oterm les compose vides, comme le firmware, prêt à les afficher.)*
+
 ### Added (oterm — transferts XMODEM (download), K3, 01/09/2026)
 - **Téléchargement XMODEM pris en charge** (`pcterm/internal/xfer`, réutilise
   `internal/xmodem` partagé) : à la détection de `1F FE`, `oterm` reprend la main sur la

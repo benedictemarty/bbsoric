@@ -34,10 +34,15 @@ une touche = un choix dans les menus, pas de `Entrée`).
   « police BBS » + clignotement) et **mode vidéo** (inverse ON/OFF `28`/`29`). Le charset
   BBS (filets `┌─┐│`, blocs `█▌▐▀▄░▒▓`, symboles `•►◄▲▼★…`) est rendu par ses **runes
   Unicode** — fidèle sans rasterisation.
-- **HIRES** (`1F FC`) : **rendu réel** en pixels. Le flux d'opcodes (`point/line/box/
-  fillbox/circle/char/blit RLE`) est rasterisé dans une VRAM 200×40 puis affiché 240×200
-  en **demi-blocs Unicode `▀`** (1 pixel/colonne, 2 pixels/ligne, couleur par pixel via
-  les attributs sériels HIRES). `1F FB` rend la main au mode texte.
+- **HIRES** (`1F FC`) : **rendu réel** en pixels, **composé à l'identique de l'écran Oric**.
+  Le flux d'opcodes (`point/line/box/fillbox/circle/char/blit RLE`) est rasterisé dans une
+  VRAM 200×40 puis affiché 240×200 en **demi-blocs Unicode `▀`** (1 pixel/colonne, 2 pixels/
+  ligne, couleur par pixel via les attributs sériels HIRES) **suivi des 3 dernières lignes
+  de la grille texte** (rows 25–27) qui restent en TEXT sous le décor — exactement comme sur
+  l'Oric (200 px graphiques + 3 lignes texte). `1F FB` rend la main au mode texte.
+  *(Note : le contenu de prod actuel n'envoie pas encore de menu dans ces 3 lignes ; oterm
+  les compose donc vides, comme le ferait le firmware — et les affiche fidèlement dès qu'une
+  page les remplit via un plot en row 25–27.)*
 - **Téléchargement XMODEM** (`1F FE`) : **pris en charge**. Quand le BBS envoie un fichier
   (menu Fichiers, catalogue), `oterm` déroule le transfert et enregistre le fichier sous son
   nom réel dans le répertoire `-dl` (défaut `.`). L'**upload** demandé par le serveur

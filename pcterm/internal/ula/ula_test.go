@@ -142,6 +142,29 @@ func TestHiresRenduPuisRetourTexte(t *testing.T) {
 	}
 }
 
+func TestHiresComposeLignesTexteBas(t *testing.T) {
+	term := New()
+	// Flux HIRES minimal (HiOn + HiEnd).
+	term.Write([]byte(oascii.HiresCmd()))
+	term.Write([]byte{oascii.HiOn, oascii.HiEnd})
+	// En HIRES, le serveur positionne le curseur en bas (row 25) et écrit un menu.
+	term.Write([]byte(oascii.Plot(0, 25)))
+	term.Write([]byte("MENU BAS"))
+	ansi := term.RenderANSI()
+	if !strings.Contains(ansi, "▀") {
+		t.Error("l'image graphique 240×200 devrait être présente")
+	}
+	if !strings.Contains(ansi, "MENU BAS") {
+		t.Error("les 3 lignes texte du bas doivent être composées sous le graphique (identique Oric)")
+	}
+	// Le texte écrit AU-DESSUS de la zone basse (row < 25) n'est PAS affiché en HIRES.
+	term.Write([]byte(oascii.Plot(0, 3)))
+	term.Write([]byte("CACHE"))
+	if strings.Contains(term.RenderANSI(), "CACHE") {
+		t.Error("le texte des rows 0–24 est sous le graphique et ne doit pas apparaître")
+	}
+}
+
 func TestCharsetAlternatifUnicode(t *testing.T) {
 	term := New()
 	// Attribut texte « charset alternatif » (0x08 | bit0) puis le code '0' (bloc plein).

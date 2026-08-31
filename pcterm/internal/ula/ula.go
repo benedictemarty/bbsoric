@@ -58,11 +58,11 @@ const (
 // Terminal porte l'état d'écran décodé. Non concurrent : sérialiser les appels
 // (le client protège Write/RenderANSI par un verrou).
 type Terminal struct {
-	grid   [Rows * Cols]byte
-	col    int
-	row    int
-	st     int
-	plotX  int
+	grid    [Rows * Cols]byte
+	col     int
+	row     int
+	st      int
+	plotX   int
 	mode    int           // modeText ou modeHires
 	hr      *hires.Raster // rasteriseur du flux HIRES courant (si mode HIRES)
 	status  string        // dernier message de statut
@@ -134,6 +134,7 @@ func (t *Terminal) feed(b byte) {
 		case 0xFC: // 1F FC : ouvre un flux de commandes HIRES
 			t.hr = hires.New()
 			t.mode = modeHires
+			t.clear() // HiOn efface aussi les 3 lignes texte du bas (firmware)
 			t.status = ""
 			t.st = stHires
 		case 0xFB: // 1F FB : retour TEXT (efface l'écran, comme le firmware)
@@ -326,30 +327,12 @@ func (t *Terminal) rowCells(row int) [Cols]cell {
 // avec l'ordre ANSI (0=noir … 7=blanc).
 func (t *Terminal) RenderANSI() string {
 	if t.mode == modeHires && t.hr != nil {
-		return t.hr.RenderANSI() // écran graphique 240×200 en demi-blocs
+		return t.renderHires()
 	}
 	var sb strings.Builder
 	sb.WriteString("\x1b[?25l\x1b[H") // masque curseur + home
-	lastFg, lastBg, lastBlink := byte(255), byte(255), false
 	for row := 0; row < Rows; row++ {
-		cells := t.rowCells(row)
-		for col := 0; col < Cols; col++ {
-			c := cells[col]
-			if c.fg != lastFg || c.bg != lastBg || c.blink != lastBlink {
-				sb.WriteString("\x1b[0;3")
-				sb.WriteByte('0' + c.fg)
-				sb.WriteString(";4")
-				sb.WriteByte('0' + c.bg)
-				if c.blink {
-					sb.WriteString(";5")
-				}
-				sb.WriteByte('m')
-				lastFg, lastBg, lastBlink = c.fg, c.bg, c.blink
-			}
-			sb.WriteRune(c.ch)
-		}
-		sb.WriteString("\x1b[0m")
-		lastFg, lastBg, lastBlink = 255, 255, false
+		t.appendTextRow(&sb, row)
 		if row < Rows-1 {
 			sb.WriteString("\r\n")
 		}
@@ -360,5 +343,54 @@ func (t *Terminal) RenderANSI() string {
 	sb.WriteByte(';')
 	sb.WriteString(strconv.Itoa(t.col + 1))
 	sb.WriteString("H\x1b[?25h")
+	return sb.String()
+}
+
+// hiresTextRows est le nombre de lignes texte affichées sous l'image HIRES, en bas
+// de l'écran (comme sur l'Oric : 240×200 graphiques + 3 lignes TEXT).
+const hiresTextRows = 3
+
+// appendTextRow écrit la ligne texte row en ANSI (couleurs sérielles résolues).
+func (t *Terminal) appendTextRow(sb *strings.Builder, row int) {
+	cells := t.rowCells(row)
+	lastFg, lastBg, lastBlink := byte(255), byte(255), false
+	for col := 0; col < Cols; col++ {
+		c := cells[col]
+		if c.fg != lastFg || c.bg != lastBg || c.blink != lastBlink {
+			sb.WriteString("\x1b[0;3")
+			sb.WriteByte('0' + c.fg)
+			sb.WriteString(";4")
+			sb.WriteByte('0' + c.bg)
+			if c.blink {
+				sb.WriteString(";5")
+			}
+			sb.WriteByte('m')
+			lastFg, lastBg, lastBlink = c.fg, c.bg, c.blink
+		}
+		sb.WriteRune(c.ch)
+	}
+	sb.WriteString("\x1b[0m")
+}
+
+// renderHires compose l'écran HIRES à l'identique du client Oric : l'image
+// graphique 240×200 (100 lignes de demi-blocs) SUIVIE des 3 dernières lignes de la
+// grille texte (rows 25–27), qui restent en TEXT sous le décor sur l'Oric. Le
+// curseur matériel est placé sur le curseur Oric s'il est dans ces 3 lignes.
+func (t *Terminal) renderHires() string {
+	var sb strings.Builder
+	sb.WriteString("\x1b[?25l")
+	sb.WriteString(hires.HalfBlockFrame(t.hr.Image())) // 100 lignes graphiques (▀)
+	for row := Rows - hiresTextRows; row < Rows; row++ {
+		sb.WriteString("\r\n")
+		t.appendTextRow(&sb, row)
+	}
+	// Curseur : dans les 3 lignes du bas -> position réelle ; sinon fin d'écran.
+	if t.row >= Rows-hiresTextRows {
+		termRow := hires.Rows + 1 + (t.row - (Rows - hiresTextRows))
+		sb.WriteString("\x1b[" + strconv.Itoa(termRow) + ";" + strconv.Itoa(t.col+1) + "H")
+	} else {
+		sb.WriteString("\x1b[" + strconv.Itoa(hires.Rows+hiresTextRows+1) + ";1H")
+	}
+	sb.WriteString("\x1b[?25h")
 	return sb.String()
 }

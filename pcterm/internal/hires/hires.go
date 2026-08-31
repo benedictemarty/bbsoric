@@ -43,8 +43,8 @@ type Raster struct {
 	// Décodage du flux : opcode courant + arguments accumulés.
 	op    byte
 	args  []byte
-	need  int    // nombre d'octets d'arguments attendus (hors Blit)
-	inCmd bool   // un opcode est en cours de lecture d'arguments
+	need  int  // nombre d'octets d'arguments attendus (hors Blit)
+	inCmd bool // un opcode est en cours de lecture d'arguments
 	blit  *blitState
 	done  bool
 }
@@ -311,13 +311,23 @@ func (r *Raster) resolve() []byte {
 	return img
 }
 
-// RenderANSI restitue l'image HIRES en demi-blocs Unicode ▀ (100 lignes de 240
-// caractères) : encre du pixel haut en avant-plan, du pixel bas en arrière-plan.
-// Les 8 couleurs Oric coïncident avec l'ordre ANSI (0=noir … 7=blanc).
-func (r *Raster) RenderANSI() string {
-	img := r.resolve()
+// Image renvoie l'image HIRES résolue : W*H couleurs (0..7), pixel (x,y) à
+// l'indice y*W+x. C'est la sortie « pixels » du rasteriseur, que l'appelant peut
+// composer avec d'autres zones (les 3 lignes texte du bas de l'écran HIRES).
+func (r *Raster) Image() []byte { return r.resolve() }
+
+// Rows est le nombre de lignes de terminal d'une image HIRES rendue en demi-blocs
+// (2 pixels verticaux par ligne).
+const Rows = H / 2
+
+// HalfBlockFrame restitue une image 240×200 (W*H couleurs) en demi-blocs Unicode
+// ▀ : 100 lignes de 240 caractères, encre du pixel haut en avant-plan, du pixel
+// bas en arrière-plan. Débute par un retour en haut à gauche (sans gérer le
+// curseur : à l'appelant de le masquer/positionner). Les 8 couleurs Oric
+// coïncident avec l'ordre ANSI (0=noir … 7=blanc).
+func HalfBlockFrame(img []byte) string {
 	var sb strings.Builder
-	sb.WriteString("\x1b[?25l\x1b[H")
+	sb.WriteString("\x1b[H")
 	lastTop, lastBot := byte(255), byte(255)
 	for y := 0; y < H; y += 2 {
 		for x := 0; x < W; x++ {
@@ -339,8 +349,15 @@ func (r *Raster) RenderANSI() string {
 			sb.WriteString("\r\n")
 		}
 	}
-	sb.WriteString("\x1b[" + strconv.Itoa(H/2+1) + ";1H\x1b[?25h")
 	return sb.String()
+}
+
+// RenderANSI restitue l'image HIRES seule (240×200) en demi-blocs, curseur géré
+// (masqué puis replacé sous l'image). Pour un écran HIRES complet avec les 3
+// lignes texte du bas, l'appelant compose HalfBlockFrame(Image()) + le texte.
+func (r *Raster) RenderANSI() string {
+	return "\x1b[?25l" + HalfBlockFrame(r.resolve()) +
+		"\x1b[" + strconv.Itoa(Rows+1) + ";1H\x1b[?25h"
 }
 
 // ColorAt renvoie la couleur résolue (0..7) du pixel (x,y) — utile aux tests.
