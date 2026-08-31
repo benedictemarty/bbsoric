@@ -59,9 +59,20 @@ func (e *Engine) fetchAPI(src content.SourceDonnees) ([]map[string]string, error
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("api statut %d", resp.StatusCode)
 	}
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // borne 1 Mo
+	// Plafond du corps configurable (défaut 1 Mo) avec détection explicite du
+	// dépassement : on lit limite+1 octets ; si on atteint ce +1, la réponse est
+	// trop volumineuse et on remonte une erreur claire (au lieu d'un JSON tronqué
+	// au message obscur).
+	limite := int64(src.API.MaxOctets)
+	if limite <= 0 {
+		limite = content.DefautMaxOctetsAPI
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, limite+1))
 	if err != nil {
 		return nil, fmt.Errorf("api lecture: %w", err)
+	}
+	if int64(len(body)) > limite {
+		return nil, fmt.Errorf("api réponse trop volumineuse (> %d o) ; augmentez max_octets ou filtrez la source", limite)
 	}
 
 	tableau, err := extraireTableau(body, src.API.Racine)

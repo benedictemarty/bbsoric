@@ -89,6 +89,12 @@ depuis l'environnement du serveur** (`os.ExpandEnv`) → les secrets restent **h
 `site.json`** (donc hors dépôt et hors déploiement). Les noms d'en-tête sont restreints
 à un jeton simple (`[A-Za-z0-9-]+`) pour éviter l'injection.
 
+**Plafond de corps** (`max_octets`) : le corps de la réponse est lu jusqu'à un plafond
+(**1 Mo par défaut**, `content.DefautMaxOctetsAPI`). Une source « grande » peut relever ce
+plafond via `max_octets`. Au-delà du plafond, le moteur remonte une **erreur explicite**
+(« réponse trop volumineuse ») au lieu de tenter de décoder un JSON tronqué. Le filtre, le
+tri et la pagination restent appliqués **en mémoire** sur l'ensemble récupéré.
+
 ## Présenter en grille (page `datawindow`)
 
 ```json
@@ -207,7 +213,8 @@ sans toucher au JSON :
     auto-incrément, requis, longueur max, pattern, **masque de saisie**, valeur par
     défaut, auto-date) et une grille de **données initiales** (seed) ;
   - *API* : `url`, clé `racine`, cache `ttl_sec`, **en-têtes HTTP** (auth incluse,
-    valeurs `${VAR}` résolues côté serveur) + colonnes mappées par nom ;
+    valeurs `${VAR}` résolues côté serveur), **corps max** (`max_octets`) + colonnes
+    mappées par nom ;
   - communs : tri par défaut, lignes par page.
 
   Le renommage d'une source ou d'une colonne reporte les références (les pages grille
@@ -225,8 +232,11 @@ avant écriture.
 
 ## Pour aller plus loin (incréments suivants)
 
-- Pagination côté endpoint pour les grandes sources API (aujourd'hui la réponse
-  entière est récupérée puis paginée en mémoire, bornée à 1 Mo).
+- **Pagination côté endpoint** (non retenue pour l'instant) : déléguer la pagination à
+  l'API casserait le filtre et le tri, appliqués **en mémoire sur l'ensemble** récupéré, et
+  imposerait une convention de pagination par API. À la place, le plafond `max_octets`
+  (configurable, défaut 1 Mo) borne les grandes sources avec une erreur explicite en cas de
+  dépassement — voir §"Source REST (API)".
 
 *(Faits : recherche par préfixe, masques de saisie `masque`, en-têtes/auth des sources
-API — voir ci-dessus.)*
+API, plafond de corps `max_octets` — voir ci-dessus.)*

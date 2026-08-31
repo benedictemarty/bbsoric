@@ -1042,6 +1042,7 @@ function renderSourceForm() {
     host.append(field('URL', textField(src.api, 'url', 'https://exemple/data.json')));
     host.append(field('Clé racine', textField(src.api, 'racine', 'ex. results (vide = tableau)')));
     host.append(field('Cache (s)', numberField(src.api, 'ttl_sec', '60', 0)));
+    host.append(field('Corps max (o)', numberField(src.api, 'max_octets', '1048576 (défaut)', 0)));
     host.append(headersEditor(src.api));
   } else {
     host.append(field('Table SQL', textField(src, 'table', 'ex. annuaire')));

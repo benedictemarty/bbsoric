@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -170,6 +171,41 @@ func TestAPISourceHeaders(t *testing.T) {
 	}
 	if gotStatic != "fixe" {
 		t.Errorf("X-Api-Key = %q, attendu \"fixe\"", gotStatic)
+	}
+}
+
+// TestAPISourceMaxOctets : le plafond de corps configurable rejette une réponse
+// trop volumineuse avec une erreur explicite, et laisse passer sous le plafond.
+func TestAPISourceMaxOctets(t *testing.T) {
+	// Corps ~2 Ko (30 objets) ; on serre le plafond en dessous puis au-dessus.
+	var sb strings.Builder
+	sb.WriteByte('[')
+	for i := 0; i < 30; i++ {
+		if i > 0 {
+			sb.WriteByte(',')
+		}
+		fmt.Fprintf(&sb, `{"id":%d,"nom":"Nom------------------%02d"}`, i, i)
+	}
+	sb.WriteByte(']')
+	body := sb.String()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, body)
+	}))
+	defer srv.Close()
+	e := testEngine(t)
+
+	// Plafond très bas -> dépassement -> erreur explicite.
+	src := apiSource(srv.URL, "")
+	src.API.MaxOctets = 100
+	if _, _, err := e.Lister(src, "", false, "", 1, 10); err == nil || !contains(err.Error(), "trop volumineuse") {
+		t.Errorf("dépassement attendu (erreur « trop volumineuse »), got %v", err)
+	}
+
+	// Plafond large -> OK (URL différente pour éviter le cache de l'appel précédent).
+	src2 := apiSource(srv.URL, "")
+	src2.API.MaxOctets = 1 << 20
+	if _, total, err := e.Lister(src2, "", false, "", 1, 5); err != nil || total != 30 {
+		t.Errorf("sous le plafond : err=%v total=%d (attendu 30)", err, total)
 	}
 }
 

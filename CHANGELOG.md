@@ -6,6 +6,19 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (DataWindow — grandes sources API : plafond de corps configurable, 31/08/2026)
+- **Plafond de corps de réponse configurable** (`APIConfig.max_octets`, défaut 1 Mo via
+  `content.DefautMaxOctetsAPI`) pour les grandes sources API, avec **détection explicite
+  du dépassement** : `fetchAPI` lit `limite+1` octets et remonte « réponse trop volumineuse
+  (> N o) » au lieu de laisser échouer un JSON tronqué avec un message obscur. Validation
+  `max_octets` ≥ 0 au chargement. Champ **« Corps max (o) »** dans le formulaire de source
+  API du studio.
+- **Pagination côté endpoint** écartée à dessein : elle casserait le filtre/tri appliqués
+  en mémoire sur l'ensemble récupéré et imposerait une convention par API ; le plafond
+  configurable couvre le besoin réel des grandes sources. Documenté dans `docs/datawindow.md`.
+- Test `datawindow.TestAPISourceMaxOctets` (dépassement → erreur explicite ; sous le
+  plafond → OK).
+
 ### Changed (Analyse — requalification d'I2b « download > 64 Ko », 31/08/2026)
 - **Analyse du plafond de téléchargement** : l'en-tête de download code la taille sur
   16 bits (`maxDownloadSize = 0xFFFF`), ce qui *ressemble* à la limite des 64 Ko mais

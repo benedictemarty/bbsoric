@@ -47,11 +47,16 @@ type SourceDonnees struct {
 // Racine (optionnel) est la clé contenant le tableau d'objets (sinon le JSON est
 // lui-même un tableau). Chaque objet mappe ses champs sur les colonnes par nom.
 type APIConfig struct {
-	URL     string            `json:"url"`
-	Racine  string            `json:"racine,omitempty"`  // clé du tableau dans la réponse (ex. "results")
-	TTL     int               `json:"ttl_sec,omitempty"` // durée de cache en secondes (défaut 60)
-	Headers map[string]string `json:"headers,omitempty"` // en-têtes HTTP (auth incluse) ; les valeurs `${VAR}` sont résolues depuis l'environnement du serveur
+	URL       string            `json:"url"`
+	Racine    string            `json:"racine,omitempty"`     // clé du tableau dans la réponse (ex. "results")
+	TTL       int               `json:"ttl_sec,omitempty"`    // durée de cache en secondes (défaut 60)
+	Headers   map[string]string `json:"headers,omitempty"`    // en-têtes HTTP (auth incluse) ; les valeurs `${VAR}` sont résolues depuis l'environnement du serveur
+	MaxOctets int               `json:"max_octets,omitempty"` // plafond du corps de réponse en octets (0 = défaut DefautMaxOctetsAPI) ; au-delà, erreur explicite
 }
+
+// DefautMaxOctetsAPI borne par défaut la taille du corps d'une réponse API (1 Mo).
+// Une source peut relever ce plafond via APIConfig.MaxOctets.
+const DefautMaxOctetsAPI = 1 << 20
 
 // EstAPI indique si la source est une source REST (lecture seule).
 func (src SourceDonnees) EstAPI() bool { return src.TypeSource == "api" }
@@ -183,6 +188,9 @@ func (src SourceDonnees) validate(nomSrc string) error {
 			if !enteteHTTPValide.MatchString(nom) {
 				return fmt.Errorf("source %q : nom d'en-tête HTTP invalide : %q", nomSrc, nom)
 			}
+		}
+		if src.API.MaxOctets < 0 {
+			return fmt.Errorf("source %q : max_octets négatif (%d)", nomSrc, src.API.MaxOctets)
 		}
 		return nil
 	}
