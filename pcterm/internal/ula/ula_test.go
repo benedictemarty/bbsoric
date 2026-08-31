@@ -198,15 +198,27 @@ func TestHiresFluxReelServeur(t *testing.T) {
 	}
 }
 
-func TestXmodemStatut(t *testing.T) {
+func TestWriteScanDetecteTransfert(t *testing.T) {
 	term := New()
-	term.Write([]byte{oascii.PlotByte, 0xFE}) // download
-	if !strings.Contains(term.Status(), "XMODEM") {
-		t.Errorf("statut XMODEM attendu, got %q", term.Status())
+	// "AB" puis 1F FE (download) puis des octets d'en-tête/XMODEM.
+	in := append([]byte("AB"), oascii.PlotByte, 0xFE, 'H', 'D', 'R')
+	consumed, x := term.WriteScan(in)
+	if x != XferDownload {
+		t.Fatalf("type de transfert = %d, veut XferDownload", x)
 	}
-	// Le flux reprend normalement juste après (pas d'octet avalé indûment).
-	term.Write([]byte("OK"))
-	if got := ligne(term, 0); got != "OK" {
-		t.Errorf("reprise après 1F FE = %q, veut \"OK\"", got)
+	if consumed != 4 { // "AB" + 1F + FE
+		t.Errorf("octets consommés = %d, veut 4 (jusqu'au 1F FE inclus)", consumed)
+	}
+	if got := ligne(term, 0); got != "AB" {
+		t.Errorf("texte avant le transfert = %q, veut \"AB\"", got)
+	}
+	// Les octets restants (en-tête + XMODEM) n'ont PAS été posés dans la grille.
+	if strings.Contains(term.Dump(), "HDR") {
+		t.Error("les octets d'en-tête ne doivent pas être décodés comme du texte")
+	}
+	// Upload : 1F FD détecté de même.
+	_, x2 := New().WriteScan([]byte{oascii.PlotByte, 0xFD})
+	if x2 != XferUpload {
+		t.Errorf("type = %d, veut XferUpload", x2)
 	}
 }

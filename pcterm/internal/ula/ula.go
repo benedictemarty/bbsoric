@@ -47,6 +47,14 @@ const (
 	modeHires
 )
 
+// Types de transfert détectés dans le flux (le client reprend alors la main sur
+// la connexion pour dérouler XMODEM).
+const (
+	XferNone     = iota
+	XferDownload // 1F FE : le serveur va ENVOYER un fichier (download côté client)
+	XferUpload   // 1F FD : le serveur veut RECEVOIR un fichier (upload côté client)
+)
+
 // Terminal porte l'état d'écran décodé. Non concurrent : sérialiser les appels
 // (le client protège Write/RenderANSI par un verrou).
 type Terminal struct {
@@ -55,9 +63,10 @@ type Terminal struct {
 	row    int
 	st     int
 	plotX  int
-	mode   int           // modeText ou modeHires
-	hr     *hires.Raster // rasteriseur du flux HIRES courant (si mode HIRES)
-	status string        // dernier message de statut (XMODEM non rendu)
+	mode    int           // modeText ou modeHires
+	hr      *hires.Raster // rasteriseur du flux HIRES courant (si mode HIRES)
+	status  string        // dernier message de statut
+	pending int           // transfert détecté en attente (XferNone/Download/Upload)
 }
 
 // New crée un terminal effacé (grille d'espaces, curseur en haut à gauche).
@@ -85,23 +94,42 @@ func (t *Terminal) Cursor() (int, int) { return t.col, t.row }
 func (t *Terminal) InHires() bool { return t.mode == modeHires }
 
 // Write injecte des octets reçus du BBS dans le décodeur. Ne faillit jamais
-// (implémente io.Writer pour un usage direct avec io.Copy si besoin).
+// (implémente io.Writer pour un usage direct avec io.Copy si besoin). Ignore la
+// détection de transfert (voir WriteScan pour la gérer).
 func (t *Terminal) Write(p []byte) (int, error) {
 	for _, b := range p {
 		t.feed(b)
 	}
+	t.pending = XferNone
 	return len(p), nil
+}
+
+// WriteScan décode p octet par octet et S'ARRÊTE dès qu'un déclencheur de
+// transfert (1F FE/FD) est rencontré : il renvoie le nombre d'octets consommés
+// (jusqu'au déclencheur inclus) et le type de transfert. Les octets suivants de p
+// (en-tête + flux XMODEM) sont alors à traiter par l'appelant sur la connexion.
+// Sans transfert, consomme tout p et renvoie (len(p), XferNone).
+func (t *Terminal) WriteScan(p []byte) (consumed, xfer int) {
+	for i, b := range p {
+		t.feed(b)
+		if t.pending != XferNone {
+			x := t.pending
+			t.pending = XferNone
+			return i + 1, x
+		}
+	}
+	return len(p), XferNone
 }
 
 func (t *Terminal) feed(b byte) {
 	switch t.st {
 	case stAfter1F:
 		switch b {
-		case 0xFE:
-			t.status = "XMODEM download reçu — non pris en charge par ce client texte"
+		case 0xFE: // 1F FE : le serveur va envoyer un fichier (download)
+			t.pending = XferDownload
 			t.st = stNormal
-		case 0xFD:
-			t.status = "XMODEM upload demandé — non pris en charge par ce client texte"
+		case 0xFD: // 1F FD : le serveur veut recevoir un fichier (upload)
+			t.pending = XferUpload
 			t.st = stNormal
 		case 0xFC: // 1F FC : ouvre un flux de commandes HIRES
 			t.hr = hires.New()

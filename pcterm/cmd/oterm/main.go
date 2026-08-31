@@ -1,14 +1,17 @@
 // Commande oterm : terminal OASCII portable pour le BBS Oric.
 //
 // Se connecte au serveur bbsd en TCP et rend le flux OASCII (mode TEXT 40×28,
-// attributs Téletexte, couleurs, inverse) dans n'importe quel terminal ANSI —
-// Linux, Windows ou macOS, en binaire statique unique. Le clavier est transmis
-// caractère par caractère (modèle d'entrée du BBS, ADR-0002). Les pages HIRES et
-// les transferts XMODEM ne sont pas rendus par ce client texte (message d'état).
+// attributs Téletexte, couleurs, inverse, charset BBS) et les pages HIRES (240×200
+// en demi-blocs Unicode) dans n'importe quel terminal ANSI — Linux, Windows ou
+// macOS, en binaire statique unique. Le clavier est transmis caractère par
+// caractère (modèle d'entrée du BBS, ADR-0002). Les téléchargements XMODEM sont
+// pris en charge (fichier enregistré dans -dl) ; l'upload demandé par le serveur
+// est annulé proprement.
 //
 // Usage :
 //
 //	oterm -addr host:port      (défaut 127.0.0.1:6502)
+//	oterm -dl <répertoire>     (répertoire des fichiers téléchargés, défaut ".")
 //
 // Quitter : Ctrl-] (0x1D).
 package main
@@ -23,6 +26,7 @@ import (
 	"time"
 
 	"github.com/benedictemarty/bbsoric/pcterm/internal/ula"
+	"github.com/benedictemarty/bbsoric/pcterm/internal/xfer"
 	"golang.org/x/term"
 )
 
@@ -30,15 +34,16 @@ const quitKey = 0x1D // Ctrl-] : ferme proprement la session
 
 func main() {
 	addr := flag.String("addr", "127.0.0.1:6502", "adresse du serveur bbsd (host:port)")
+	dlDir := flag.String("dl", ".", "répertoire d'enregistrement des fichiers téléchargés")
 	flag.Parse()
 
-	if err := run(*addr); err != nil {
+	if err := run(*addr, *dlDir); err != nil {
 		fmt.Fprintln(os.Stderr, "oterm:", err)
 		os.Exit(1)
 	}
 }
 
-func run(addr string) error {
+func run(addr, dlDir string) error {
 	conn, err := net.DialTimeout("tcp", addr, 10*time.Second)
 	if err != nil {
 		return fmt.Errorf("connexion à %s : %w", addr, err)
@@ -61,36 +66,58 @@ func run(addr string) error {
 	var mu sync.Mutex
 	var lastStatus string
 
+	setStatus := func(s string) {
+		mu.Lock()
+		lastStatus = s
+		mu.Unlock()
+	}
 	repaint := func() {
 		mu.Lock()
 		defer mu.Unlock()
 		out := t.RenderANSI()
-		if st := t.Status(); st != lastStatus {
-			lastStatus = st
-			// Affiche le statut sur une 29e ligne (sous l'écran 40×28).
-			out += "\x1b[29;1H\x1b[2K"
-			if st != "" {
-				out += "\x1b[33m[" + st + "]\x1b[0m"
-			}
+		st := t.Status()
+		if st == "" {
+			st = lastStatus
+		}
+		// Ligne de statut sous l'écran 40×28 (29e ligne).
+		out += "\x1b[29;1H\x1b[2K"
+		if st != "" {
+			out += "\x1b[33m[" + st + "]\x1b[0m"
 		}
 		io.WriteString(os.Stdout, out)
 	}
 
-	// Écran d'accueil propre.
 	io.WriteString(os.Stdout, "\x1b[2J")
 	repaint()
 
-	// Réception : lit le flux du serveur, décode et repeint.
 	errc := make(chan error, 2)
+
+	// Réception : lit le flux du serveur, décode et repeint. Sur détection d'un
+	// transfert (1F FE/FD), reprend la main sur la connexion pour dérouler XMODEM.
 	go func() {
 		buf := make([]byte, 4096)
 		for {
+			// Écarte toute échéance de lecture posée par un transfert précédent.
+			_ = conn.SetReadDeadline(time.Time{})
 			n, err := conn.Read(buf)
 			if n > 0 {
-				mu.Lock()
-				t.Write(buf[:n])
-				mu.Unlock()
-				repaint()
+				chunk := buf[:n]
+				for len(chunk) > 0 {
+					mu.Lock()
+					consumed, x := t.WriteScan(chunk)
+					mu.Unlock()
+					rest := chunk[consumed:]
+					if x == ula.XferNone {
+						repaint()
+						break
+					}
+					// Transfert : les octets restants (en-tête + XMODEM) appartiennent
+					// au transfert. On les préfixe à la connexion pour ne rien perdre.
+					pc := &prefixConn{pre: rest, Conn: conn}
+					handleTransfer(t, x, pc, dlDir, setStatus)
+					repaint()
+					chunk = nil // le préfixe a été consommé par le transfert
+				}
 			}
 			if err != nil {
 				errc <- err
@@ -122,11 +149,47 @@ func run(addr string) error {
 	}()
 
 	err = <-errc
-	// Nettoyage visuel : curseur visible, ligne sous l'écran, message de fin.
 	io.WriteString(os.Stdout, "\x1b[?25h\x1b[29;1H\x1b[2K\r\n")
 	if err != nil && err != io.EOF {
 		return err
 	}
 	fmt.Fprintln(os.Stdout, "Session terminée.")
 	return nil
+}
+
+// handleTransfer déroule un transfert XMODEM détecté. Download : reçoit et
+// enregistre le fichier. Upload (non pris en charge par un client texte) : annulé
+// proprement. Le résultat est reporté dans la ligne de statut.
+func handleTransfer(t *ula.Terminal, kind int, c *prefixConn, dlDir string, setStatus func(string)) {
+	switch kind {
+	case ula.XferDownload:
+		setStatus("Téléchargement XMODEM en cours…")
+		path, n, err := xfer.Download(c, dlDir)
+		if err != nil {
+			setStatus("Téléchargement échoué : " + err.Error())
+			return
+		}
+		setStatus(fmt.Sprintf("Reçu : %s (%d octets)", path, n))
+	case ula.XferUpload:
+		xfer.CancelUpload(c)
+		setStatus("Upload demandé — non pris en charge par oterm (annulé)")
+	}
+	_ = t // le terminal reprend le flux normal ensuite
+}
+
+// prefixConn est une connexion précédée d'octets déjà lus (le reliquat du chunk
+// après le déclencheur de transfert) : Read les draine d'abord, puis lit la
+// connexion réelle. Satisfait xmodem.Conn (Write + SetReadDeadline via net.Conn).
+type prefixConn struct {
+	pre []byte
+	net.Conn
+}
+
+func (p *prefixConn) Read(b []byte) (int, error) {
+	if len(p.pre) > 0 {
+		n := copy(b, p.pre)
+		p.pre = p.pre[n:]
+		return n, nil
+	}
+	return p.Conn.Read(b)
 }

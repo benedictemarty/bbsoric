@@ -267,8 +267,18 @@
   `1F FC`→HIRES, `1F FB`→text. Tests (rasteriser primitives + ula alt-charset/inverse/hires) +
   e2e via `render.Hires` + visual smoke test on `docs/examples/hires-demo.json` (24000
   half-blocks, 14 colour pairs). Docs `pcterm/README.md`.)*
+  - Not done at K2 (later): XMODEM transfer → done in K3.
+- [x] **K3** (3) As a user, I want oterm to **download files** from the BBS (catalogue / files
+  menu) over XMODEM. *(Done 01/09/2026 — `pcterm/internal/xfer` reuses shared `internal/xmodem`:
+  on `1F FE`, oterm takes over the connection, reads the download header (blocks + 12-byte
+  Sedoric name + real size), receives the file, truncates to the exact size and saves it under
+  its real name in `-dl` (default `.`). Server-initiated upload (`1F FD`) is cleanly cancelled
+  (CAN). `ula.WriteScan` stops on a transfer trigger and hands the remaining bytes back; oterm
+  prefixes them to the connection (`prefixConn`). Tests: Sedoric-name parsing + net.Pipe loopback
+  download; `TestWriteScanDetecteTransfert`. Real smoke test against `bbsd -files` (downloaded
+  file byte-identical, 90 o).)*
   - Not done (documented limit): pixel-accurate double-height (a text terminal has no half-height);
-    XMODEM transfer (status message only).
+    client-initiated upload (needs local file selection UX).
 
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.

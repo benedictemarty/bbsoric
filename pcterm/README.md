@@ -38,18 +38,21 @@ une touche = un choix dans les menus, pas de `Entrée`).
   fillbox/circle/char/blit RLE`) est rasterisé dans une VRAM 200×40 puis affiché 240×200
   en **demi-blocs Unicode `▀`** (1 pixel/colonne, 2 pixels/ligne, couleur par pixel via
   les attributs sériels HIRES). `1F FB` rend la main au mode texte.
+- **Téléchargement XMODEM** (`1F FE`) : **pris en charge**. Quand le BBS envoie un fichier
+  (menu Fichiers, catalogue), `oterm` déroule le transfert et enregistre le fichier sous son
+  nom réel dans le répertoire `-dl` (défaut `.`). L'**upload** demandé par le serveur
+  (`1F FD`) est **annulé proprement** (un client texte ne choisit pas de fichier local).
 - **Double hauteur** : approximée (un terminal ne fait pas de demi-hauteur pixel).
-- **XMODEM** (`1F FE`/`FD`) : non pris en charge (message d'état) — un client texte ne
-  fait pas de transfert de fichiers.
 
 ## Architecture
 
 ```
 pcterm/
-  cmd/oterm/          client : connexion TCP + clavier brut + boucle de rendu ANSI
+  cmd/oterm/          client : connexion TCP + clavier brut + boucle de rendu ANSI + transferts
   internal/ula/       décodeur OASCII -> grille 40×28 + curseur, rendu ANSI (pur, testé),
-                      charset BBS -> Unicode, bascule mode HIRES
+                      charset BBS -> Unicode, bascule mode HIRES, détection de transfert
   internal/hires/     rasteriseur du flux HIRES -> image 240×200 couleur, rendu demi-blocs
+  internal/xfer/      transferts XMODEM (download : en-tête + réception + écriture fichier)
 ```
 
 Le décodeur `internal/ula` réutilise les constantes et la sémantique de

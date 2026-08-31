@@ -6,6 +6,21 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (oterm — transferts XMODEM (download), K3, 01/09/2026)
+- **Téléchargement XMODEM pris en charge** (`pcterm/internal/xfer`, réutilise
+  `internal/xmodem` partagé) : à la détection de `1F FE`, `oterm` reprend la main sur la
+  connexion, lit l'en-tête de download (blocs + nom Sedoric 12 o + taille réelle), reçoit
+  le fichier, le **tronque à la taille exacte** et l'enregistre sous son **nom réel** dans
+  le répertoire `-dl` (défaut `.`). L'**upload** serveur (`1F FD`) est **annulé proprement**
+  (CAN) — un client texte ne sélectionne pas de fichier local.
+- **`ula.WriteScan`** : décodage qui **s'arrête sur un déclencheur de transfert** et rend
+  les octets restants (en-tête + flux) à l'appelant ; `oterm` les préfixe à la connexion
+  (`prefixConn`) pour ne rien perdre. Nouveau flag `oterm -dl <répertoire>`.
+- **Tests** : `pcterm/internal/xfer/xfer_test.go` (nom Sedoric→fichier ; **download en
+  boucle locale via `net.Pipe`** : en-tête + `xmodem.Send` d'un côté, réception/écriture de
+  l'autre, contenu identique) ; `ula.TestWriteScanDetecteTransfert`. **Smoke-test réel**
+  contre un `bbsd` (`-files`) : fichier téléchargé identique à la source (90 o).
+
 ### Added (oterm — rendu HIRES réel + charset BBS + attributs sériels complets, K2, 01/09/2026)
 - **Mode HIRES rendu réellement en pixels** (`pcterm/internal/hires`, pur & testé) :
   rasteriseur Go du flux d'opcodes HIRES (`HiOn/Ink/Curset/Point/Line/Box/FillBox/Circle/
