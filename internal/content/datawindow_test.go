@@ -81,6 +81,47 @@ func TestValidateColumnPattern(t *testing.T) {
 	}
 }
 
+// TestValiderMasque : gabarit position par position (# A N X + littéraux).
+func TestValiderMasque(t *testing.T) {
+	cas := []struct {
+		masque, valeur string
+		ok             bool
+	}{
+		{"", "n'importe quoi", true},        // masque vide = pas de contrainte
+		{"##/##/####", "17/07/2026", true},  // date valide
+		{"##/##/####", "17-07-2026", false}, // mauvais littéral
+		{"##/##/####", "1/07/2026", false},  // trop court
+		{"AAA", "abc", true},
+		{"AAA", "ab1", false}, // chiffre là où une lettre est attendue
+		{"NNN", "a1z", true},
+		{"NNN", "a-1", false}, // '-' n'est pas alphanumérique
+		{"X#X", "?7!", true},  // X accepte tout
+	}
+	for _, c := range cas {
+		if got := ValiderMasque(c.masque, c.valeur); got != c.ok {
+			t.Errorf("ValiderMasque(%q, %q) = %v, attendu %v", c.masque, c.valeur, got, c.ok)
+		}
+	}
+}
+
+// TestValidateAPIHeaders : un nom d'en-tête HTTP non conforme est refusé.
+func TestValidateAPIHeaders(t *testing.T) {
+	mk := func(nom string) *Site {
+		return siteAvecDW(func(s *Site) {
+			src := s.SourcesDonnees["rep"]
+			src.TypeSource = "api"
+			src.API = &APIConfig{URL: "https://x/data.json", Headers: map[string]string{nom: "v"}}
+			s.SourcesDonnees["rep"] = src
+		})
+	}
+	if err := mk("Authorization").Validate(); err != nil {
+		t.Errorf("en-tête valide refusé : %v", err)
+	}
+	if err := mk("Bad Header").Validate(); err == nil {
+		t.Error("nom d'en-tête avec espace aurait dû échouer")
+	}
+}
+
 // TestValidateFichierColonne : fichier_colonne doit désigner une colonne de la source.
 func TestValidateFichierColonne(t *testing.T) {
 	ok := siteAvecDW(func(s *Site) {

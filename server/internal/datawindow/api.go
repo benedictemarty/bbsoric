@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -40,7 +42,16 @@ func (e *Engine) fetchAPI(src content.SourceDonnees) ([]map[string]string, error
 	}
 	e.apiMu.Unlock()
 
-	resp, err := e.httpClient.Get(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("api requête: %w", err)
+	}
+	// En-têtes (auth incluse) : les valeurs `${VAR}` sont résolues depuis
+	// l'environnement du serveur pour garder les secrets hors du site.json.
+	for nom, val := range src.API.Headers {
+		req.Header.Set(nom, os.ExpandEnv(val))
+	}
+	resp, err := e.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("api GET: %w", err)
 	}

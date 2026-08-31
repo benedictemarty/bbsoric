@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 // --- Modèle DataWindow (porté de telenet/serveur-go/structures.go) ---
@@ -26,7 +27,7 @@ type ColonneDef struct {
 	Pattern       string `json:"pattern,omitempty"`        // regex de validation
 	ValeurDefaut  any    `json:"valeur_defaut,omitempty"`  // DEFAULT SQL
 	AutoDate      bool   `json:"auto_date,omitempty"`      // rempli à la date courante
-	Masque        string `json:"masque,omitempty"`         // masque de saisie (réservé)
+	Masque        string `json:"masque,omitempty"`         // masque de saisie (gabarit position par position, cf. ValiderMasque)
 }
 
 // SourceDonnees définit une source de données. Par défaut une table SQLite
@@ -46,9 +47,10 @@ type SourceDonnees struct {
 // Racine (optionnel) est la clé contenant le tableau d'objets (sinon le JSON est
 // lui-même un tableau). Chaque objet mappe ses champs sur les colonnes par nom.
 type APIConfig struct {
-	URL    string `json:"url"`
-	Racine string `json:"racine,omitempty"`  // clé du tableau dans la réponse (ex. "results")
-	TTL    int    `json:"ttl_sec,omitempty"` // durée de cache en secondes (défaut 60)
+	URL     string            `json:"url"`
+	Racine  string            `json:"racine,omitempty"`  // clé du tableau dans la réponse (ex. "results")
+	TTL     int               `json:"ttl_sec,omitempty"` // durée de cache en secondes (défaut 60)
+	Headers map[string]string `json:"headers,omitempty"` // en-têtes HTTP (auth incluse) ; les valeurs `${VAR}` sont résolues depuis l'environnement du serveur
 }
 
 // EstAPI indique si la source est une source REST (lecture seule).
@@ -83,6 +85,55 @@ type FiltreFixe struct {
 var ErrValidationSQL = errors.New("identifiant SQL invalide")
 
 var nomSQLValide = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
+// enteteHTTPValide restreint les noms d'en-tête HTTP des sources API à un jeton
+// simple (lettres, chiffres, tiret) — évite l'injection d'en-têtes.
+var enteteHTTPValide = regexp.MustCompile(`^[A-Za-z0-9-]+$`)
+
+// ValiderMasque vérifie qu'une valeur respecte un masque de saisie. Le masque est
+// un gabarit position par position :
+//
+//	#  un chiffre (0-9)
+//	A  une lettre
+//	N  un caractère alphanumérique (lettre ou chiffre)
+//	X  n'importe quel caractère
+//
+// Tout autre caractère est un littéral qui doit apparaître tel quel (ex. le « / »
+// de « ##/##/#### »). La valeur doit avoir exactement la longueur du masque. Un
+// masque vide n'impose aucune contrainte.
+func ValiderMasque(masque, valeur string) bool {
+	if masque == "" {
+		return true
+	}
+	m, v := []rune(masque), []rune(valeur)
+	if len(v) != len(m) {
+		return false
+	}
+	for i, c := range m {
+		r := v[i]
+		switch c {
+		case '#':
+			if !unicode.IsDigit(r) {
+				return false
+			}
+		case 'A':
+			if !unicode.IsLetter(r) {
+				return false
+			}
+		case 'N':
+			if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+				return false
+			}
+		case 'X':
+			// n'importe quel caractère accepté
+		default:
+			if r != c {
+				return false
+			}
+		}
+	}
+	return true
+}
 
 // typesSQL : seuls les types SQLite standards sont autorisés.
 var typesSQL = map[string]bool{
@@ -127,6 +178,11 @@ func (src SourceDonnees) validate(nomSrc string) error {
 	if src.EstAPI() {
 		if src.API == nil || src.API.URL == "" {
 			return fmt.Errorf("source %q : type_source=api exige api.url", nomSrc)
+		}
+		for nom := range src.API.Headers {
+			if !enteteHTTPValide.MatchString(nom) {
+				return fmt.Errorf("source %q : nom d'en-tête HTTP invalide : %q", nomSrc, nom)
+			}
 		}
 		return nil
 	}

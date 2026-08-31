@@ -37,7 +37,24 @@ Au niveau racine du `site.json` :
 
 **Colonne** (`ColonneDef`) : `type` (TEXT/INTEGER/REAL/… liste blanche), `libelle`,
 `cle_primaire`, `auto_increment`, `requis`, `longueur_max`, `pattern` (regex),
-`valeur_defaut`, `auto_date`. `donnees` est un seed importé une seule fois.
+`masque` (gabarit de saisie, cf. ci-dessous), `valeur_defaut`, `auto_date`.
+`donnees` est un seed importé une seule fois.
+
+### Masque de saisie (`masque`)
+
+Gabarit **position par position** validé à l'écriture (création/édition) et affiché
+comme indication à côté du libellé lors de la saisie dans l'applet :
+
+| Symbole | Accepte              |
+|---------|----------------------|
+| `#`     | un chiffre (0-9)     |
+| `A`     | une lettre           |
+| `N`     | un alphanumérique    |
+| `X`     | n'importe quel caractère |
+| *autre* | littéral attendu tel quel (ex. le `/` de `##/##/####`) |
+
+La valeur doit avoir **exactement** la longueur du masque. Un masque vide n'impose
+aucune contrainte. Complémentaire de `pattern` (regex) et de `longueur_max`.
 
 ## Source REST (API) — lecture seule
 
@@ -51,7 +68,10 @@ filtre/tri/pagination appliqués **côté serveur** sur les données récupéré
 "meteo": {
   "type_source": "api",
   "tri_defaut": "ville ASC",
-  "api": { "url": "https://exemple/meteo.json", "racine": "results", "ttl_sec": 300 },
+  "api": {
+    "url": "https://exemple/meteo.json", "racine": "results", "ttl_sec": 300,
+    "headers": { "Authorization": "Bearer ${DW_TOKEN}", "X-Api-Key": "fixe" }
+  },
   "colonnes": {
     "ville": { "type": "TEXT",    "libelle": "Ville" },
     "temp":  { "type": "INTEGER", "libelle": "Temp" }
@@ -62,6 +82,12 @@ filtre/tri/pagination appliqués **côté serveur** sur les données récupéré
 L'endpoint renvoie soit un **tableau d'objets**, soit un objet dont la clé `racine`
 contient le tableau. Chaque objet mappe ses champs sur les colonnes **par nom**.
 Pas de table SQLite ; le flag `-data` reste requis (le moteur porte aussi l'API).
+
+**En-têtes HTTP / authentification** (`headers`) : dictionnaire nom → valeur envoyé à
+chaque requête (ex. `Authorization`, `X-Api-Key`). Les valeurs `${VAR}` sont **résolues
+depuis l'environnement du serveur** (`os.ExpandEnv`) → les secrets restent **hors du
+`site.json`** (donc hors dépôt et hors déploiement). Les noms d'en-tête sont restreints
+à un jeton simple (`[A-Za-z0-9-]+`) pour éviter l'injection.
 
 ## Présenter en grille (page `datawindow`)
 
@@ -178,9 +204,10 @@ sans toucher au JSON :
 - **Onglet « Données »** — gère les `sources_donnees`. On crée/charge/supprime une
   source, on choisit son **type** (SQLite CRUD ou **API REST** lecture seule), puis :
   - *SQLite* : nom de table, **colonnes typées** (clé, type, libellé, clé primaire,
-    auto-incrément, requis, longueur max, pattern, valeur par défaut, auto-date) et
-    une grille de **données initiales** (seed) ;
-  - *API* : `url`, clé `racine`, cache `ttl_sec` + colonnes mappées par nom ;
+    auto-incrément, requis, longueur max, pattern, **masque de saisie**, valeur par
+    défaut, auto-date) et une grille de **données initiales** (seed) ;
+  - *API* : `url`, clé `racine`, cache `ttl_sec`, **en-têtes HTTP** (auth incluse,
+    valeurs `${VAR}` résolues côté serveur) + colonnes mappées par nom ;
   - communs : tri par défaut, lignes par page.
 
   Le renommage d'une source ou d'une colonne reporte les références (les pages grille
@@ -198,5 +225,8 @@ avant écriture.
 
 ## Pour aller plus loin (incréments suivants)
 
-- Recherche par préfixe (en plus du filtre LIKE), masques de saisie.
-- Sources API avec en-têtes/authentification, pagination côté endpoint.
+- Pagination côté endpoint pour les grandes sources API (aujourd'hui la réponse
+  entière est récupérée puis paginée en mémoire, bornée à 1 Mo).
+
+*(Faits : recherche par préfixe, masques de saisie `masque`, en-têtes/auth des sources
+API — voir ci-dessus.)*

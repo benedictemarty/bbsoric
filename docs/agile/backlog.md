@@ -121,12 +121,15 @@
   grid applet on the `oascii.Screen` diff buffer (inverse selection, `+/- S/R V N/E/D
   F/C Q`), `-data` flag. Engine/content/integration tests + driver smoke. Docs
   `docs/datawindow.md`, ADR-0004, demo `docs/examples/datawindow-demo.json`.)*
-- [~] **H2** (5) As an editor, I want to **manage sources and data from the studio**
+- [x] **H2** (5) As an editor, I want to **manage sources and data from the studio**
   (Forge), and interactive column sort / prefix search / REST sources (telenet parity).
   *(Interactive column sort (key `T`) + REST API sources (`type_source:"api"`,
-  read-only) done 27/06. Studio editor done (Sprint 9). **Prefix search done 17/07/2026**
+  read-only) done 27/06. Studio editor done (Sprint 9). Prefix search done 17/07/2026
   (`Engine.Lister` `prefixe` param, applet key `P`, studio `/api/grid`, legend `F/P/C`;
-  test `TestListerPrefixe`). Remaining: input masks, API auth/headers.)*
+  test `TestListerPrefixe`). **Input masks + API auth/headers done 31/08/2026**:
+  `ColonneDef.masque` (`content.ValiderMasque`, `Engine.Valider`, applet hint, studio
+  column) ; `APIConfig.Headers` with `${VAR}` env-expansion (secrets out of `site.json`),
+  studio headers editor ; tests `ValiderMasque`/`APISourceHeaders`/`ValidateAPIHeaders`.)*
 
 ## Epic I — Code quality & hardening (post-analysis, 16/07/2026)
 

@@ -145,6 +145,34 @@ func TestAPISourceErreurHTTP(t *testing.T) {
 	}
 }
 
+// Les en-têtes HTTP configurés sont envoyés, avec expansion de ${VAR} depuis
+// l'environnement du serveur (secrets hors du site.json).
+func TestAPISourceHeaders(t *testing.T) {
+	t.Setenv("DW_TOKEN_TEST", "s3cret")
+	var gotAuth, gotStatic string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		gotStatic = r.Header.Get("X-Api-Key")
+		fmt.Fprint(w, `[{"id":1,"nom":"X"}]`)
+	}))
+	defer srv.Close()
+	e := testEngine(t)
+	src := apiSource(srv.URL, "")
+	src.API.Headers = map[string]string{
+		"Authorization": "Bearer ${DW_TOKEN_TEST}",
+		"X-Api-Key":     "fixe",
+	}
+	if _, _, err := e.Lister(src, "", false, "", 1, 10); err != nil {
+		t.Fatal(err)
+	}
+	if gotAuth != "Bearer s3cret" {
+		t.Errorf("Authorization = %q, attendu \"Bearer s3cret\"", gotAuth)
+	}
+	if gotStatic != "fixe" {
+		t.Errorf("X-Api-Key = %q, attendu \"fixe\"", gotStatic)
+	}
+}
+
 // InitialiserSource ignore les sources API (rien à créer en base).
 func TestAPISourceInitNoOp(t *testing.T) {
 	e := testEngine(t)

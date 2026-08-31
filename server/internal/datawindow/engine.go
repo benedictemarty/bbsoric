@@ -689,6 +689,9 @@ func (e *Engine) Valider(srcDef content.SourceDonnees, champs map[string]string,
 				erreurs = append(erreurs, libelle+" format invalide")
 			}
 		}
+		if colDef.Masque != "" && !content.ValiderMasque(colDef.Masque, valeur) {
+			erreurs = append(erreurs, fmt.Sprintf("%s doit suivre le masque %s", libelle, colDef.Masque))
+		}
 		switch colDef.Type {
 		case "INTEGER":
 			if _, err := strconv.ParseInt(valeur, 10, 64); err != nil {

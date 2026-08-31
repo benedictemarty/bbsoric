@@ -929,7 +929,7 @@ function colonnesEditor(src) {
   const wrap = el('div', {});
   wrap.append(el('span', { className: 'lbl', textContent: 'Colonnes' }));
   const tbl = el('table', { className: 'rows' });
-  tbl.append(el('tr', {}, ['Clé', 'Type', 'Libellé', 'PK', 'Auto+', 'Requis', 'LongMax', 'Pattern', 'Défaut', 'Date', ''].map(t => el('th', { textContent: t }))));
+  tbl.append(el('tr', {}, ['Clé', 'Type', 'Libellé', 'PK', 'Auto+', 'Requis', 'LongMax', 'Pattern', 'Masque', 'Défaut', 'Date', ''].map(t => el('th', { textContent: t }))));
   for (const [name, col] of Object.entries(src.colonnes || {})) {
     const k = el('input', { type: 'text', value: name }); k.style.width = '90px'; k.onchange = () => renameCol(src, name, k.value);
     const ty = el('select');
@@ -940,17 +940,52 @@ function colonnesEditor(src) {
     const lm = el('input', { type: 'number', value: col.longueur_max || '' }); lm.min = 0; lm.style.width = '64px';
     lm.oninput = () => { const v = parseInt(lm.value, 10); if (v > 0) col.longueur_max = v; else delete col.longueur_max; };
     const pat = el('input', { type: 'text', value: col.pattern || '' }); pat.style.width = '90px'; pat.oninput = () => { if (pat.value) col.pattern = pat.value; else delete col.pattern; };
+    const msk = el('input', { type: 'text', value: col.masque || '', title: '# chiffre · A lettre · N alphanum · X tout · autre = littéral (ex. ##/##/####)' }); msk.style.width = '90px';
+    msk.oninput = () => { if (msk.value) col.masque = msk.value; else delete col.masque; };
     const def = el('input', { type: 'text', value: col.valeur_defaut != null ? col.valeur_defaut : '' }); def.style.width = '80px';
     def.oninput = () => { const v = coerceCell(col, def.value); if (v === undefined) delete col.valeur_defaut; else col.valeur_defaut = v; };
     const del = el('button', { className: 'del', textContent: '✕' });
     del.onclick = () => { delete src.colonnes[name]; renderSourceForm(); };
-    tbl.append(el('tr', {}, [td(k), td(ty), td(lb), td(tog('cle_primaire')), td(tog('auto_increment')), td(tog('requis')), td(lm), td(pat), td(def), td(tog('auto_date')), td(del)]));
+    tbl.append(el('tr', {}, [td(k), td(ty), td(lb), td(tog('cle_primaire')), td(tog('auto_increment')), td(tog('requis')), td(lm), td(pat), td(msk), td(def), td(tog('auto_date')), td(del)]));
   }
   wrap.append(tbl);
   const add = el('button', { textContent: '+ colonne' });
   add.onclick = () => {
     let i = 1, key = 'col' + i; while (src.colonnes[key]) key = 'col' + (++i);
     src.colonnes[key] = { type: 'TEXT', libelle: key }; renderSourceForm();
+  };
+  wrap.append(add);
+  return wrap;
+}
+
+// headersEditor : liste d'en-têtes HTTP (nom → valeur) d'une source API. Les
+// valeurs `${VAR}` sont résolues côté serveur depuis l'environnement (secrets
+// hors du site.json), ex. Authorization = « Bearer ${DW_TOKEN} ».
+function headersEditor(api) {
+  const wrap = el('div', {});
+  wrap.append(el('span', { className: 'lbl', textContent: 'En-têtes HTTP (auth incluse ; valeurs ${VAR} résolues côté serveur)' }));
+  api.headers = api.headers || {};
+  const tbl = el('table', { className: 'rows' });
+  tbl.append(el('tr', {}, ['Nom', 'Valeur', ''].map(t => el('th', { textContent: t }))));
+  for (const [name, value] of Object.entries(api.headers)) {
+    const k = el('input', { type: 'text', value: name }); k.style.width = '140px';
+    k.onchange = () => {
+      const nk = k.value.trim();
+      if (!nk || (nk !== name && api.headers[nk] !== undefined)) { k.value = name; return; }
+      const next = {}; for (const [kk, vv] of Object.entries(api.headers)) next[kk === name ? nk : kk] = vv;
+      api.headers = next; renderSourceForm();
+    };
+    const v = el('input', { type: 'text', value: value }); v.style.width = '200px';
+    v.oninput = () => { api.headers[name] = v.value; };
+    const del = el('button', { className: 'del', textContent: '✕' });
+    del.onclick = () => { delete api.headers[name]; if (!Object.keys(api.headers).length) delete api.headers; renderSourceForm(); };
+    tbl.append(el('tr', {}, [td(k), td(v), td(del)]));
+  }
+  wrap.append(tbl);
+  const add = el('button', { textContent: '+ en-tête' });
+  add.onclick = () => {
+    let i = 1, key = 'X-Header-' + i; while (api.headers[key]) key = 'X-Header-' + (++i);
+    api.headers[key] = ''; renderSourceForm();
   };
   wrap.append(add);
   return wrap;
@@ -1007,6 +1042,7 @@ function renderSourceForm() {
     host.append(field('URL', textField(src.api, 'url', 'https://exemple/data.json')));
     host.append(field('Clé racine', textField(src.api, 'racine', 'ex. results (vide = tableau)')));
     host.append(field('Cache (s)', numberField(src.api, 'ttl_sec', '60', 0)));
+    host.append(headersEditor(src.api));
   } else {
     host.append(field('Table SQL', textField(src, 'table', 'ex. annuaire')));
   }

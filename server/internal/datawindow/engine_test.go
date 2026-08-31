@@ -205,6 +205,24 @@ func TestValider(t *testing.T) {
 	}
 }
 
+// TestValiderMasque : le moteur refuse une valeur ne suivant pas le masque de
+// saisie de la colonne (H2).
+func TestValiderMasque(t *testing.T) {
+	e := testEngine(t)
+	src := repertoire()
+	col := src.Colonnes["ville"]
+	col.Masque = "AA-##" // 2 lettres, tiret, 2 chiffres
+	src.Colonnes["ville"] = col
+
+	if errs := e.Valider(src, map[string]string{"nom": "Z", "ville": "LY-69"}, false); len(errs) != 0 {
+		t.Errorf("valeur conforme au masque refusée : %v", errs)
+	}
+	errs := e.Valider(src, map[string]string{"nom": "Z", "ville": "Lyon"}, false)
+	if len(errs) == 0 || !contains(errs[0], "masque") {
+		t.Errorf("valeur non conforme au masque : attendu erreur « masque », got %v", errs)
+	}
+}
+
 func TestAutoMigration(t *testing.T) {
 	e := testEngine(t)
 	src := repertoire()

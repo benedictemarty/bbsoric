@@ -367,6 +367,9 @@ func dwCreer(s *server.Session, eng *datawindow.Engine, src content.SourceDonnee
 			if lib == "" {
 				lib = col
 			}
+			if cd.Masque != "" {
+				lib += " (" + cd.Masque + ")"
+			}
 			val, err := prompt(s, lib)
 			if err != nil {
 				return
@@ -404,6 +407,9 @@ func dwEditer(s *server.Session, eng *datawindow.Engine, src content.SourceDonne
 			lib := cd.Libelle
 			if lib == "" {
 				lib = col
+			}
+			if cd.Masque != "" {
+				lib += " (" + cd.Masque + ")"
 			}
 			val, err := prompt(s, fmt.Sprintf("%s [%s]", lib, trunc(row[col], 16)))
 			if err != nil {

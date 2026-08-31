@@ -6,6 +6,26 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (DataWindow — masques de saisie & en-têtes/auth des sources API, H2 fin, 31/08/2026)
+- **Masques de saisie** (`ColonneDef.masque`) : gabarit **position par position**
+  (`#` chiffre, `A` lettre, `N` alphanumérique, `X` tout, tout autre caractère = littéral,
+  ex. `##/##/####`). Nouvelle fonction partagée `content.ValiderMasque(masque, valeur)`.
+  Le moteur `Engine.Valider` refuse une valeur non conforme (message « … doit suivre le
+  masque … ») ; l'applet DataWindow **affiche le masque** en indication à côté du libellé
+  lors de la saisie (création/édition). Éditeur de colonnes du studio : nouvelle colonne
+  **« Masque »** (avec info-bulle des symboles).
+- **En-têtes HTTP / authentification des sources API** (`api.headers`) : dictionnaire
+  nom → valeur envoyé à chaque requête (`Authorization`, `X-Api-Key`…). Les valeurs
+  **`${VAR}` sont résolues depuis l'environnement du serveur** (`os.ExpandEnv`) → les
+  secrets restent **hors du `site.json`**. Noms d'en-tête restreints à `[A-Za-z0-9-]+`
+  (validation au chargement, anti-injection). `fetchAPI` passe par `http.NewRequest` +
+  `httpClient.Do`. Formulaire de source API du studio : **éditeur d'en-têtes** (paires
+  nom/valeur, ajout/suppression).
+- Tests : `content.TestValiderMasque`, `content.TestValidateAPIHeaders`,
+  `datawindow.TestValiderMasque` (moteur), `datawindow.TestAPISourceHeaders` (en-tête
+  envoyé + expansion `${VAR}` via `t.Setenv`). Docs `docs/datawindow.md` à jour.
+- **Clôt H2 / Sprint 9 incrément 2** (recherche par préfixe déjà livrée le 17/07).
+
 ### Added (Forge — multi-sites & sauvegardes, F3, 31/08/2026)
 - **Création d'un nouveau site depuis l'UI** (`Store.Create`, `POST /api/site/create`) :
   échoue si le site existe déjà ; le contenu est validé et écrit atomiquement comme par
