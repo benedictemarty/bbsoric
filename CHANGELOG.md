@@ -6,6 +6,20 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (oterm — vérification pixel-exacte du rendu HIRES, K5, 01/09/2026)
+- **Preuve d'identité au pixel** du rasteriseur HIRES contre une **référence indépendante** :
+  un port Go fidèle du rasteriseur JS du studio (`renderHiresPreview`) est ajouté en test
+  (`pcterm/internal/hires/ref_test.go`). Les deux consomment le **même** `content.Hires` — le
+  mien via le flux fil serveur (`render.Hires`), la référence via les primitives directes du
+  studio — et on **diffe les masques de pixels 240×200**.
+- **Résultat : 0 pixel divergent.** `TestPixelExactVsStudio` (point/box/fillbox/circle/char/
+  blit + lignes H/V) = 0 écart ; `TestPixelExactLignes` (**720 cas** de lignes de 4 origines
+  vers toute la grille) = 0 écart. Les deux formulations de Bresenham (firmware « major-axis »
+  que j'implémente, studio « both-axis ») **coïncident** sur des extrémités entières.
+- Conclusion honnête : ceci prouve l'identité à la **référence studio** (implémentation
+  indépendante), pas une capture émulateur ; mais deux portages indépendants du firmware qui
+  concordent au pixel sur une large batterie constituent une preuve forte de fidélité.
+
 ### Changed (oterm — écran HIRES composé à l'identique de l'Oric, K4, 01/09/2026)
 - **Composition graphique + 3 lignes texte** en mode HIRES, comme le vrai client Oric :
   l'écran HIRES de l'Oric = 240×200 pixels graphiques **+ 3 lignes de TEXTE** en bas (rows

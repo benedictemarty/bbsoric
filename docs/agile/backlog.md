@@ -289,6 +289,17 @@
   in HIRES pages — oterm composes them empty, like the firmware, ready to show them if a page fills
   rows 25–27.)*
 
+- [x] **K5** (2) As a maintainer, I want **proof** that oterm's HIRES rasteriser is pixel-identical
+  to a reference, not just plausibly correct.
+  *(Done 01/09/2026 — independent Go port of the studio JS rasteriser (`renderHiresPreview`) added
+  as a test reference; both consume the same `content.Hires` (mine via the server wire stream
+  `render.Hires`, the reference via the studio's direct primitives) and the 240×200 pixel masks are
+  diffed. Result: 0 divergent pixels — `TestPixelExactVsStudio` (point/box/fillbox/circle/char/blit +
+  H/V lines) and `TestPixelExactLignes` (720 line cases). The two Bresenham forms (firmware major-axis
+  vs studio both-axis) coincide on integer endpoints. Proves identity to the independent studio
+  reference, not an emulator capture — but two independent firmware ports agreeing pixel-for-pixel is
+  strong evidence of fidelity.)*
+
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.
 - Tests passing for the delivered feature.
