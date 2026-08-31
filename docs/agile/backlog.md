@@ -300,6 +300,16 @@
   reference, not an emulator capture — but two independent firmware ports agreeing pixel-for-pixel is
   strong evidence of fidelity.)*
 
+- [x] **K6** (3) As a maintainer, I want the HIRES rasteriser proven **byte-identical to the real
+  Oric firmware** (not just to a JS reference).
+  *(Done 01/09/2026 — `scripts/test-emulateur-hires.sh` boots the real `client/term.tap` in the
+  reference emulator `oric1-emu` (headless, modem TCP serial), navigates to the HIRES `logo` page,
+  dumps the 64 KB RAM (`--dump-ram-at`), and the gated test `TestPixelExactVsEmulateur` compares the
+  `$A000` VRAM (8000 bytes) to my rasteriser on the same `render.Hires` stream. Result: 7999/8000
+  bytes identical; the single difference is the ULA mode-latch attribute `0x1E` at `$BB80` written
+  by the firmware at `HiOn` (not drawn content, absent from the wire stream) — excluded and
+  documented. Test skips without `ORIC_RAM_DUMP` (green CI).)*
+
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.
 - Tests passing for the delivered feature.

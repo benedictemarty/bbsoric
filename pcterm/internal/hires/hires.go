@@ -368,6 +368,10 @@ func (r *Raster) ColorAt(x, y int) byte {
 	return r.resolve()[y*W+x]
 }
 
+// VRAM renvoie les 8000 octets de la VRAM HIRES (200×40), dans le format exact de
+// l'Oric ($A000) : utile pour comparer octet à octet avec une capture émulateur.
+func (r *Raster) VRAM() []byte { return r.vram[:] }
+
 // Pixel indique si le pixel (x,y) est allumé dans la VRAM (indépendamment de la
 // couleur) — utile aux tests des primitives.
 func (r *Raster) Pixel(x, y int) bool {

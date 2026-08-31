@@ -64,3 +64,12 @@ Le décodeur `internal/ula` réutilise les constantes et la sémantique de
 `internal/oascii` (partagé avec le serveur et le studio) : **zéro divergence** de format.
 Il est **pur** (sans I/O) et couvert par des tests unitaires (`ula_test.go`). Seule
 dépendance externe : `golang.org/x/term` (mode brut du clavier, portable multi-OS).
+
+### Fidélité HIRES vérifiée
+
+Le rasteriseur `internal/hires` est prouvé **identique au client Oric** à deux niveaux :
+- **pixel-exact** contre une référence indépendante (port Go du rasteriseur JS du studio) —
+  0 pixel divergent sur toutes les primitives, 720 cas de lignes (`ref_test.go`) ;
+- **VRAM byte-exacte** contre le **vrai firmware** exécuté dans l'émulateur `oric1-emu` —
+  7999/8000 octets identiques (`scripts/test-emulateur-hires.sh` + `emu_test.go`), la seule
+  différence étant l'attribut de bascule mode ULA à `$BB80`, artefact firmware hors dessin.

@@ -6,6 +6,20 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (oterm — preuve VRAM byte-exacte contre le VRAI firmware (émulateur), K6, 01/09/2026)
+- **Preuve ultime « identique au client Oric »** : la VRAM HIRES (`$A000`, 8000 o) produite par
+  le **vrai firmware `client/term.tap`** exécuté dans l'émulateur de référence **`oric1-emu`**
+  est comparée octet à octet à celle de mon rasteriseur, sur le **même flux fil** (`render.Hires`
+  de la page `logo`). **Résultat : 7999/8000 octets identiques.** La seule différence est
+  l'octet `0x1E` à `$BB80` — l'attribut de **bascule mode vidéo** que le firmware écrit
+  localement à `HiOn` pour latcher le mode HIRES dans l'ULA (pas du contenu dessiné, absent du
+  flux fil) — exclu et documenté.
+- **`scripts/test-emulateur-hires.sh`** : bbsd sert la page HIRES, le firmware boote dans
+  `oric1-emu` (headless, série modem TCP), navigue jusqu'à la page, dumpe la RAM 64 Ko
+  (`--dump-ram-at`), puis compare via le test gaté `TestPixelExactVsEmulateur`
+  (`pcterm/internal/hires/emu_test.go`, sauté si `ORIC_RAM_DUMP` absent → CI verte).
+- Accesseur `hires.Raster.VRAM()` (8000 o au format `$A000`).
+
 ### Added (oterm — vérification pixel-exacte du rendu HIRES, K5, 01/09/2026)
 - **Preuve d'identité au pixel** du rasteriseur HIRES contre une **référence indépendante** :
   un port Go fidèle du rasteriseur JS du studio (`renderHiresPreview`) est ajouté en test
