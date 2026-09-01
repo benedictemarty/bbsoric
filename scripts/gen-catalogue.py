@@ -8,8 +8,9 @@ Trois sources DataWindow (une par catégorie) + trois grilles + un menu. Chaque
 ligne porte titre / auteur / année et, pour les logiciels, le nom du fichier
 téléchargeable (colonne `fichier`, action X → XMODEM côté BBS). Les magazines et
 livres (PDF) sont LISTÉS pour la consultation (fiche détail via V) mais ne sont
-pas téléchargeables vers un Oric (buffer terminal ~30 Ko) : leur colonne fichier
-reste vide — c'est volontaire, pas un oubli.
+pas téléchargeables vers un Oric : leur colonne fichier reste vide — c'est
+volontaire, pas un oubli. Les logiciels tiennent, eux, jusqu'à 64 Ko (réception
+en streaming sur disque LOCI/Sedoric, cf. `DEFAULT_MAX_FILE`).
 
 Usage :
     python3 scripts/gen-catalogue.py --lib "/media/.../OricProgramsLib" \
@@ -29,8 +30,13 @@ import sys
 # consultable mais pas téléchargeable). Ordre = préférence (cassette avant disque).
 DOWNLOAD_EXTS = (".tap", ".ort", ".rom", ".dsk")
 
-# Buffer de réception du terminal Oric ($4000..~$B800). Au-delà, non téléchargeable.
-DEFAULT_MAX_FILE = 30720
+# Plafond d'un fichier téléchargeable. Depuis le streaming de réception (I2b), une
+# machine équipée LOCI SD (ou Sedoric par tranches) reçoit jusqu'à 64 Ko — la limite
+# n'est plus le buffer terminal (~30 Ko) mais l'en-tête de download 16 bits côté
+# serveur (`maxDownloadSize = 0xFFFF`). On aligne donc le plafond sur 0xFFFF = 65535.
+# NB : un terminal SANS sink disque (cassette seule) reste borné à ~30 Ko et refuse
+# proprement un fichier plus gros (pas de sauvegarde partielle, cf. I2b-a).
+DEFAULT_MAX_FILE = 65535
 
 
 def clean(v):
@@ -259,8 +265,8 @@ def build_site(lib, limit, maxsize, copy_dest):
     site = {
         "_comment": "Catalogue de telechargement BBS Oric (genere par scripts/gen-catalogue.py). "
                     "UN catalogue (colonne categorie) presente en 3 vues filtrees (filtre_fixe). "
-                    "Logiciels telechargeables (touche X, XMODEM) si le fichier est petit et present "
-                    "dans -files ; magazines/livres (PDF) consultables (fiche V). Filtre F, tri T.",
+                    "Logiciels telechargeables (touche X, XMODEM) si le fichier tient (<=64 Ko) et "
+                    "present dans -files ; magazines/livres (PDF) consultables (fiche V). Filtre F, tri T.",
         "start": "catalogue",
         "sources_donnees": {"catalogue": source},
         "pages": pages,

@@ -6,6 +6,16 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Changed (catalogue — plafond téléchargeable relevé à 64 Ko pour exploiter le streaming, 01/09/2026)
+- **`scripts/gen-catalogue.py`** : `DEFAULT_MAX_FILE` passe de **30720** (ancien buffer terminal)
+  à **65535** octets. Depuis la réception en streaming (I2b), une machine LOCI SD (ou Sedoric par
+  tranches) reçoit jusqu'à **64 Ko** — la limite n'est plus le tampon `$4000` mais l'en-tête de
+  download 16 bits côté serveur (`maxDownloadSize = 0xFFFF`, inchangé). Davantage de fichiers de la
+  bibliothèque OricProgramsLib deviennent donc **téléchargeables** à la prochaine génération.
+- Un terminal **sans sink disque** (cassette seule) reste borné à ~30 Ko et **refuse proprement**
+  un fichier plus gros (pas de sauvegarde partielle, cf. I2b-a) — l'offre côté serveur est donc
+  sûre pour tous les terminaux. Commentaires et libellé de menu du générateur mis à jour.
+
 ### Added (terminal Oric — download > 30 Ko sur Sedoric par tranches FILE.00N, I2b-b, 01/09/2026)
 - **Une machine Sedoric seule (sans LOCI) peut désormais recevoir un fichier > 30 Ko**, sauvé
   en **tranches numérotées** `FICHIER.001`, `.002`… (recombinées côté hôte). Sedoric ne peut pas
