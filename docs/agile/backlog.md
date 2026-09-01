@@ -162,9 +162,13 @@
     header ⇒ 64 KB). Fixes a **latent bug**: an oversized file on a non-LOCI terminal no longer
     saves a partial buffer (`xmodem_recv` returns A=1/0). Runtime-proven in `oric1-emu`:
     `scripts/test-stream-loci-emu.sh` streams a 40000-byte file, host file byte-identical.
-  - [ ] **I2b-b** — **Sedoric multi-slice** (`.001/.002…`): a Sedoric-only machine cannot
-    stream (`XSAVEB` needs a contiguous region) → save numbered slices each time the `$4000`
-    buffer fills, recombined host-side. *(Firmware; emulator validation.)*
+  - [x] **I2b-b** — **Sedoric multi-slice** (`.001/.002…`, done 01/09/2026): a Sedoric-only
+    machine cannot stream (`XSAVEB` needs a contiguous region) → the receiver accumulates in
+    `$4000` and saves a numbered slice each time the buffer fills, recombined host-side. New sink
+    `xsink=2` (`xr_sed_write_slice`/`xr_sed_final`), `set_slice_ext` (`.00N` extension),
+    `sed_present` probe, `sed_save` made re-callable. Runtime-proven under **resident Sedoric** in
+    `oric1-emu` (`scripts/test-stream-sedoric-emu.sh`: two slices `BIGFILE.001`/`.002` persisted to
+    the `.dsk`, catalog entries + data byte-checked).
   - [ ] **I2b-c** — **files > 64 KB**: widen the download header size field to 3 bytes (server
     `downloadHeader` + `client/xmodem.s` `XSIZE`/gauge). Only useful once streaming is in place.
     *(The former "widen header" idea, now correctly ordered after the real enabler.)*

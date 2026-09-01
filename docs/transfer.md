@@ -88,9 +88,15 @@ XMODEM padding dropped) and the file is closed at EOT.
 - **File-size ceiling is now the SD card** (and the 16-bit download header ⇒ **64 KB**
   with the current wire format; going beyond 64 KB is the former "widen header to 3
   bytes", tracked as the remaining part of I2b).
-- **Sedoric-only machines stay capped at ~30 KB** — `XSAVEB` saves one **contiguous** RAM
-  region in a single call and cannot stream. Large-file support there is **I2b-b**
-  (save in numbered slices `.001/.002…`).
+- **Sedoric-only machines: large files via numbered slices** (I2b-b, done 01/09/2026) —
+  `XSAVEB` saves one **contiguous** RAM region in a single call and cannot stream, so a
+  Sedoric-only terminal instead **accumulates** in `$4000` like the buffered path and, **each
+  time the buffer fills** (~30 KB), saves a numbered slice `FICHIER.001`, `.002`… then resets
+  `$4000`; the final partial slice is saved at EOT at the real size. New sink `xsink=2`
+  (`xr_sed_write_slice`/`xr_sed_final`, `set_slice_ext` for the `.00N` extension, `sed_present`
+  probe). Host-side the slices are concatenated back. Proven in `oric1-emu` under resident
+  Sedoric (`scripts/test-stream-sedoric-emu.sh`: two slices persisted to the `.dsk`, catalog
+  entries + data byte-checked).
 - **Latent bug fixed on the way**: the server offers files up to 64 KB, so a >30 KB file
   reaching a **non-LOCI** terminal used to overflow the buffer *and then still save the
   partial buffer* under the real (larger) size. `xmodem_recv` now returns **A=1/0**

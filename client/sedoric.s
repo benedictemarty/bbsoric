@@ -44,8 +44,45 @@ V_FISALO   = $C054
 V_EXSALO   = $C056
 
 ; ---------------------------------------------------------------------------
-;  sed_save - sauve XSIZE octets de $4000 en fichier "BBSFILE.BIN".
+;  sed_present - probe NON destructif de Sedoric resident. A=1 present, A=0 sinon.
+;  Restaure toujours l'etat overlay (ROM) avant de rendre la main. Utilise par
+;  handle_rx (I2b-b) pour choisir le mode "sauvegarde par tranches" avant une
+;  reception. La logique de detection reprend celle de sed_save (dupliquee a
+;  dessein pour ne pas toucher le chemin de sauvegarde deja valide materiellement).
+; ---------------------------------------------------------------------------
+sed_present:
+        lda OVL_TOGGLE           ; $04F2 = 4C (JMP) ?
+        cmp #$4C
+        bne sp_no
+        lda OVL_TOGGLE+2         ; cible en page 4 ?
+        cmp #$04
+        bne sp_no
+        lda OVL_TOGGLE+3         ; $04F5 = 4C (JMP) ?
+        cmp #$4C
+        bne sp_no
+        lda OVL_TOGGLE+5         ; cible en page 4 ?
+        cmp #$04
+        bne sp_no
+        jsr OVL_TOGGLE           ; ROM -> RAM overlay
+        lda XSAVEB               ; XSAVEB debute par SEI $78 ?
+        cmp #$78
+        beq sp_yes
+        jsr OVL_TOGGLE           ; absent -> rebascule ROM et rend A=0
+        lda #0
+        rts
+sp_yes:
+        jsr OVL_TOGGLE           ; present -> rebascule ROM et rend A=1
+        lda #1
+        rts
+sp_no:
+        lda #0
+        rts
+
+; ---------------------------------------------------------------------------
+;  sed_save - sauve XSIZE octets de $4000 en fichier nomme d'apres dlname.
 ;  XSIZE (mot, zero-page) = taille recue ; defini par term.s/xmodem.s.
+;  Rappelable plusieurs fois de suite (sauvegarde par tranches I2b-b) - chaque
+;  appel bascule l'overlay, sauve, rebascule.
 ; ---------------------------------------------------------------------------
 sed_save:
         ; --- garde PRE-bascule (RAM page 4 toujours mappee) ---

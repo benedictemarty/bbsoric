@@ -6,6 +6,28 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (terminal Oric — download > 30 Ko sur Sedoric par tranches FILE.00N, I2b-b, 01/09/2026)
+- **Une machine Sedoric seule (sans LOCI) peut désormais recevoir un fichier > 30 Ko**, sauvé
+  en **tranches numérotées** `FICHIER.001`, `.002`… (recombinées côté hôte). Sedoric ne peut pas
+  streamer (`XSAVEB` exige une région RAM contiguë) : le récepteur **accumule** dans `$4000`
+  comme le chemin bufferisé, et **à chaque remplissage** du tampon (~30 Ko) sauve une tranche puis
+  réinitialise `$4000` ; la dernière tranche (partielle) est sauvée à l'EOT à la taille réelle.
+- **`client/xmodem.s`** : nouvel évier `xsink=2` (Sedoric) distinct de `xsink=1` (LOCI). En mode
+  SED le bloc est accumulé (avance de `XBUF`) ; le garde « tampon plein » déclenche
+  `xr_sed_write_slice` (sauve `XBUF-$4000` octets, incrémente `slicenum`, décrémente `xdrem`) au
+  lieu d'abandonner ; l'EOT appelle `xr_sed_final` (dernière tranche = `xdrem` octets réels).
+- **`client/term.s`** : `handle_rx` — si pas de LOCI mais **Sedoric résident** (`sed_present`),
+  bascule en mode tranches ; `set_slice_ext` écrit l'extension `001..255` dans le nom Sedoric.
+- **`client/sedoric.s`** : `sed_present` (probe non destructif de Sedoric résident, restaure
+  l'overlay ROM) ; `sed_save` rendu **rappelable** (une tranche par appel) — chemin de sauvegarde
+  inchangé fonctionnellement (déjà validé matériellement).
+- **Validation runtime dans `oric1-emu`** : `scripts/test-stream-sedoric-emu.sh` (gaté) — sous
+  **Sedoric résident** (boot `sedoric3.dsk` + Microdisc, `--disk-writeback`), un harnais 6502
+  pilote les **vraies** routines extraites des sources et écrit **deux tranches** ; le `.dsk`
+  persisté contient les **deux entrées catalogue** `BIGFILE.001`/`BIGFILE.002` **et** leurs
+  données (200 o `0xA1` + 100 o `0xB2`, vérifiées octet à octet). La décision « quand trancher »
+  dans `xmodem_recv` réutilise la structure flush-sur-événement déjà prouvée par le test LOCI.
+
 ### Added (terminal Oric — download > 32 Ko en streaming direct sur carte SD LOCI, I2b-a, 01/09/2026)
 - **Le plafond ~30 Ko du download est levé sur les machines équipées LOCI SD.** Jusqu'ici le
   terminal bufferisait **tout** le fichier reçu en RAM à `$4000` avant de le sauvegarder, ce qui

@@ -74,11 +74,25 @@ xr_block:
         bcc xr_start
         eor #$FF
         cmp KTMP
-        bne xr_nak           ; en-tete corrompu
+        beq xr_hdrok
+        jmp xr_nak           ; en-tete corrompu (branche trop loin pour bne)
+xr_hdrok:
         lda XBUF+1           ; tampon plein ($4000..$B7FF avant l'ecran $BB80) ?
         cmp #$B8
         bcc xr_sizeok        ; place pour 128 octets -> continuer
-        jmp xr_overflow      ; fichier trop gros -> annuler (protege la RAM)
+        lda xstream          ; tampon plein
+        beq xr_ovf           ; mode bufferise -> fichier trop gros -> annuler
+        lda xsink
+        cmp #2
+        beq xr_slice         ; SED -> sauver la tranche pleine et poursuivre
+xr_ovf:
+        jmp xr_overflow      ; (bufferise, ou LOCI par securite - jamais ici)
+xr_slice:
+        jsr xr_sed_write_slice ; SED -> sauver la tranche pleine ($4000..$B7FF)
+        lda #$00             ; puis reset XBUF = $4000 et poursuivre
+        sta XBUF
+        lda #$40
+        sta XBUF+1
 xr_sizeok:
         lda #0
         sta XSUM
@@ -102,8 +116,11 @@ xr_data:
         bne xr_dup           ; bloc deja recu -> ACK sans avancer
         lda xstream
         beq xr_bufadv        ; mode bufferise -> avancer le buffer
-        jsr xr_flush         ; mode streaming -> ecrire le bloc sur disque avant
-        jmp xr_advblk        ;   ACK (le sender attend ACK donc pas de perte serie)
+        lda xsink
+        cmp #1
+        bne xr_bufadv        ; SED (xsink=2) accumule dans $4000 comme le buffer
+        jsr xr_flush         ; LOCI -> ecrire le bloc sur SD avant l'ACK (le sender
+        jmp xr_advblk        ;   attend ACK donc pas de perte serie)
 xr_bufadv:
         clc                  ; bloc valide -> avancer le buffer
         lda XBUF
@@ -136,15 +153,21 @@ xr_eot:
         lda #ACK
         jsr ser_tx
         lda xstream
-        bne xr_done_stream   ; streaming -> fermer le fichier disque
-        lda #<msg_recu       ; bufferise -> "recu en 4000" (save differe par handle_rx)
+        bne xr_eot_stream
+        jmp xr_done_buffered ; bufferise -> "recu en 4000" (save differe par handle_rx)
+xr_eot_stream:
+        lda xsink
+        cmp #1
+        beq xr_done_loci     ; LOCI -> fermer le fichier SD
+        jsr xr_sed_final     ; SED -> sauver la derniere tranche (partielle)
+        lda #<msg_sed_ok
         sta STRPTR
-        lda #>msg_recu
+        lda #>msg_sed_ok
         sta STRPTR+1
         jsr print_string
         lda #1               ; succes
         rts
-xr_done_stream:
+xr_done_loci:
         jsr loci_close       ; fin de fichier -> fermer le descripteur SD
         lda #<msg_stream_ok
         sta STRPTR
@@ -153,10 +176,21 @@ xr_done_stream:
         jsr print_string
         lda #1               ; succes
         rts
+xr_done_buffered:
+        lda #<msg_recu
+        sta STRPTR
+        lda #>msg_recu
+        sta STRPTR+1
+        jsr print_string
+        lda #1               ; succes
+        rts
 xr_cancel:
-        lda xstream          ; CAN recu (serveur a annule) -> fermer si streaming
+        lda xstream          ; CAN recu (serveur a annule)
         beq xr_cancel_msg
-        jsr loci_close
+        lda xsink
+        cmp #1
+        bne xr_cancel_msg    ; SED -> tranches deja sauvees, rien a fermer
+        jsr loci_close       ; LOCI -> fermer le descripteur SD
 xr_cancel_msg:
         lda #<msg_annule
         sta STRPTR
@@ -210,6 +244,47 @@ xf_have:
         bcs xf_done
         dec xdrem+1
 xf_done:
+        rts
+
+; xr_sed_write_slice - mode Sedoric par tranches - sauve la tranche PLEINE
+; courante ($4000..XBUF, soit XBUF-$4000 octets) en fichier FILE.00N via sed_save
+; (dlname extension = slicenum), decremente xdrem et incremente slicenum. Appele
+; quand le buffer $4000 est plein (tranche = 30720 o, multiple de 128, sans padding
+; car ce n'est pas le dernier bloc du transfert).
+xr_sed_write_slice:
+        sec                  ; XSIZE = XBUF - $4000
+        lda XBUF
+        sbc #$00
+        sta XSIZE
+        lda XBUF+1
+        sbc #$40
+        sta XSIZE+1
+        jsr set_slice_ext    ; dlname+9..+11 = slicenum en 3 chiffres (term.s)
+        jsr sed_save         ; sauve $4000..+XSIZE sous FILE.00N
+        sec                  ; xdrem -= XSIZE
+        lda xdrem
+        sbc XSIZE
+        sta xdrem
+        lda xdrem+1
+        sbc XSIZE+1
+        sta xdrem+1
+        inc slicenum         ; tranche suivante
+        rts
+
+; xr_sed_final - mode Sedoric - sauve la DERNIERE tranche (partielle) a l'EOT :
+; xdrem octets reels restants (troncature du padding XMODEM du dernier bloc). Si
+; xdrem = 0 (le fichier finit pile sur une tranche pleine deja sauvee), rien a faire.
+xr_sed_final:
+        lda xdrem
+        ora xdrem+1
+        beq xsf_done
+        lda xdrem
+        sta XSIZE
+        lda xdrem+1
+        sta XSIZE+1
+        jsr set_slice_ext
+        jsr sed_save
+xsf_done:
         rts
 
 ; xr_rx_t - lit un octet d'un bloc AVEC timeout (~1.3 s). PRESERVE Y (ser_rx
@@ -502,14 +577,22 @@ pdc_u:
         jmp putbyte          ; putbyte fait rts
 
 ; --- etat du mode streaming (I2b - reception directe sur disque) ---
-; xstream - 1 = ecrire chaque bloc sur le sink (LOCI) sans bufferiser $4000
-;           (gros fichiers > ~30 Ko), 0 = bufferisation classique en $4000.
-; xdrem   - octets restant a ecrire (= taille reelle du fichier), decremente
-;           bloc par bloc ; tronque le dernier bloc et ignore le padding XMODEM.
+; xstream  - 1 = gros fichier ecrit au fil de l'eau (pas de buffer complet),
+;            0 = bufferisation classique en $4000.
+; xsink    - type d'evier quand xstream vaut 1. 1 = LOCI (flush chaque bloc sur
+;            SD, XBUF fixe). 2 = Sedoric par tranches (accumule dans $4000 comme
+;            le buffer, sauve une tranche FILE.00N a chaque remplissage - I2b-b).
+; xdrem    - octets reels restant a ecrire (= taille du fichier), decremente ;
+;            tronque le dernier bloc/tranche et ignore le padding XMODEM.
+; slicenum - numero de la tranche Sedoric courante (1..255 -> extension 001..255).
 xstream:
+        .byt 0
+xsink:
         .byt 0
 xdrem:
         .byt 0,0
+slicenum:
+        .byt 0
 
 msg_recu:
         .byt $0D,$0A,$02,"FICHIER RECU EN 4000",$0D,$0A,$07,$00
@@ -519,5 +602,7 @@ msg_envoye:
         .byt $0D,$0A,$02,"FICHIER ENVOYE",$0D,$0A,$07,$00
 msg_stream_ok:
         .byt $0D,$0A,$02,"FICHIER SAUVE SUR CARTE SD",$0D,$0A,$07,$00
+msg_sed_ok:
+        .byt $0D,$0A,$02,"FICHIER SAUVE EN TRANCHES 00N",$0D,$0A,$07,$00
 msg_annule:
         .byt $0D,$0A,$01,"TRANSFERT ANNULE",$0D,$0A,$07,$00

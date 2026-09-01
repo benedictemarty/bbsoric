@@ -132,6 +132,8 @@ h_nm:
         sta $9001                ; marqueur open
         lda #1
         sta xstream              ; mode streaming
+        lda #1
+        sta xsink                ; evier = LOCI
         lda #0
         sta XTOTAL               ; jauge desactivee (pas d'ecran a piloter)
         sta XTOTAL+1
@@ -154,6 +156,8 @@ putbyte:
         rts
 sed_save:
         lda #0
+        rts
+set_slice_ext:                   ; inerte ici (chemin SED non exerce par ce harnais)
         rts
 ; --- primitives serie (copie fidele de term.s) ---
 ser_tx:

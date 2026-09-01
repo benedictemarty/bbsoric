@@ -120,7 +120,10 @@
     Lifts the ceiling on LOCI machines (bounded by the SD card / 16-bit header ⇒ 64 KB). Fixes a
     latent partial-save bug on non-LOCI terminals. Proven in `oric1-emu`
     (`scripts/test-stream-loci-emu.sh`, 40000-byte file byte-identical).
-  - [ ] **I2b-b — Sedoric multi-slice** (`.001/.002…`) for Sedoric-only machines.
+  - [x] **I2b-b — Sedoric multi-slice** (`.001/.002…`, 01/09/2026) for Sedoric-only machines:
+    accumulate in `$4000`, save a numbered slice each time it fills, final slice at EOT. Sink
+    `xsink=2`, `set_slice_ext`, `sed_present`. Proven under resident Sedoric in `oric1-emu`
+    (`scripts/test-stream-sedoric-emu.sh`, two slices persisted to the `.dsk`).
   - [ ] **I2b-c — files > 64 KB**: widen the download header to a 3-byte size field.
 
 ### Slice 2 — Security (I3, I4, I5) — ✅ done (16/07/2026)

@@ -392,20 +392,37 @@ hr_szhi:
         sta xstream              ; defaut - reception bufferisee en $4000
         jsr hr_is_large          ; C=1 si dlsize > capacite buffer (~30 Ko)
         bcc hr_dl_buffered
-        ; --- gros fichier (I2b) -> tenter le streaming LOCI (chaque bloc -> SD) ---
+        ; --- gros fichier (I2b) -> streaming LOCI, sinon tranches Sedoric ---
         jsr edit_dlname          ; nom AVANT ouverture (le serveur attend notre NAK/C)
         jsr loci_open            ; ouvrir le fichier SD (A=1 si LOCI present + ok)
-        beq hr_dl_bufafteredit   ; pas de LOCI -> bufferise (overflow-abort propre)
+        beq hr_dl_trysed         ; pas de LOCI -> tenter Sedoric par tranches
         lda #1
         sta xstream              ; streaming actif
+        lda #1
+        sta xsink                ; evier = LOCI (flush par bloc)
         lda dlsize               ; xdrem = taille reelle a ecrire
         sta xdrem
         lda dlsize+1
         sta xdrem+1
         jsr xmodem_recv          ; streame chaque bloc sur SD + ferme le sink a EOT
         jmp hr_dl_end
+hr_dl_trysed:
+        jsr sed_present          ; Sedoric resident ? (I2b-b)
+        beq hr_dl_bufafteredit   ; ni LOCI ni Sedoric -> bufferise (overflow-abort)
+        lda #1
+        sta xstream
+        lda #2
+        sta xsink                ; evier = Sedoric par tranches
+        lda #1
+        sta slicenum             ; premiere tranche = extension 001
+        lda dlsize
+        sta xdrem
+        lda dlsize+1
+        sta xdrem+1
+        jsr xmodem_recv          ; accumule + sauve FILE.00N a chaque remplissage
+        jmp hr_dl_end
 hr_dl_bufafteredit:
-        jsr xmodem_recv          ; bufferise ; A=0 si overflow (trop gros sans LOCI)
+        jsr xmodem_recv          ; bufferise ; A=0 si overflow (trop gros, ni LOCI ni Sedoric)
         beq hr_dl_end            ; abandon -> NE PAS sauver de buffer partiel (bug fix)
         lda dlsize
         sta XSIZE
@@ -442,6 +459,32 @@ hil_yes:
         rts
 hil_no:
         clc
+        rts
+
+; set_slice_ext - ecrit slicenum (1..255) en 3 chiffres ASCII dans l'extension
+; du nom Sedoric (dlname+9,+10,+11) -> FICHIER.001, .002, ... (I2b-b).
+set_slice_ext:
+        lda slicenum
+        ldx #'0'                 ; centaines
+sse_h:
+        cmp #100
+        bcc sse_hd
+        sbc #100                 ; carry pose par le cmp precedent
+        inx
+        jmp sse_h
+sse_hd:
+        stx dlname+9
+        ldx #'0'                 ; dizaines
+sse_t:
+        cmp #10
+        bcc sse_td
+        sbc #10
+        inx
+        jmp sse_t
+sse_td:
+        stx dlname+10
+        ora #'0'                 ; unites (reste 0..9)
+        sta dlname+11
         rts
 hr_normal:
         cmp #PLOTCMD
