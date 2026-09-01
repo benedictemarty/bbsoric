@@ -15,6 +15,9 @@ versioning [SemVer](https://semver.org/lang/en/).
 - Un terminal **sans sink disque** (cassette seule) reste borné à ~30 Ko et **refuse proprement**
   un fichier plus gros (pas de sauvegarde partielle, cf. I2b-a) — l'offre côté serveur est donc
   sûre pour tous les terminaux. Commentaires et libellé de menu du générateur mis à jour.
+- **Test** `scripts/test-gen-catalogue.py` (8 cas, fonctions pures, sans la bibliothèque USB) :
+  vérifie le plafond 0xFFFF, les bornes exactes (65535 ok / 65536 refusé), la préférence
+  cassette `.tap` avant disque `.dsk`, le repli, et le rejet des extensions non transférables.
 
 ### Added (terminal Oric — download > 30 Ko sur Sedoric par tranches FILE.00N, I2b-b, 01/09/2026)
 - **Une machine Sedoric seule (sans LOCI) peut désormais recevoir un fichier > 30 Ko**, sauvé
