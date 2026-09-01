@@ -72,6 +72,37 @@ disk** (write each XMODEM block to Sedoric/LOCI instead of buffering all of `$40
 which is a substantial firmware change requiring emulator validation. I2b is requalified
 accordingly in `docs/agile/backlog.md`.
 
+#### Streaming reception straight to LOCI SD — done (I2b-a, 01/09/2026)
+
+The buffer ceiling is **lifted on LOCI-equipped machines**. LOCI writes incrementally
+(`OPEN` → `WRITE_XSTACK` per block → `CLOSE`), so nothing forces the whole file into
+`$4000` — only the fact that the classic receiver filled `$4000` first. For a file
+**larger than 30720 bytes** (`$4000..$B7FF`), `handle_rx` now edits the filename, opens
+the SD file (`loci_open`), and receives in **streaming mode**: `xmodem_recv` (flag
+`xstream`) writes each validated 128-byte block **directly to the SD card**
+(`loci_write_chunk`) **before** the ACK — the sender is stop-and-wait, so it waits for
+the ACK and no serial byte is lost during the synchronous SD write — never keeping more
+than 128 bytes in RAM. The last block is truncated to the real size (`xdrem` counter,
+XMODEM padding dropped) and the file is closed at EOT.
+
+- **File-size ceiling is now the SD card** (and the 16-bit download header ⇒ **64 KB**
+  with the current wire format; going beyond 64 KB is the former "widen header to 3
+  bytes", tracked as the remaining part of I2b).
+- **Sedoric-only machines stay capped at ~30 KB** — `XSAVEB` saves one **contiguous** RAM
+  region in a single call and cannot stream. Large-file support there is **I2b-b**
+  (save in numbered slices `.001/.002…`).
+- **Latent bug fixed on the way**: the server offers files up to 64 KB, so a >30 KB file
+  reaching a **non-LOCI** terminal used to overflow the buffer *and then still save the
+  partial buffer* under the real (larger) size. `xmodem_recv` now returns **A=1/0**
+  (success/abort) and `handle_rx` saves **nothing** on overflow/CAN.
+- **Runtime proof**: `scripts/test-stream-loci-emu.sh` (gated; skipped without
+  `oric1-emu`/ROM). A Go XMODEM sender (`internal/xmodem.Send`) ships a **40000-byte**
+  file (> 30720, not a multiple of 128) over TCP serial; a standalone 6502 harness drives
+  `xmodem_recv` in streaming mode; the host file written by the LOCI backend is
+  **byte-identical** to the source. Gotcha: under `--loci-flash` the default ACIA moves to
+  the LOCI picowifi modem at `$0380`, so the test forces `--acia-addr 031C` to keep the
+  serial ACIA at `$031C` alongside the LOCI MIA at `$03A0`.
+
 ## Oric side
 
 - **Download: done.** `client/xmodem.s` implements the **6502 XMODEM receiver**

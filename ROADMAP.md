@@ -112,8 +112,16 @@
 - [x] **S11.2 — Guard oversized download** (I2): `downloadApplet` refuses a file larger than
   `maxDownloadSize` (0xFFFF — the 16-bit size header's limit) with an explicit message,
   before any transfer, instead of silently truncating. Test `TestDownloadTooLarge`.
-- [ ] **S11.2b — Widen download header for files > 64 KB** (I2b): 3-byte size field + matching
-  `client/xmodem.s` change; needs emulator validation (DoD). Deferred.
+- [~] **S11.2b — Large downloads (> 32 KB)** (I2b): the binding limit is the `$4000` RAM buffer
+  (~30 KB), not the header. Split:
+  - [x] **I2b-a — streaming reception → LOCI SD** (01/09/2026): `loci.s` split into
+    `loci_open`/`loci_write_chunk`/`loci_close`; `xmodem_recv` gains a streaming mode that writes
+    each block to the SD card before the ACK; `handle_rx` routes files > 30720 o to streaming.
+    Lifts the ceiling on LOCI machines (bounded by the SD card / 16-bit header ⇒ 64 KB). Fixes a
+    latent partial-save bug on non-LOCI terminals. Proven in `oric1-emu`
+    (`scripts/test-stream-loci-emu.sh`, 40000-byte file byte-identical).
+  - [ ] **I2b-b — Sedoric multi-slice** (`.001/.002…`) for Sedoric-only machines.
+  - [ ] **I2b-c — files > 64 KB**: widen the download header to a 3-byte size field.
 
 ### Slice 2 — Security (I3, I4, I5) — ✅ done (16/07/2026)
 - [x] **S11.3 — Injection-safe remote deploy** (I3): `validateProfileFields` restricts

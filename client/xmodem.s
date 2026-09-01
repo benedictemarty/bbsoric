@@ -58,9 +58,13 @@ xr_wait:
         cmp #SOH
         beq xr_block
         cmp #EOT
-        beq xr_eot
+        bne xw_noteot
+        jmp xr_eot               ; branche trop loin pour beq
+xw_noteot:
         cmp #CAN
-        beq xr_done
+        bne xw_notcan
+        jmp xr_cancel            ; branche trop loin pour beq
+xw_notcan:
         jmp xr_wait
 xr_block:
         jsr xr_rx_t          ; numero de bloc (avec timeout)
@@ -96,13 +100,18 @@ xr_data:
         lda KTMP
         cmp XBLK
         bne xr_dup           ; bloc deja recu -> ACK sans avancer
+        lda xstream
+        beq xr_bufadv        ; mode bufferise -> avancer le buffer
+        jsr xr_flush         ; mode streaming -> ecrire le bloc sur disque avant
+        jmp xr_advblk        ;   ACK (le sender attend ACK donc pas de perte serie)
+xr_bufadv:
         clc                  ; bloc valide -> avancer le buffer
         lda XBUF
         adc #128
         sta XBUF
-        bcc xr_nocarry
+        bcc xr_advblk
         inc XBUF+1
-xr_nocarry:
+xr_advblk:
         inc XBLK
         clc                  ; XSIZE += 128
         lda XSIZE
@@ -126,12 +135,36 @@ xr_nak:
 xr_eot:
         lda #ACK
         jsr ser_tx
-xr_done:
-        lda #<msg_recu
+        lda xstream
+        bne xr_done_stream   ; streaming -> fermer le fichier disque
+        lda #<msg_recu       ; bufferise -> "recu en 4000" (save differe par handle_rx)
         sta STRPTR
         lda #>msg_recu
         sta STRPTR+1
-        jmp print_string     ; print_string fait rts
+        jsr print_string
+        lda #1               ; succes
+        rts
+xr_done_stream:
+        jsr loci_close       ; fin de fichier -> fermer le descripteur SD
+        lda #<msg_stream_ok
+        sta STRPTR
+        lda #>msg_stream_ok
+        sta STRPTR+1
+        jsr print_string
+        lda #1               ; succes
+        rts
+xr_cancel:
+        lda xstream          ; CAN recu (serveur a annule) -> fermer si streaming
+        beq xr_cancel_msg
+        jsr loci_close
+xr_cancel_msg:
+        lda #<msg_annule
+        sta STRPTR
+        lda #>msg_annule
+        sta STRPTR+1
+        jsr print_string
+        lda #0               ; echec / annule
+        rts
 xr_overflow:
         lda #CAN             ; annule la transmission cote serveur
         jsr ser_tx
@@ -140,7 +173,44 @@ xr_overflow:
         sta STRPTR
         lda #>msg_full
         sta STRPTR+1
-        jmp print_string     ; print_string fait rts
+        jsr print_string
+        lda #0               ; echec (fichier trop gros pour le buffer)
+        rts
+
+; xr_flush - mode streaming - ecrit min(128, xdrem) octets du bloc recu ($4000)
+; sur le sink ouvert (LOCI), puis decremente xdrem. Les octets au-dela de la
+; taille reelle (padding XMODEM du dernier bloc) ne sont PAS ecrits. Appele
+; APRES validation du bloc et AVANT ACK (le sender attend ACK donc pas de perte
+; serie pendant la sauvegarde SD synchrone). SRC est reinitialise par le
+; prochain xr_rx_t (compteur de timeout) donc pas de conflit zero-page.
+xr_flush:
+        lda xdrem
+        ora xdrem+1
+        beq xf_done          ; deja tout ecrit -> reste = padding, ignorer
+        lda xdrem+1
+        bne xf_full          ; reste >= 256 -> bloc plein
+        lda xdrem
+        cmp #128
+        bcs xf_full          ; reste >= 128 -> bloc plein
+        sta lcnb             ; reste < 128 -> dernier bloc partiel
+        jmp xf_have
+xf_full:
+        lda #128
+        sta lcnb
+xf_have:
+        lda #$00
+        sta SRC
+        lda #$40
+        sta SRC+1            ; SRC = $4000 (buffer de bloc fixe)
+        jsr loci_write_chunk ; ecrit lcnb octets (best effort - erreur SD ignoree)
+        sec                  ; xdrem -= lcnb
+        lda xdrem
+        sbc lcnb
+        sta xdrem
+        bcs xf_done
+        dec xdrem+1
+xf_done:
+        rts
 
 ; xr_rx_t - lit un octet d'un bloc AVEC timeout (~1.3 s). PRESERVE Y (ser_rx
 ; l'ecrase) car xr_data s'en sert comme index/compteur ; X sert de tampon.
@@ -431,9 +501,23 @@ pdc_u:
         ora #'0'
         jmp putbyte          ; putbyte fait rts
 
+; --- etat du mode streaming (I2b - reception directe sur disque) ---
+; xstream - 1 = ecrire chaque bloc sur le sink (LOCI) sans bufferiser $4000
+;           (gros fichiers > ~30 Ko), 0 = bufferisation classique en $4000.
+; xdrem   - octets restant a ecrire (= taille reelle du fichier), decremente
+;           bloc par bloc ; tronque le dernier bloc et ignore le padding XMODEM.
+xstream:
+        .byt 0
+xdrem:
+        .byt 0,0
+
 msg_recu:
         .byt $0D,$0A,$02,"FICHIER RECU EN 4000",$0D,$0A,$07,$00
 msg_full:
         .byt $0D,$0A,$01,"FICHIER TROP GROS - ANNULE",$0D,$0A,$07,$00
 msg_envoye:
         .byt $0D,$0A,$02,"FICHIER ENVOYE",$0D,$0A,$07,$00
+msg_stream_ok:
+        .byt $0D,$0A,$02,"FICHIER SAUVE SUR CARTE SD",$0D,$0A,$07,$00
+msg_annule:
+        .byt $0D,$0A,$01,"TRANSFERT ANNULE",$0D,$0A,$07,$00

@@ -6,6 +6,36 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (terminal Oric — download > 32 Ko en streaming direct sur carte SD LOCI, I2b-a, 01/09/2026)
+- **Le plafond ~30 Ko du download est levé sur les machines équipées LOCI SD.** Jusqu'ici le
+  terminal bufferisait **tout** le fichier reçu en RAM à `$4000` avant de le sauvegarder, ce qui
+  le plafonnait à `$4000..$B7FF` ≈ **30720 o** (l'écran texte suit à `$BB80`). Un fichier plus
+  gros débordait le tampon. Désormais, pour un fichier **> 30720 o**, la réception XMODEM écrit
+  **chaque bloc directement sur la carte SD** (LOCI) sans jamais garder plus de 128 o en RAM →
+  taille limitée par la carte SD (et par l'en-tête de download 16 bits, donc **64 Ko** avec le
+  format de fil actuel ; au-delà = ex-I2b « header 3 octets », noté comme suite).
+- **`client/loci.s` refactorisé en primitives réutilisables** `loci_open` / `loci_write_chunk` /
+  `loci_close` ; `loci_save` (chemin bufferisé, inchangé fonctionnellement) réécrit par-dessus.
+- **`client/xmodem.s` — mode streaming** : `xmodem_recv` prend un drapeau `xstream` ; en mode
+  streaming il flushe chaque bloc validé via `loci_write_chunk` **avant** l'ACK (le sender attend
+  l'ACK → aucune perte série), tronque le dernier bloc à la taille réelle (compteur `xdrem`,
+  padding XMODEM ignoré) et ferme le fichier à l'EOT. `xmodem_recv` renvoie désormais **A=1/0**
+  (succès/abandon).
+- **`client/term.s` — aiguillage** `handle_rx` : `hr_is_large` (> 30720 o) → édition du nom **puis**
+  ouverture SD **puis** réception en streaming ; petit fichier → chemin bufferisé classique
+  (Sedoric prioritaire, inchangé). **Correction d'un bug latent** au passage : un download trop
+  gros pour le buffer (le serveur offre jusqu'à 64 Ko) ne provoque plus la **sauvegarde d'un
+  tampon partiel** — `xmodem_recv` renvoie A=0 sur overflow/CAN et `handle_rx` n'écrit rien.
+- **Validation runtime dans `oric1-emu`** : `scripts/test-stream-loci-emu.sh` (gaté, sauté si
+  émulateur/ROM absents → CI verte) — un émetteur XMODEM Go (`internal/xmodem.Send`) envoie un
+  fichier de **40000 o** (> 30720, non multiple de 128) via série TCP ; le harnais 6502 pilote
+  `xmodem_recv` en streaming ; le fichier hôte écrit par le LOCI est **octet-identique** à la
+  source. Piège documenté : sous `--loci-flash`, l'ACIA par défaut se déplace (picowifi $0380) →
+  le test force `--acia-addr 031C`.
+- Périmètre honnête : le streaming direct sur disque **n'existe que côté LOCI** (`WRITE_XSTACK`
+  incrémental). Une machine **Sedoric seule** reste plafonnée à ~30 Ko (XSAVEB exige une région
+  RAM contiguë) — traité séparément par l'incrément **I2b-b** (sauvegarde par tranches).
+
 ### Added (oterm — preuve VRAM byte-exacte contre le VRAI firmware (émulateur), K6, 01/09/2026)
 - **Preuve ultime « identique au client Oric »** : la VRAM HIRES (`$A000`, 8000 o) produite par
   le **vrai firmware `client/term.tap`** exécuté dans l'émulateur de référence **`oric1-emu`**

@@ -148,14 +148,26 @@
   `maxDownloadSize` (0xFFFF, the header's 16-bit size limit) with an explicit message;
   test `TestDownloadTooLarge`. Widening the header to 3 bytes needs a matching `client/xmodem.s`
   change → tracked as **I2b**.)*
-- [ ] **I2b** (8) As a user, I want to download files **larger than 64 KB**. **Requalified
+- [~] **I2b** (8) As a user, I want to download files **larger than 32 KB**. **Requalified
   31/08/2026** (analysis in `docs/transfer.md` §"Download size limit"): the 16-bit header is
   **not** the binding limit — the terminal buffers the whole file in **RAM at `$4000`**, which
-  caps at **~32 KB** on a 48 KB Oric (`$4000..$BB80`), well below 64 KB. Widening the header
-  alone unlocks nothing and risks the hardware-validated ≤32 KB path. The real enabler is
-  **streaming reception straight to disk** (write each XMODEM block to Sedoric/LOCI instead of
-  buffering `$4000`), a firmware change requiring emulator validation. Re-pointed from
-  "widen header" (3) to "streaming-to-disk receiver" (8). *(Blocked on emulator/hardware.)*
+  caps at **~30 KB** on a 48 KB Oric (`$4000..$B7FF`), well below 64 KB. The real enabler is
+  **streaming reception straight to disk** (write each XMODEM block to disk instead of buffering
+  `$4000`). Split into two increments:
+  - [x] **I2b-a** — **streaming reception → LOCI SD** (done 01/09/2026): `client/loci.s`
+    refactored into `loci_open`/`loci_write_chunk`/`loci_close`; `xmodem_recv` gains a `xstream`
+    mode that flushes each block to SD before the ACK and truncates the last block (`xdrem`);
+    `handle_rx` routes files > 30720 o to streaming (open SD, receive, close). **Lifts the
+    ~30 KB ceiling on LOCI machines** (file size now bounded by the SD card and the 16-bit
+    header ⇒ 64 KB). Fixes a **latent bug**: an oversized file on a non-LOCI terminal no longer
+    saves a partial buffer (`xmodem_recv` returns A=1/0). Runtime-proven in `oric1-emu`:
+    `scripts/test-stream-loci-emu.sh` streams a 40000-byte file, host file byte-identical.
+  - [ ] **I2b-b** — **Sedoric multi-slice** (`.001/.002…`): a Sedoric-only machine cannot
+    stream (`XSAVEB` needs a contiguous region) → save numbered slices each time the `$4000`
+    buffer fills, recombined host-side. *(Firmware; emulator validation.)*
+  - [ ] **I2b-c** — **files > 64 KB**: widen the download header size field to 3 bytes (server
+    `downloadHeader` + `client/xmodem.s` `XSIZE`/gauge). Only useful once streaming is in place.
+    *(The former "widen header" idea, now correctly ordered after the real enabler.)*
 
 ### Security
 - [x] **I3** (3) As an admin deploying content, I want the **remote backup/reload commands

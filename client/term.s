@@ -336,13 +336,17 @@ ks_ret:
 ; transfert (sinon la machine a etats reste desynchronisee).
 handle_rx:
         ldx PLOTST
-        beq hr_normal
+        bne hr_disp
+        jmp hr_normal            ; etat 0 -> affichage (branche trop loin pour beq)
+hr_disp:
         cpx #8                   ; 8 = flux de commandes HIRES en cours
         bne hr_not8
         jmp hr_hiresfeed
 hr_not8:
         cpx #1
-        beq hr_state1
+        bne hr_n1
+        jmp hr_state1            ; branche trop loin pour beq
+hr_n1:
         cpx #2
         bne hr_n2
         jmp hr_row               ; branche trop loin pour beq
@@ -356,7 +360,9 @@ hr_n3:
         cpx #6
         beq hr_szlo
         cpx #7
-        beq hr_szhi
+        bne hr_st5               ; etat 5 -> lecture du nom (par defaut)
+        jmp hr_szhi              ; branche trop loin pour beq
+hr_st5:
         ; etat 5 - octets du nom (12) dans dlname
         ldx INLEN
         sta dlname,x
@@ -381,16 +387,61 @@ hr_szlo:
         sta PLOTST
         rts
 hr_szhi:
-        sta dlsize+1             ; etat 7 - taille reelle (hi), puis reception
-        jsr xmodem_recv          ; recoit en RAM ($4000) avec barre de progression
+        sta dlsize+1             ; etat 7 - taille reelle (hi)
+        lda #0
+        sta xstream              ; defaut - reception bufferisee en $4000
+        jsr hr_is_large          ; C=1 si dlsize > capacite buffer (~30 Ko)
+        bcc hr_dl_buffered
+        ; --- gros fichier (I2b) -> tenter le streaming LOCI (chaque bloc -> SD) ---
+        jsr edit_dlname          ; nom AVANT ouverture (le serveur attend notre NAK/C)
+        jsr loci_open            ; ouvrir le fichier SD (A=1 si LOCI present + ok)
+        beq hr_dl_bufafteredit   ; pas de LOCI -> bufferise (overflow-abort propre)
+        lda #1
+        sta xstream              ; streaming actif
+        lda dlsize               ; xdrem = taille reelle a ecrire
+        sta xdrem
+        lda dlsize+1
+        sta xdrem+1
+        jsr xmodem_recv          ; streame chaque bloc sur SD + ferme le sink a EOT
+        jmp hr_dl_end
+hr_dl_bufafteredit:
+        jsr xmodem_recv          ; bufferise ; A=0 si overflow (trop gros sans LOCI)
+        beq hr_dl_end            ; abandon -> NE PAS sauver de buffer partiel (bug fix)
+        lda dlsize
+        sta XSIZE
+        lda dlsize+1
+        sta XSIZE+1
+        jsr save_received        ; nom deja edite ci-dessus
+        jmp hr_dl_end
+hr_dl_buffered:
+        jsr xmodem_recv          ; petit fichier -> bufferisation classique ($4000)
+        beq hr_dl_end            ; abandon -> pas de sauvegarde partielle
         lda dlsize               ; clamp XSIZE = taille reelle (sans padding 128)
         sta XSIZE
         lda dlsize+1
         sta XSIZE+1
         jsr edit_dlname          ; nom editable avant sauvegarde (RET = defaut)
         jsr save_received        ; sauve sous le nom (Sedoric, sinon LOCI SD)
+hr_dl_end:
         lda #0
         sta PLOTST               ; XACC a ecrase PLOTST -> reinit
+        rts
+
+; hr_is_large - C=1 si dlsize (mot) > 30720 ($7800 = capacite du buffer
+; $4000..$B7FF), C=0 sinon. Au-dela, la reception doit streamer sur disque
+; plutot que bufferiser (sinon overflow du tampon RAM).
+hr_is_large:
+        lda dlsize+1
+        cmp #$78
+        bcc hil_no               ; hi < $78 -> <= 30720 (tient dans le buffer)
+        bne hil_yes              ; hi > $78 -> > 30720
+        lda dlsize               ; hi == $78 -> grand seulement si lo > 0
+        beq hil_no
+hil_yes:
+        sec
+        rts
+hil_no:
+        clc
         rts
 hr_normal:
         cmp #PLOTCMD

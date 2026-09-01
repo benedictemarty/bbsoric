@@ -62,31 +62,38 @@ lp_no:
         rts
 
 ; ---------------------------------------------------------------------------
-;  loci_save - ecrit XSIZE octets de $4000 dans un fichier nomme d'apres dlname.
-;  Renvoie A=1 si sauve, A=0 sinon (LOCI absent ou erreur). XSIZE multiple de 128.
+;  Primitives LOCI reutilisables (open / write / close) - partagees par la
+;  sauvegarde bufferisee (loci_save) ET la reception en STREAMING (xmodem.s,
+;  I2b) qui ecrit chaque bloc XMODEM directement sur la carte SD sans tout
+;  bufferiser en RAM $4000 -> plus de plafond ~30 Ko.
 ; ---------------------------------------------------------------------------
-loci_save:
+
+; loci_open - detecte le LOCI, construit le chemin depuis dlname, ouvre le
+; fichier en ecriture (O_WRONLY|O_CREAT|O_TRUNC). A=1 (fd dans lcfd) si ouvert,
+; A=0 sinon (LOCI absent, nom vide ou erreur d'ouverture).
+loci_open:
         jsr loci_present
-        bne ls_go
+        bne lo_go
         rts                      ; A=0, pas de LOCI
-ls_go:
+lo_go:
         jsr loci_build_path      ; pathbuf / pathlen depuis dlname
         ldx lcpathlen
-        bne ls_pathok            ; nom present -> continuer
-        jmp ls_fail              ; nom vide (branche trop loin pour beq)
-ls_pathok:
+        bne lo_pathok            ; nom present -> continuer
+        lda #0                   ; nom vide
+        rts
+lo_pathok:
         ; --- open(path, OPEN_FLAGS) --- pousser le NUL puis le chemin a l'envers.
         ; Le firmware depile en ordre direct (pop_zstring lit jusqu'au NUL) ; le
         ; NUL pousse en premier est lu en dernier -> terminateur de chaine. Requis
         ; par le vrai LOCI (l'emulateur tolere son absence, pas le firmware reel).
         lda #0
         sta MIA_XSTACK
-ls_pushpath:
+lo_pushpath:
         dex
         lda lcpathbuf,x
         sta MIA_XSTACK
         txa
-        bne ls_pushpath
+        bne lo_pushpath
         lda #0                   ; xreg (haut) = 0
         sta MIA_XREG
         lda #OPEN_FLAGS
@@ -98,42 +105,24 @@ ls_pushpath:
         sta lcfd                 ; A=fd bas, X=fd haut
         stx lcfd+1
         txa
-        bpl ls_fdok              ; fd>=0 -> ok
-        jmp ls_fail              ; fd<0 -> erreur (branche trop loin)
-ls_fdok:
-        ; --- boucle d'ecriture par blocs de 128 octets ---
-        lda #$00
-        sta SRC
-        lda #$40
-        sta SRC+1                ; SRC = $4000
-        lda XSIZE
-        sta lcrem
-        lda XSIZE+1
-        sta lcrem+1
-ls_wloop:
-        lda lcrem
-        ora lcrem+1
-        beq ls_close             ; plus rien -> fermer
-        ; nb = min(128, rem) -> dernier bloc eventuellement partiel (taille reelle,
-        ; sans padding XMODEM). WRITE_XSTACK ecrit exactement le nb d'octets pousses.
-        lda lcrem+1
-        bne ls_full              ; rem >= 256 -> bloc plein
-        lda lcrem
-        cmp #128
-        bcs ls_full              ; rem.lo >= 128 -> bloc plein
-        sta lcnb                 ; rem.lo < 128 (et > 0) -> bloc partiel
-        jmp ls_haveb
-ls_full:
-        lda #128
-        sta lcnb
-ls_haveb:
+        bpl lo_ok                ; fd>=0 -> ok
+        lda #0                   ; fd<0 -> erreur
+        rts
+lo_ok:
+        lda #1
+        rts
+
+; loci_write_chunk - ecrit lcnb octets (1..128) depuis (SRC) dans lcfd via
+; WRITE_XSTACK. A=1 si ok, A=0 sinon. PRESERVE SRC. lcnb doit etre non nul
+; (garanti par appelant ; lcnb=0 pousserait 256 octets par sous-passage de Y).
+loci_write_chunk:
         ldy lcnb                 ; pousser nb octets a l'envers (index decroissant)
         dey
-ls_push:
+lw_push:
         lda (SRC),y
         sta MIA_XSTACK
         dey
-        bpl ls_push
+        bpl lw_push
         lda lcfd+1               ; ax = fd
         sta MIA_XREG
         lda lcfd
@@ -143,25 +132,16 @@ ls_push:
         clv
         jsr MIA_SPIN
         txa
-        bpl ls_wrok              ; ecriture ok
-        jmp ls_wfail             ; ecriture < 0 -> fermer le fd puis abandonner
-ls_wrok:
-        clc                      ; SRC += nb
-        lda SRC
-        adc lcnb
-        sta SRC
-        bcc ls_noinc
-        inc SRC+1
-ls_noinc:
-        sec                      ; rem -= nb
-        lda lcrem
-        sbc lcnb
-        sta lcrem
-        bcs ls_wloop
-        dec lcrem+1
-        jmp ls_wloop
-ls_close:
-        lda lcfd+1               ; close(fd)
+        bpl lw_ok                ; ecriture ok
+        lda #0                   ; ecriture < 0 -> erreur
+        rts
+lw_ok:
+        lda #1
+        rts
+
+; loci_close - ferme lcfd (evite la fuite de descripteur - le LOCI n'en a que 16).
+loci_close:
+        lda lcfd+1
         sta MIA_XREG
         lda lcfd
         sta MIA_AREG
@@ -169,6 +149,60 @@ ls_close:
         sta MIA_OP
         clv
         jsr MIA_SPIN
+        rts
+
+; ---------------------------------------------------------------------------
+;  loci_save - ecrit XSIZE octets de $4000 dans un fichier nomme d'apres dlname.
+;  Renvoie A=1 si sauve, A=0 sinon (LOCI absent ou erreur). Dernier bloc partiel
+;  tronque a la taille reelle (XSIZE, sans padding XMODEM).
+; ---------------------------------------------------------------------------
+loci_save:
+        jsr loci_open            ; A=1 si ouvert (present + nom + open ok)
+        bne lsv_open
+        lda #0                   ; pas de LOCI ou echec -> non sauve
+        rts
+lsv_open:
+        lda #$00
+        sta SRC
+        lda #$40
+        sta SRC+1                ; SRC = $4000
+        lda XSIZE
+        sta lcrem
+        lda XSIZE+1
+        sta lcrem+1
+lsv_loop:
+        lda lcrem
+        ora lcrem+1
+        beq lsv_close            ; plus rien -> fermer
+        lda lcrem+1
+        bne lsv_full             ; rem >= 256 -> bloc plein
+        lda lcrem
+        cmp #128
+        bcs lsv_full             ; rem.lo >= 128 -> bloc plein
+        sta lcnb                 ; rem.lo < 128 (et > 0) -> bloc partiel
+        jmp lsv_have
+lsv_full:
+        lda #128
+        sta lcnb
+lsv_have:
+        jsr loci_write_chunk
+        beq lsv_wfail            ; A=0 -> echec ecriture
+        clc                      ; SRC += nb
+        lda SRC
+        adc lcnb
+        sta SRC
+        bcc lsv_noinc
+        inc SRC+1
+lsv_noinc:
+        sec                      ; rem -= nb
+        lda lcrem
+        sbc lcnb
+        sta lcrem
+        bcs lsv_loop
+        dec lcrem+1
+        jmp lsv_loop
+lsv_close:
+        jsr loci_close
         lda #<msg_loci_ok
         sta STRPTR
         lda #>msg_loci_ok
@@ -176,16 +210,8 @@ ls_close:
         jsr print_string
         lda #1                   ; sauve
         rts
-ls_wfail:
-        lda lcfd+1               ; close(fd) avant d'abandonner (evite la fuite
-        sta MIA_XREG             ; de descripteur - le LOCI n'en a que 16)
-        lda lcfd
-        sta MIA_AREG
-        lda #OP_CLOSE
-        sta MIA_OP
-        clv
-        jsr MIA_SPIN
-ls_fail:
+lsv_wfail:
+        jsr loci_close           ; fermer le fd avant d'abandonner
         lda #<msg_loci_ko
         sta STRPTR
         lda #>msg_loci_ko
