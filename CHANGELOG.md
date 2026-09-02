@@ -12,10 +12,11 @@ versioning [SemVer](https://semver.org/lang/en/).
   binaire + service déployés via `make deploy`. Vérifié : log « espaces fichiers personnels … », page
   « MES FICHIERS » → un invité est refusé (« Reserve aux membres identifies »).
 - **Catalogue tachibana déployé** (remplace l'ancien OricProgramsLib) via
-  `deploy-catalogue.sh --source tachibana --reseed` : 1518 logiciels (tous téléchargeables) / 701
-  magazines / 340 livres, 1518 fichiers rsync (~20 Mo) dans `-files`, table `catalogue` re-semée
-  (2559 lignes). Page `fichiers` de prod repointée sur `mesfichiers`. Vérifié en pilotant la prod :
-  menu « Catalogue » → grille peuplée (Page 1/76, 1518 enreg.).
+  `deploy-catalogue.sh --source tachibana --reseed` : **1520** logiciels (tous téléchargeables) / 701
+  magazines / 340 livres, table `catalogue` re-semée (**2561** lignes), 1520 fichiers (~20 Mo) dans
+  `-files`. Page `fichiers` de prod repointée sur `mesfichiers`. Réaligné sur la base fraîche (le premier
+  passage donnait 1518 ; la base live avait bougé de 2 fichiers). Vérifié en pilotant la prod : menu
+  « Catalogue » → Logiciels (1520).
 - **Fix `scripts/pull-tachibana.sh`** : l'inventaire distant (`find -iregex`) et le rapatriement
   (upload de la liste + `tar`) perdaient leur quoting à travers `ssh → pct exec → bash -lc` et
   renvoyaient 0 fichier. Réécrits en `bash -s "$REMOTE_LIB"` (script via stdin) + `tee` pour l'upload
