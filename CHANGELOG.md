@@ -6,6 +6,17 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (message équipe Phosphoric — write-back Jasmin absent, 02/09/2026)
+- **`MESSAGE-phosphoric-team-jasmin.md`** : constat sourcé destiné à l'équipe Phosphoric (`oric1-emu`).
+  Le chemin d'écriture Jasmin fonctionne en RAM (`jasmin_write` → `fdc_write`, pose
+  `emu->jasmin.disk_dirty`, `src/io/jasmin.c:95`), **mais le write-back vers le `.dsk` ne se déclenche
+  jamais** : `osd_writeback_drive` (`src/main.c:603`) et `control_writeback_drive` (`src/control.c:600`)
+  ne testent que `emu->microdisc.disk_dirty` — `emu->jasmin.disk_dirty` n'est consulté nulle part. Donc
+  un `SAVE` invité sous Jasmin est perdu, même avec `--disk-writeback`.
+- Impact bbsoric : c'est le **bloqueur** pour valider un futur évier d'écriture Jasmin côté terminal
+  (les sinks LOCI et Sedoric/Microdisc restent, eux, validables en émulateur). Correctif attendu **côté
+  Phosphoric** (consulter le flag dirty de l'interface active) — non traité ici (décision utilisateur).
+
 ### Added (catalogue — source alternative tachibana.eu, 02/09/2026)
 - **Nouveau générateur `scripts/gen-catalogue-tachibana.py`** : alimente le catalogue BBS depuis la
   base du site **tachibana.eu** (`tachibana.sqlite`, table `items`) au lieu d'`OricProgramsLib`. Le
