@@ -158,27 +158,37 @@ combinable (AND) avec le filtre utilisateur `F` et le tri `T`. Cela permet **un 
 source `catalogue` (colonne `categorie`) présenté en plusieurs vues (Logiciels /
 Magazines / Livres). Appliqué en SQL (SQLite) et en mémoire (source API).
 
-Le générateur `scripts/gen-catalogue.py` produit un catalogue (1 source + 3 vues
-filtrées + menu) depuis la bibliothèque OricProgramsLib ; démo :
-`docs/examples/catalogue-demo.json`.
+**Deux sources possibles** produisent le même catalogue (1 source + 3 vues filtrées + menu) :
+- `scripts/gen-catalogue.py` — depuis la bibliothèque **OricProgramsLib** (clé USB) ;
+- `scripts/gen-catalogue-tachibana.py` — depuis la base du site **tachibana.eu**
+  (`tachibana.sqlite`, table `items` : `Logiciel`→Logiciels, `Revue`→Magazines,
+  `Livre`+`Documentation`→Livres ; noms de fichiers extraits du HTML `body`, résolus
+  contre un miroir local de `/srv/oriclib`). C'est la **source en production**.
 
-**Génération complète + peuplement de `-files`** (J2). Le générateur est conscient
-des tailles : un item n'est marqué téléchargeable que si un fichier réellement
-transférable (`.tap`/`.ort`/`.rom`/`.dsk`, le plus petit qui tient) est ≤
-`--max-file-size` (défaut 30720 o, le buffer terminal Oric) ; une colonne `taille`
-est ajoutée. `--copy-files <dir>` copie ces fichiers dans le répertoire `-files`
-sous un nom court sûr (8.3, unique). Exemple :
+Démo committée : `docs/examples/catalogue-demo.json`.
+
+**Génération + peuplement de `-files`**. Le générateur est conscient des tailles : un item
+n'est marqué téléchargeable que si un fichier réellement transférable
+(`.tap`/`.ort`/`.rom`/`.dsk`, le plus petit qui tient) est ≤ `--max-file-size`
+(défaut **65535 o = 0xFFFF**, borne de l'en-tête download 16 bits — réception en streaming
+LOCI/Sedoric, cf. `docs/transfer.md`) ; une colonne `taille` est ajoutée. `--copy-files <dir>`
+copie ces fichiers dans `-files` sous un nom court sûr (8.3, unique). Le générateur tachibana
+**ne liste par défaut que les logiciels téléchargeables** (`--all-software` pour tout inclure) —
+sur un BBS orienté download, inutile d'afficher les titres non transférables (et pas de `taille 0`).
 
 ```bash
-python3 scripts/gen-catalogue.py \
-  --lib "<...>/OricProgramsLib" \
+# depuis tachibana (source de prod) : snapshot local puis génération
+scripts/pull-tachibana.sh                     # -> /tmp/tachibana/{tachibana.sqlite,oriclib/}
+python3 scripts/gen-catalogue-tachibana.py \
+  --db /tmp/tachibana/tachibana.sqlite --oriclib /tmp/tachibana/oriclib \
   --copy-files /srv/bbsfiles --out content/catalogue.json
 # puis : ./bbsd -content content/catalogue.json -data <dir> -files /srv/bbsfiles
 ```
 
-Sur la bibliothèque complète : ~2600 logiciels (dont ~1900 téléchargeables ≤ 30 Ko),
-~700 magazines et ~190 livres (consultables, non téléchargeables). Le catalogue
-complet (~1,2 Mo) n'est pas versionné (régénérable) ; seule la démo l'est.
+Volumétrie en production (source tachibana) : **1520 logiciels** (tous téléchargeables ≤ 64 Ko),
+**701 magazines**, **340 livres** (consultables, non téléchargeables) — table `catalogue` de
+**2561 lignes**. Le déploiement est décrit dans `docs/catalogue-deploy.md`. Le catalogue complet
+n'est pas versionné (régénérable) ; seule la démo l'est.
 
 La **fiche détail** (`V`) affiche toutes les colonnes de la ligne ; les valeurs
 longues (ex. `description`) sont **repliées** sur plusieurs lignes (au plus 4,

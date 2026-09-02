@@ -6,6 +6,20 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Docs (catalogue & fichiers personnels, 02/09/2026)
+- **`docs/userfiles.md`** (nouveau) : espace fichiers personnel par compte — activation
+  (`-userfiles` + quotas), modèle de stockage (`<dir>/<pseudo>/`, réutilise `files.Library`),
+  applet `mesfichiers`, règles d'accès (comptes identifiés), transfert XMODEM, déploiement, tests.
+- **`docs/datawindow.md`** : section catalogue mise à jour — **deux sources** (`gen-catalogue.py`
+  OricProgramsLib **et** `gen-catalogue-tachibana.py`, source de prod), plafond 30 Ko → **64 Ko**,
+  filtre « téléchargeables seulement » par défaut (tachibana), volumétrie prod (1520/701/340, 2561 lignes).
+- **`docs/catalogue-deploy.md`** : encadré « source en production : tachibana.eu » ; prérequis clarifiés
+  par source.
+- **`docs/content.md`** : `mesfichiers` ajouté à la liste des applets enregistrés.
+- **`docs/transfer.md`** : note « deux consommateurs de `-files` » (Catalogue public vs espace
+  personnel) ; les applets `download`/`upload` à plat ne sont plus câblés en prod.
+- **`CLAUDE.md`** : `docs/catalogue-deploy.md` et `docs/userfiles.md` ajoutés aux docs clés.
+
 ### Deployed (prod pavi3617 / CT 510 — catalogue tachibana + espace personnel, 02/09/2026)
 - **Espace fichiers personnels activé en prod** : unité `deploy/bbsoric.service` gagne
   `-userfiles /var/lib/bbsoric/userfiles -userfiles-max-files 20 -userfiles-max-bytes 524288` ;

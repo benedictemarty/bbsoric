@@ -24,6 +24,13 @@ bbsd ... -files /var/lib/bbsoric/files -max-upload 65536
 File names are **validated** (simple name, no `/`, `\` or `..`) to
 prevent any escape from the directory.
 
+> **Two consumers of the `-files` library.** The low-level `download`/`upload` applets
+> below operate on the **shared** `-files` directory. In the production content they are
+> **no longer wired flat** into the "Fichiers" menu: public downloads go through the
+> **Catalogue** (`datawindow`, `docs/datawindow.md`) and the "Fichiers" section is now the
+> **personal per-account space** (`mesfichiers`, `docs/userfiles.md`). Both reuse the same
+> XMODEM plumbing documented here.
+
 ## Wiring the applets into the content
 
 Two applets are provided: **`download`** and **`upload`**. They are wired as

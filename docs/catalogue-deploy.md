@@ -8,10 +8,17 @@ téléchargeables copiés dans le répertoire `-files` du serveur.
 > `-files /var/lib/bbsoric/files` et `-data /var/lib/bbsoric/dwdata` déjà configurés
 > (voir `deploy/bbsoric.service`). Le catalogue est donc **greffé** dans ce site.json.
 
+> **Source en production : tachibana.eu.** Le catalogue déployé provient de la base du site
+> **tachibana.eu** (`--source tachibana`, voir la section dédiée plus bas), qui a remplacé
+> OricProgramsLib. État courant : **1520 logiciels** (téléchargeables) / 701 magazines /
+> 340 livres. La section « Fichiers » du BBS est désormais l'**espace personnel** par compte
+> (`docs/userfiles.md`), distincte de ce catalogue public.
+
 ## Automatique (recommandé)
 
-Prérequis : VPN mustang actif, `deploy/deploy.conf` rempli, `ORIC_LIB` défini
-(chemin de `OricProgramsLib`, dans l'environnement ou `deploy.conf`).
+Prérequis : VPN mustang actif, `deploy/deploy.conf` rempli. Source **OricProgramsLib** :
+`ORIC_LIB` défini (env ou `deploy.conf`). Source **tachibana** : rien de plus (snapshot
+récupéré automatiquement par `pull-tachibana.sh`).
 
 ```bash
 # répétition à blanc (ne pousse rien, valide le rendu) :

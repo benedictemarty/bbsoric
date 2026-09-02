@@ -92,8 +92,10 @@ Applet entry:
 { "key": "1", "label": "Se connecter", "applet": "login", "next": "main" }
 ```
 - `applet`: name of the applet to launch when the entry is chosen. Registered applets:
-  `login`, `register`, `guest`, `download`, `upload`, `who`, `chat`, `wall`, `forum`,
-  `pm`, `datawindow`. **Adding an applet** = writing a small Go function and registering it.
+  `login`, `register`, `guest`, `download`, `upload`, `mesfichiers`, `who`, `chat`, `wall`,
+  `forum`, `pm`, `datawindow`. `mesfichiers` is the **personal file space** (per-account private
+  library; requires `-userfiles`, identified accounts only — see `docs/userfiles.md`).
+  **Adding an applet** = writing a small Go function and registering it.
 - `next` (optional): page to go to **after the applet succeeds** (empty = stay).
 
 > **`wall`** (mur de messages) — persisted one-liner wall (the historic "guestbook"):
