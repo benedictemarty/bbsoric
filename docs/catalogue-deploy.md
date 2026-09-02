@@ -44,6 +44,35 @@ scp /tmp/site.json vps:/etc/bbsoric/site.json
 ssh vps "systemctl restart bbsoric && systemctl is-active bbsoric"
 ```
 
+## Source alternative : catalogue tachibana.eu
+
+Le catalogue peut aussi être alimenté depuis la base du site **tachibana.eu**
+(`tachibana.sqlite`, table `items`) au lieu d'`OricProgramsLib`. Le **format de
+sortie et le déploiement sont identiques** — seule la SOURCE des lignes change.
+
+Correspondance : `Logiciel` → Logiciels (téléchargeables), `Revue` → Magazines,
+`Livre` + `Documentation` → Livres. Les noms de fichiers `.tap/.dsk/.rom` sont
+extraits du HTML `body` des items (liens `/lib/...`), résolus contre un **miroir
+local** du volume `/srv/oriclib` de tachibana.
+
+```bash
+# 1. snapshot local de la base + des seuls fichiers utiles (~20 Mo, via ssh/pct) :
+scripts/pull-tachibana.sh                     # -> /tmp/tachibana/{tachibana.sqlite,oriclib/}
+
+# 2a. déploiement automatique depuis cette source (rafraîchit le snapshot avec --pull) :
+scripts/deploy-catalogue.sh --source tachibana [--pull] [--reseed]
+
+# 2b. …ou génération manuelle (mêmes étapes 3-4 que ci-dessus) :
+python3 scripts/gen-catalogue-tachibana.py \
+    --db /tmp/tachibana/tachibana.sqlite --oriclib /tmp/tachibana/oriclib \
+    --merge-into /tmp/site-prod.json --copy-files /tmp/bbsfiles --out /tmp/site.json
+```
+
+Config de `pull-tachibana.sh` (env) : `TACHI_SSH` (défaut `kiranerys`), `TACHI_CT`
+(`716`), `TACHI_DB`, `TACHI_ORICLIB`, `OUT` (`/tmp/tachibana`), `MAX` (`65535`).
+Volumétrie actuelle : **3983 logiciels** (~1520 téléchargeables ≤ 64 Ko),
+**701 magazines**, **340 livres**.
+
 ## Notes
 
 - **Redémarrage obligatoire** : le semis SQLite d'une source neuve se fait au boot
@@ -54,7 +83,10 @@ ssh vps "systemctl restart bbsoric && systemctl is-active bbsoric"
   table `catalogue` dans `/var/lib/bbsoric/dwdata/bbsoric.db`, puis redémarre — la table
   est recréée et re-semée depuis le nouveau `site.json`. (Sans `--reseed`, seul le contenu
   des pages est mis à jour, pas les données déjà semées.)
-- **Taille** : seuls les fichiers ≤ `--max-file-size` (défaut 30720 o = buffer terminal
-  Oric) sont téléchargeables ; magazines/livres (PDF) sont consultables (fiche `V`).
-- **Catalogue complet** : ~2600 logiciels (dont ~1900 téléchargeables), ~700 magazines,
-  ~190 livres (~1,2 Mo, ~1900 fichiers). Non versionné (régénérable).
+- **Taille** : seuls les fichiers ≤ `--max-file-size` (défaut 65535 o = 0xFFFF, borne de
+  l'en-tête download 16 bits ; réception en streaming LOCI/Sedoric, cf. I2b) sont
+  téléchargeables ; magazines/livres (PDF) sont consultables (fiche `V`).
+- **Catalogue complet** (OricProgramsLib) : ~2600 logiciels (dont ~1900 téléchargeables),
+  ~700 magazines, ~190 livres (~1,2 Mo, ~1900 fichiers). Non versionné (régénérable).
+- **Source tachibana** : voir la section dédiée ci-dessus (3983 logiciels, ~1520
+  téléchargeables). Choix de la source via `--source oriclib|tachibana`.

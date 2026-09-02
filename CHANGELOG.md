@@ -6,6 +6,32 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (catalogue — source alternative tachibana.eu, 02/09/2026)
+- **Nouveau générateur `scripts/gen-catalogue-tachibana.py`** : alimente le catalogue BBS depuis la
+  base du site **tachibana.eu** (`tachibana.sqlite`, table `items`) au lieu d'`OricProgramsLib`. Le
+  **format de sortie est strictement identique** (source DataWindow `catalogue` en 3 vues filtrées +
+  menu) : seule la SOURCE des lignes change. Correspondance des catégories : `Logiciel` → Logiciels
+  (téléchargeables, X → XMODEM), `Revue` → Magazines, `Livre`+`Documentation` → Livres.
+- Les noms de fichiers `.tap/.dsk/.rom/.ort` ne sont pas dans une colonne dédiée : ils sont **extraits
+  du HTML `body`** des items (liens `/lib/...`), résolus contre un **miroir local** du volume
+  `/srv/oriclib`. Sélection du plus petit fichier transférable **présent, non vide, ≤ 64 Ko** (cassette
+  avant disque). Description = 1ᵉʳ paragraphe de contenu du body (saute notation/étoiles et « Source : »).
+- **Refactor de `scripts/gen-catalogue.py`** : l'assemblage du site (format d'affichage BBS) est
+  factorisé (`assemble_catalogue`, `wrap_site`, `graft_catalogue`) et **partagé** par les deux
+  générateurs — une seule source de vérité pour la forme du JSON. Comportement d'`OricProgramsLib`
+  inchangé (test existant toujours vert).
+- **`scripts/pull-tachibana.sh`** : snapshot local de la base + des seuls fichiers utiles (référencés,
+  ≤ 64 Ko, ~20 Mo au lieu des ~290 Mo du volume) via `ssh`/`pct exec`, dans `/tmp/tachibana`.
+- **`scripts/deploy-catalogue.sh`** : nouvelle option **`--source oriclib|tachibana`** (`--pull` pour
+  rafraîchir le snapshot). Le reste du déploiement (fusion, validation, rsync, restart) est inchangé.
+- **Test `scripts/test-gen-catalogue-tachibana.py`** (18 cas, base SQLite + miroir de fichiers jetables) :
+  `strip_html`, `description_of`, `local_path`, `pick_from_body` (préférence cassette, rejet vide/>plafond/
+  absent, repli disque) et `build_catalogue` de bout en bout (mapping des catégories, colonnes, copie,
+  exclusion des non-publiés).
+- **Vérifié en pilotant le serveur** (`-content` généré + `-files`) : semis de 5024 lignes, navigation
+  Catalogue → Logiciels, grille DataWindow, et **download XMODEM d'un vrai fichier** (bloc SOH reçu).
+- Doc : `docs/catalogue-deploy.md` gagne une section « Source alternative : catalogue tachibana.eu ».
+
 ### Changed (catalogue — plafond téléchargeable relevé à 64 Ko pour exploiter le streaming, 01/09/2026)
 - **`scripts/gen-catalogue.py`** : `DEFAULT_MAX_FILE` passe de **30720** (ancien buffer terminal)
   à **65535** octets. Depuis la réception en streaming (I2b), une machine LOCI SD (ou Sedoric par

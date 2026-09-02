@@ -11,29 +11,42 @@
 # Prérequis :
 #   - VPN WireGuard mustang actif (comme deploy/vps-deploy.sh)
 #   - deploy/deploy.conf rempli
-#   - ORIC_LIB = chemin de la bibliothèque OricProgramsLib (env ou deploy.conf)
+#   - source OricProgramsLib : ORIC_LIB = chemin de la bibliothèque (env/deploy.conf)
+#   - source tachibana       : snapshot local via scripts/pull-tachibana.sh
+#                              (OUT=$TACHI_OUT ; défaut /tmp/tachibana)
 #
-# Usage : scripts/deploy-catalogue.sh [--dry-run] [--limit N]
+# Usage : scripts/deploy-catalogue.sh [--dry-run] [--reseed] [--limit N]
+#                                     [--source oriclib|tachibana] [--pull]
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=/dev/null
 source "$ROOT/deploy/deploy.conf"
 : "${VPS_HOST:?deploy.conf incomplet}" "${VPS_USER:?}" "${VPS_PORT:?}" "${SERVICE:?}"
-LIB="${ORIC_LIB:?definir ORIC_LIB=chemin/vers/OricProgramsLib (env ou deploy.conf)}"
 
 DRY=false
 RESEED=false
 LIMIT=0
+SOURCE=oriclib
+PULL=false
 while [ $# -gt 0 ]; do
     case "$1" in
         --dry-run) DRY=true ;;
         --reseed) RESEED=true ;;
         --limit) LIMIT="$2"; shift ;;
+        --source) SOURCE="$2"; shift ;;
+        --pull) PULL=true ;;
         *) echo "option inconnue : $1" >&2; exit 2 ;;
     esac
     shift
 done
+
+TACHI_OUT="${TACHI_OUT:-/tmp/tachibana}"
+if [ "$SOURCE" = oriclib ]; then
+    LIB="${ORIC_LIB:?definir ORIC_LIB=chemin/vers/OricProgramsLib (env ou deploy.conf)}"
+elif [ "$SOURCE" != tachibana ]; then
+    echo "source inconnue : $SOURCE (attendu : oriclib | tachibana)" >&2; exit 2
+fi
 
 SSH="ssh -p $VPS_PORT -o ConnectTimeout=8 $VPS_USER@$VPS_HOST"
 REMOTE_FILES="/var/lib/bbsoric/files"
@@ -55,10 +68,21 @@ else
     cp "$ROOT/content/site.json" "$STAGE/site-prod.json"
 fi
 
-echo "--- 2. Fusion du catalogue + copie des fichiers téléchargeables ---"
-ARGS=(--lib "$LIB" --merge-into "$STAGE/site-prod.json" --copy-files "$FILES" --out "$STAGE/site.json")
-[ "$LIMIT" -gt 0 ] && ARGS+=(--limit "$LIMIT")
-python3 "$ROOT/scripts/gen-catalogue.py" "${ARGS[@]}"
+echo "--- 2. Fusion du catalogue + copie des fichiers téléchargeables (source : $SOURCE) ---"
+COMMON=(--merge-into "$STAGE/site-prod.json" --copy-files "$FILES" --out "$STAGE/site.json")
+[ "$LIMIT" -gt 0 ] && COMMON+=(--limit "$LIMIT")
+if [ "$SOURCE" = tachibana ]; then
+    if $PULL || [ ! -s "$TACHI_OUT/tachibana.sqlite" ]; then
+        echo "  snapshot tachibana (pull-tachibana.sh) -> $TACHI_OUT"
+        OUT="$TACHI_OUT" "$ROOT/scripts/pull-tachibana.sh"
+    else
+        echo "  snapshot tachibana réutilisé : $TACHI_OUT (relancer avec --pull pour rafraîchir)"
+    fi
+    python3 "$ROOT/scripts/gen-catalogue-tachibana.py" \
+        --db "$TACHI_OUT/tachibana.sqlite" --oriclib "$TACHI_OUT/oriclib" "${COMMON[@]}"
+else
+    python3 "$ROOT/scripts/gen-catalogue.py" --lib "$LIB" "${COMMON[@]}"
+fi
 NFILES=$(find "$FILES" -type f | wc -l | tr -d ' ')
 echo "  fichiers téléchargeables copiés en staging : $NFILES"
 

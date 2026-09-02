@@ -226,12 +226,11 @@ CAT_COLONNES = {
 }
 
 
-def build_catalogue(lib, limit, maxsize, copy_dest):
-    """Construit la source `catalogue` (1 table, colonne categorie) et ses pages
-    (menu + 3 vues filtrées). Renvoie (source, pages, (nl, nm, nv))."""
-    logiciels = software_rows(lib, limit, maxsize, copy_dest)
-    magazines = magazine_rows(lib, limit)
-    livres = pdf_rows(os.path.join(lib, "library", "livres"), limit, recursive=False)
+def assemble_catalogue(logiciels, magazines, livres):
+    """Assemble la source `catalogue` (1 table, colonne categorie) et ses pages
+    (menu + 3 vues filtrées) à partir des trois listes de lignes déjà extraites.
+    Indépendant de la SOURCE des données (OricProgramsLib, tachibana.eu…) : c'est
+    le format d'affichage BBS partagé. Renvoie (source, pages, (nl, nm, nv))."""
     for r in logiciels:
         r["categorie"] = "Logiciel"
     for r in magazines:
@@ -259,9 +258,18 @@ def build_catalogue(lib, limit, maxsize, copy_dest):
     return source, pages, (len(logiciels), len(magazines), len(livres))
 
 
-def build_site(lib, limit, maxsize, copy_dest):
-    """Site autonome dont la page de départ est le catalogue."""
-    source, pages, counts = build_catalogue(lib, limit, maxsize, copy_dest)
+def build_catalogue(lib, limit, maxsize, copy_dest):
+    """Construit le catalogue depuis OricProgramsLib. Renvoie (source, pages, counts)."""
+    logiciels = software_rows(lib, limit, maxsize, copy_dest)
+    magazines = magazine_rows(lib, limit)
+    livres = pdf_rows(os.path.join(lib, "library", "livres"), limit, recursive=False)
+    return assemble_catalogue(logiciels, magazines, livres)
+
+
+def wrap_site(catalogue):
+    """Site autonome dont la page de départ est le catalogue (à partir du tuple
+    (source, pages, counts) produit par assemble_catalogue/build_catalogue)."""
+    source, pages, counts = catalogue
     site = {
         "_comment": "Catalogue de telechargement BBS Oric (genere par scripts/gen-catalogue.py). "
                     "UN catalogue (colonne categorie) presente en 3 vues filtrees (filtre_fixe). "
@@ -274,19 +282,18 @@ def build_site(lib, limit, maxsize, copy_dest):
     return site, counts
 
 
-def merge_into(site_path, lib, limit, maxsize, copy_dest, menu_page, menu_key):
-    """Greffe le catalogue dans un site.json existant : ajoute la source `catalogue`,
-    ses pages, et une entrée de menu (menu_key -> "catalogue") sur menu_page, insérée
-    avant l'éventuelle sortie (__quit__). Idempotent sur l'entrée de menu."""
-    with open(site_path, encoding="utf-8") as f:
-        site = json.load(f)
-    source, pages, counts = build_catalogue(lib, limit, maxsize, copy_dest)
+def graft_catalogue(site, catalogue, menu_page, menu_key):
+    """Greffe le catalogue (tuple assemble_catalogue) dans un site dict existant :
+    ajoute la source `catalogue`, ses pages, et une entrée de menu (menu_key ->
+    "catalogue") sur menu_page, insérée avant l'éventuelle sortie (__quit__/__back__).
+    Idempotent sur l'entrée de menu. Renvoie (site, counts)."""
+    source, pages, counts = catalogue
     site.setdefault("sources_donnees", {})["catalogue"] = source
     site.setdefault("pages", {}).update(pages)
 
     mp = site.get("pages", {}).get(menu_page)
     if mp is None:
-        raise SystemExit("page de menu %r introuvable dans %s" % (menu_page, site_path))
+        raise SystemExit("page de menu %r introuvable" % (menu_page,))
     entries = mp.setdefault("entries", [])
     entries = [e for e in entries if e.get("target") != "catalogue"]  # évite un doublon
     entry = {"key": menu_key, "label": "Catalogue", "target": "catalogue"}
@@ -295,6 +302,13 @@ def merge_into(site_path, lib, limit, maxsize, copy_dest, menu_page, menu_key):
     entries.insert(quit_idx, entry)
     mp["entries"] = entries
     return site, counts
+
+
+def merge_into(site_path, lib, limit, maxsize, copy_dest, menu_page, menu_key):
+    """Charge site_path et y greffe le catalogue OricProgramsLib."""
+    with open(site_path, encoding="utf-8") as f:
+        site = json.load(f)
+    return graft_catalogue(site, build_catalogue(lib, limit, maxsize, copy_dest), menu_page, menu_key)
 
 
 def main():
@@ -319,7 +333,7 @@ def main():
         site, (nl, nm, nv) = merge_into(args.merge_into, args.lib, args.limit,
                                         args.max_file_size, args.copy_files, args.menu_page, args.menu_key)
     else:
-        site, (nl, nm, nv) = build_site(args.lib, args.limit, args.max_file_size, args.copy_files)
+        site, (nl, nm, nv) = wrap_site(build_catalogue(args.lib, args.limit, args.max_file_size, args.copy_files))
     dl = sum(1 for r in site["sources_donnees"]["catalogue"]["donnees"] if r.get("fichier"))
     data = json.dumps(site, ensure_ascii=False, indent=2)
     if args.out == "-":
