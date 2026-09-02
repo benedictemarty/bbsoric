@@ -14,6 +14,7 @@ import (
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/throttle"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
+	"github.com/benedictemarty/bbsoric/server/internal/userfiles"
 	"github.com/benedictemarty/bbsoric/server/internal/wall"
 )
 
@@ -22,10 +23,11 @@ import (
 // au démarrage (bibliothèque de fichiers, registre de présence) accessibles aux
 // applets.
 type SessionState struct {
-	User     *user.User
-	Guest    bool
-	Files    *files.Library     // bibliothèque de fichiers (peut être nil)
-	Presence *presence.Registry // registre « qui est en ligne » + chat (peut être nil)
+	User      *user.User
+	Guest     bool
+	Files     *files.Library     // bibliothèque publique de fichiers (peut être nil)
+	UserFiles *userfiles.Store   // espaces fichiers personnels par utilisateur (peut être nil)
+	Presence  *presence.Registry // registre « qui est en ligne » + chat (peut être nil)
 	Data     *datawindow.Engine // moteur DataWindow SQLite (peut être nil)
 	Wall     *wall.Store        // mur de messages persisté (peut être nil)
 	Forum    *forum.Store       // forum de discussion persisté (peut être nil)
@@ -62,9 +64,9 @@ type Outcome struct {
 // AppContext injecte les dépendances accessibles à un applet.
 type AppContext struct {
 	Users *user.Store        // magasin de comptes (peut être nil)
-	Files *files.Library     // bibliothèque de fichiers (peut être nil)
+	Files *files.Library     // bibliothèque publique de fichiers (peut être nil)
 	Data  *datawindow.Engine // moteur DataWindow (peut être nil)
-	State *SessionState      // état de la session courante
+	State *SessionState      // état de la session courante (porte aussi UserFiles)
 	Site  *content.Site      // site courant (sources de données, pages)
 	Page  *content.Page      // page applet courante (titre, intro, Next…)
 }

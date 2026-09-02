@@ -197,18 +197,12 @@
       ]
     },
     "fichiers": {
-      "title": "FICHIERS",
+      "title": "MES FICHIERS",
       "entries": [
         {
           "key": "1",
-          "label": "Telecharger",
-          "applet": "download",
-          "next": "fichiers"
-        },
-        {
-          "key": "2",
-          "label": "Televerser",
-          "applet": "upload",
+          "label": "Mon espace personnel",
+          "applet": "mesfichiers",
           "next": "fichiers"
         },
         {

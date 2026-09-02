@@ -276,17 +276,19 @@
 > identified accounts only (no guests), per-user directory `-userfiles/<handle>/` reusing
 > `files.Library`, per-user **quota** (files + bytes), optional flag (nil = disabled).
 
-- [ ] **L1** (5) As a logged-in user, I want a **private file area** only I can see (list / download /
+- [x] **L1** (5) As a logged-in user, I want a **private file area** only I can see (list / download /
   upload), so "Fichiers" is my own space, separate from the public Catalogue.
-  *Scope (ADR-0006): package `server/internal/userfiles` (Store over per-user `files.Library` +
-  quota, tests); wiring — flags `-userfiles`, `-userfiles-max-files` (20), `-userfiles-max-bytes`
-  (512 KB), injection `WelcomeHandler`→`SessionState`→`AppContext`; applet **`mesfichiers`** (list +
-  XMODEM download + XMODEM upload, gated on `State.User != nil` && `UserFiles != nil`). Guests and
-  no-`-userfiles` refuse cleanly. Verify in the real server (upload→reappears→byte-exact download;
-  guest refused; quota refused past limit).*
-- [ ] **L2** (1) As an admin, I want the flat public **"Fichiers → Télécharger/Téléverser"** (shared
+  *(Done 02/09 — package `server/internal/userfiles` (`Store` over per-user `files.Library` + quota,
+  6 unit tests: isolation, case-insensitive handle, file-count & byte quotas, unsafe-handle rejection);
+  wiring — flags `-userfiles`, `-userfiles-max-files` (20), `-userfiles-max-bytes` (512 KB), injection
+  `WelcomeHandler`→`SessionState`; applet **`mesfichiers`** (list + XMODEM download + upload, gated on
+  `State.User != nil` && `UserFiles != nil`). Guest refusal tested (`TestMesFichiersRefuseNonIdentifie`).
+  Verified in the real server: register → upload (200 o, byte-exact on disk) → byte-exact download.)*
+- [x] **L2** (1) As an admin, I want the flat public **"Fichiers → Télécharger/Téléverser"** (shared
   `-files`, 9 max) **removed** from the `fichiers` page, since the Catalogue supersedes public
-  downloads and the page now hosts the personal space. *(Bundled with L1.)*
+  downloads and the page now hosts the personal space.
+  *(Done 02/09 — `content/site.json` page `fichiers` (« MES FICHIERS ») lance désormais `mesfichiers` ;
+  les applets `download`/`upload` publics à plat en sont retirés.)*
 - [ ] **L3** (2) As a logged-in user, I want to **delete / rename** my own files. *(Later.)*
 - [ ] **L4** (3) As a logged-in user, I want to **copy a Catalogue file into my personal space**,
   so I can keep a public title among my files. *(Later.)*

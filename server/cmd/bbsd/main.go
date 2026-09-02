@@ -30,6 +30,7 @@ import (
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/throttle"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
+	"github.com/benedictemarty/bbsoric/server/internal/userfiles"
 	"github.com/benedictemarty/bbsoric/server/internal/wall"
 )
 
@@ -54,6 +55,9 @@ func main() {
 	newsPath := flag.String("news", "", "fichier JSON des actualités / annonces (vide = en mémoire, non persisté)")
 	filesDir := flag.String("files", "", "répertoire de la bibliothèque de fichiers (download/upload XMODEM ; vide = désactivé)")
 	maxUpload := flag.Int64("max-upload", 64*1024, "taille max d'un téléversement en octets (0 = illimité)")
+	userFilesDir := flag.String("userfiles", "", "répertoire racine des espaces fichiers PERSONNELS (un sous-dossier par compte ; vide = désactivé)")
+	userMaxFiles := flag.Int("userfiles-max-files", 20, "quota : nombre max de fichiers par utilisateur (0 = illimité)")
+	userMaxBytes := flag.Int64("userfiles-max-bytes", 512*1024, "quota : taille totale max par utilisateur en octets (0 = illimité)")
 	dataDir := flag.String("data", "", "répertoire des bases SQLite DataWindow (vide = désactivé)")
 	metricsAddr := flag.String("metrics-addr", "", "adresse HTTP de supervision (/healthz, /metrics) ; vide = désactivé ; à garder LOCAL (ex. 127.0.0.1:6510)")
 	flag.Parse()
@@ -128,6 +132,16 @@ func main() {
 		log.Info("bibliothèque de fichiers", "dir", *filesDir)
 	}
 
+	var userLib *userfiles.Store
+	if *userFilesDir != "" {
+		userLib, err = userfiles.Open(*userFilesDir, *userMaxFiles, *userMaxBytes, *maxUpload)
+		if err != nil {
+			log.Error("espaces fichiers personnels : ouverture impossible", "dir", *userFilesDir, "err", err)
+			os.Exit(1)
+		}
+		log.Info("espaces fichiers personnels", "dir", *userFilesDir, "max_fichiers", *userMaxFiles, "max_octets", *userMaxBytes)
+	}
+
 	var dwEngine *datawindow.Engine
 	if *dataDir != "" {
 		dwEngine = datawindow.NewEngine(*dataDir, log)
@@ -146,7 +160,7 @@ func main() {
 	// Garde-fou anti brute-force : au plus 5 échecs d'auth par IP sur 5 minutes,
 	// en complément du plafond de 3 essais par passage d'applet (S11.4).
 	loginLimiter := throttle.New(5, 5*time.Minute)
-	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users, Files: lib, Presence: online, Data: dwEngine, Wall: messages, Forum: forums, PM: mailbox, News: annonces, Login: loginLimiter}, log)
+	srv := server.New(cfg, bbs.WelcomeHandler{Store: store, Users: users, Files: lib, UserFiles: userLib, Presence: online, Data: dwEngine, Wall: messages, Forum: forums, PM: mailbox, News: annonces, Login: loginLimiter}, log)
 
 	// Arrêt propre sur SIGINT/SIGTERM.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

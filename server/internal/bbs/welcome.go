@@ -18,6 +18,7 @@ import (
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 	"github.com/benedictemarty/bbsoric/server/internal/throttle"
 	"github.com/benedictemarty/bbsoric/server/internal/user"
+	"github.com/benedictemarty/bbsoric/server/internal/userfiles"
 	"github.com/benedictemarty/bbsoric/server/internal/wall"
 )
 
@@ -26,10 +27,11 @@ import (
 // si Store est nil). Users est le magasin de comptes injecté aux applets
 // (login, inscription…) ; il peut être nil si aucun applet ne l'exige.
 type WelcomeHandler struct {
-	Store    *content.Store
-	Users    *user.Store
-	Files    *files.Library     // bibliothèque de fichiers (download/upload ; peut être nil)
-	Presence *presence.Registry // registre « qui est en ligne » + chat (peut être nil)
+	Store     *content.Store
+	Users     *user.Store
+	Files     *files.Library     // bibliothèque publique de fichiers (download/upload ; peut être nil)
+	UserFiles *userfiles.Store   // espaces fichiers personnels par utilisateur (peut être nil)
+	Presence  *presence.Registry // registre « qui est en ligne » + chat (peut être nil)
 	Data     *datawindow.Engine // moteur DataWindow SQLite (peut être nil)
 	Wall     *wall.Store        // mur de messages persisté (peut être nil)
 	Forum    *forum.Store       // forum de discussion persisté (peut être nil)
@@ -45,7 +47,7 @@ func (h WelcomeHandler) Handle(ctx context.Context, s *server.Session) {
 	if err := h.banner(s); err != nil {
 		return
 	}
-	state := &SessionState{Files: h.Files, Presence: h.Presence, Data: h.Data,
+	state := &SessionState{Files: h.Files, UserFiles: h.UserFiles, Presence: h.Presence, Data: h.Data,
 		Wall: h.Wall, Forum: h.Forum, PM: h.PM, News: h.News, Login: h.Login, IP: s.RemoteIP()}
 	if h.Presence != nil {
 		// Pseudo provisoire jusqu'à l'identification (login/invité le fixe).

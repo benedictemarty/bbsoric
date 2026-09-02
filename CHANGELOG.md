@@ -6,6 +6,22 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (espace fichiers personnels — L1, 02/09/2026)
+- **Nouveau package `server/internal/userfiles`** : `Store` d'espaces **privés par utilisateur**
+  (répertoire `-userfiles/<pseudo>/`, réutilise `files.Library`) avec **quota** par compte (nombre de
+  fichiers + octets total). Pseudo normalisé et re-validé `[a-z0-9_-]` (défense path-traversal). 6 tests
+  (isolation, casse, quotas fichiers/octets, remplacement recompté, pseudo hors périmètre refusé).
+- **Applet `mesfichiers`** (`server/internal/bbs/userfiles.go`) : liste de ses fichiers, **téléchargement**
+  (numéro → XMODEM, même `sendFileDownload`) et **téléversement** (T → XMODEM → `Store.Write`, quota
+  appliqué). **Réservé aux comptes identifiés** (invité / espace non configuré refusés proprement).
+  Test d'intégration `TestMesFichiersRefuseNonIdentifie`.
+- **Câblage** : flags `-userfiles`, `-userfiles-max-files` (défaut 20), `-userfiles-max-bytes` (défaut
+  512 Ko) ; injection `WelcomeHandler` → `SessionState.UserFiles` (nil = désactivé, comme `-files`).
+- **Contenu (L2)** : la page `fichiers` (« MES FICHIERS ») lance `mesfichiers` ; l'ancien
+  `download`/`upload` public **à plat** (9 max, redondant avec le Catalogue) en est **retiré**.
+- **Vérifié en pilotant le serveur** : inscription → « Mes fichiers » → upload d'un fichier (200 o,
+  **byte-exact sur disque** dans l'espace du compte) → **download byte-exact**. `make test` : 26 packages.
+
 ### Added (spécification — ADR-0006 espace fichiers personnels, 02/09/2026)
 - **`docs/adr/0006-personal-file-space.md`** : décision d'architecture pour transformer la section
   « Fichiers » en **espace privé par utilisateur**, distinct du Catalogue public. Choix actés :
