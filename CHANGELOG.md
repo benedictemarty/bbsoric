@@ -6,6 +6,21 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Deployed (prod pavi3617 / CT 510 — catalogue tachibana + espace personnel, 02/09/2026)
+- **Espace fichiers personnels activé en prod** : unité `deploy/bbsoric.service` gagne
+  `-userfiles /var/lib/bbsoric/userfiles -userfiles-max-files 20 -userfiles-max-bytes 524288` ;
+  binaire + service déployés via `make deploy`. Vérifié : log « espaces fichiers personnels … », page
+  « MES FICHIERS » → un invité est refusé (« Reserve aux membres identifies »).
+- **Catalogue tachibana déployé** (remplace l'ancien OricProgramsLib) via
+  `deploy-catalogue.sh --source tachibana --reseed` : 1518 logiciels (tous téléchargeables) / 701
+  magazines / 340 livres, 1518 fichiers rsync (~20 Mo) dans `-files`, table `catalogue` re-semée
+  (2559 lignes). Page `fichiers` de prod repointée sur `mesfichiers`. Vérifié en pilotant la prod :
+  menu « Catalogue » → grille peuplée (Page 1/76, 1518 enreg.).
+- **Fix `scripts/pull-tachibana.sh`** : l'inventaire distant (`find -iregex`) et le rapatriement
+  (upload de la liste + `tar`) perdaient leur quoting à travers `ssh → pct exec → bash -lc` et
+  renvoyaient 0 fichier. Réécrits en `bash -s "$REMOTE_LIB"` (script via stdin) + `tee` pour l'upload
+  et `-iname` au lieu de `-iregex`. Validé : 7779 fichiers inventoriés, 1513 rapatriés, 1520 logiciels.
+
 ### Added (espace fichiers personnels — L1, 02/09/2026)
 - **Nouveau package `server/internal/userfiles`** : `Store` d'espaces **privés par utilisateur**
   (répertoire `-userfiles/<pseudo>/`, réutilise `files.Library`) avec **quota** par compte (nombre de

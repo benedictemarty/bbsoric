@@ -39,8 +39,13 @@ done
 
 echo "=== 2. Inventaire des fichiers téléchargeables (tailles) ==="
 # %P = chemin relatif à $REMOTE_LIB ; l'URL /lib/<P> == miroir $OUT/oriclib/<P>.
-$CTX bash -lc "cd '$REMOTE_LIB' && find . -iregex '.*\.\(tap\|dsk\|rom\|ort\)' -type f -printf '%s\t%P\n'" \
-    > "$OUT/inventory.tsv"
+# Script envoyé via stdin (bash -s "$REMOTE_LIB") : évite l'enfer de quoting des
+# backslashes du find à travers ssh -> pct exec -> bash (un -iregex embarqué dans une
+# chaîne double-guillemets perdait ses '\' et renvoyait 0 résultat).
+ssh "$SSH_HOST" "pct exec $CT -- bash -s '$REMOTE_LIB'" > "$OUT/inventory.tsv" <<'REMOTE'
+cd "$1" || exit 1
+find . -type f \( -iname '*.tap' -o -iname '*.dsk' -o -iname '*.rom' -o -iname '*.ort' \) -printf '%s\t%P\n'
+REMOTE
 echo "  fichiers inventoriés : $(wc -l < "$OUT/inventory.tsv")"
 
 echo "=== 3. Sélection des fichiers réellement utiles (référencés, ≤ $MAX o) ==="
@@ -78,9 +83,13 @@ print("  fichiers à rapatrier : %d (%.1f Mo)"
 PY
 
 echo "=== 4. Rapatriement (tar over ssh) -> $OUT/oriclib ==="
-$CTX bash -lc "cat > /tmp/pull-rel.txt" < "$OUT/pull-rel.txt"
-$CTX bash -lc "cd '$REMOTE_LIB' && tar czf - -T /tmp/pull-rel.txt 2>/dev/null" \
-    | tar xzf - -C "$OUT/oriclib"
+# Upload de la liste via `tee` (bash -lc "cat >..." ne recevait pas stdin de façon
+# fiable à travers pct exec) puis tar streamé via `bash -s "$REMOTE_LIB"` (stdin propre).
+ssh "$SSH_HOST" "pct exec $CT -- tee /tmp/pull-rel.txt >/dev/null" < "$OUT/pull-rel.txt"
+ssh "$SSH_HOST" "pct exec $CT -- bash -s '$REMOTE_LIB'" <<'REMOTE' | tar xzf - -C "$OUT/oriclib"
+cd "$1" || exit 1
+tar czf - -T /tmp/pull-rel.txt 2>/dev/null
+REMOTE
 echo "  miroir : $(find "$OUT/oriclib" -type f | wc -l) fichiers, $(du -sh "$OUT/oriclib" | cut -f1)"
 
 echo "=== Snapshot prêt ==="
