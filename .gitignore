@@ -34,6 +34,7 @@ deploy/profiles/**/*.conf
 # Binaires (à la racine uniquement — ne pas ignorer le dossier cmd/forge/)
 /bbsd
 /forge
+/oterm
 
 # Outillage assistant IA (non distribué — local uniquement)
 CLAUDE.md
