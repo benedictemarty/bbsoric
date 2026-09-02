@@ -126,18 +126,38 @@ func run(addr, dlDir string) error {
 		}
 	}()
 
-	// Émission : lit le clavier octet par octet et l'envoie au serveur.
+	// Émission : lit le clavier et l'envoie au serveur, en traduisant les séquences
+	// de flèches ANSI en codes Oric (translateKeys). Buffer > 1 octet pour capter une
+	// séquence d'échappement entière ; `pending` recolle une séquence à cheval sur
+	// deux lectures.
 	go func() {
-		buf := make([]byte, 1)
+		buf := make([]byte, 64)
+		var pending []byte
 		for {
 			n, err := os.Stdin.Read(buf)
 			if n > 0 {
-				if buf[0] == quitKey {
-					errc <- nil
-					return
+				data := buf[:n]
+				if len(pending) > 0 {
+					data = append(pending, data...)
+					pending = nil
 				}
-				if _, err := conn.Write(buf[:n]); err != nil {
-					errc <- err
+				out, rest := translateKeys(data)
+				if len(rest) > 0 {
+					pending = append([]byte(nil), rest...) // copie : buf sera réécrit
+				}
+				quit := false
+				if i := indexByte(out, quitKey); i >= 0 {
+					out = out[:i] // émet ce qui précède, puis on quitte
+					quit = true
+				}
+				if len(out) > 0 {
+					if _, err := conn.Write(out); err != nil {
+						errc <- err
+						return
+					}
+				}
+				if quit {
+					errc <- nil
 					return
 				}
 			}

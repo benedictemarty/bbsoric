@@ -6,6 +6,23 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Fixed (oterm — les touches flèches ne naviguaient pas, 02/09/2026)
+- **`pcterm/cmd/oterm`** : les flèches du clavier PC ne faisaient rien (seuls `+`/`-` naviguaient).
+  Cause : oterm lisait stdin **octet par octet** et transmettait les octets **tels quels**, or une
+  flèche de terminal émet une séquence d'échappement ANSI (CSI `ESC [ A/B/C/D`, ou SS3 `ESC O …`) que
+  le serveur ne comprend pas — il attend les **codes flèches Oric** `0x0B/0x0C/0x0E/0x0F`
+  (`server/internal/bbs/datawindow.go`).
+- **Correctif** : nouveau `pcterm/cmd/oterm/keys.go` (`translateKeys`) qui convertit les séquences de
+  flèches ANSI en codes Oric (haut→0x0B, bas→0x0C, droite→0x0F, gauche→0x0E), ignore les autres
+  séquences CSI (Home/Suppr…) au lieu de les transmettre en clair, et gère une séquence **à cheval sur
+  deux lectures** stdin via un reliquat (`rest`). La boucle d'émission lit désormais un buffer de 64 o
+  et émet les octets qui précèdent un `Ctrl-]` avant de quitter. Un ESC final seul est mis en attente
+  (ambigu) — `Q` reste le moyen direct de quitter une grille.
+- **Tests** : `pcterm/cmd/oterm/keys_test.go` (traduction des 4 flèches CSI/SS3, octets ordinaires,
+  séquences non-flèches ignorées, ESC ambigu, séquence scindée). **Vérifié end-to-end** : (1) flèche PC
+  → oterm émet le bon code Oric sur la socket ; (2) ce code déplace réellement la sélection dans la
+  grille DataWindow du serveur.
+
 ### Added (message équipe Phosphoric — write-back Jasmin absent, 02/09/2026)
 - **`MESSAGE-phosphoric-team-jasmin.md`** : constat sourcé destiné à l'équipe Phosphoric (`oric1-emu`).
   Le chemin d'écriture Jasmin fonctionne en RAM (`jasmin_write` → `fdc_write`, pose
