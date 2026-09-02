@@ -6,6 +6,17 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Changed (catalogue tachibana — vue Logiciels : téléchargeables seulement, 02/09/2026)
+- **`scripts/gen-catalogue-tachibana.py`** : par défaut, la vue **Logiciels ne liste que les titres
+  réellement téléchargeables** (fichier ≤ 64 Ko présent). Sur un BBS orienté download, inutile
+  d'afficher ~2/3 d'entrées non transférables — et cela **supprime les `taille 0`** de la fiche.
+  Résultat sur la base actuelle : **1518 logiciels** (au lieu de 3983), tous avec un fichier et une
+  taille non nulle ; magazines/livres (consultables) inchangés. Option **`--all-software`** pour
+  réintégrer le catalogue navigable complet. Tests mis à jour (`--all-software` couvert).
+- **Backlog** : **J5** (source tachibana) et **J6** (filtre téléchargeables) marqués faits ; nouvelle
+  **Epic L — Espace fichiers personnels** ouverte (la section « Fichiers » doit devenir un espace privé
+  par utilisateur, distinct du Catalogue public ; conception à décider, non démarré).
+
 ### Fixed (oterm — les touches flèches ne naviguaient pas, 02/09/2026)
 - **`pcterm/cmd/oterm`** : les flèches du clavier PC ne faisaient rien (seuls `+`/`-` naviguaient).
   Cause : oterm lisait stdin **octet par octet** et transmettait les octets **tels quels**, or une

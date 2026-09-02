@@ -118,10 +118,14 @@ def copy_download(src_path, title, name, copy_dest, used):
         return ""
 
 
-def software_rows(con, oriclib, limit, maxsize, copy_dest):
+def software_rows(con, oriclib, limit, maxsize, copy_dest, downloadable_only=True):
     """Lignes 'Logiciel' depuis items (category='Logiciel', published=1). `fichier`
     n'est renseigné que si un fichier transférable tient dans maxsize et existe dans
-    le miroir ; il est alors copié dans copy_dest (nom court unique)."""
+    le miroir ; il est alors copié dans copy_dest (nom court unique).
+
+    downloadable_only (défaut) : n'émet QUE les logiciels réellement téléchargeables
+    (BBS orienté download ; évite ~2/3 d'entrées non transférables et les 'taille 0').
+    Passer False pour un catalogue navigable complet (métadonnées seules incluses)."""
     rows, used = [], {}
     q = ("SELECT title, publisher, programmer, year, kind, language, body "
          "FROM items WHERE category='Logiciel' AND published=1 ORDER BY title COLLATE NOCASE")
@@ -133,6 +137,8 @@ def software_rows(con, oriclib, limit, maxsize, copy_dest):
             fichier = copy_download(path, title, name, copy_dest, used)
         elif path:
             fichier = gc.sedoric_name((title or name.rsplit(".", 1)[0]) + "." + name.rsplit(".", 1)[-1])
+        if downloadable_only and not fichier:
+            continue  # non téléchargeable -> exclu de la vue Logiciels
         auteur = gc.clean(prog) or gc.clean(pub)
         rows.append({
             "titre": title[:40],
@@ -174,11 +180,11 @@ def consult_rows(con, categories, limit):
     return rows
 
 
-def build_catalogue(db, oriclib, limit, maxsize, copy_dest):
+def build_catalogue(db, oriclib, limit, maxsize, copy_dest, downloadable_only=True):
     """Construit le catalogue depuis tachibana.sqlite. Renvoie (source, pages, counts)."""
     con = sqlite3.connect("file:%s?mode=ro" % db, uri=True)
     try:
-        logiciels = software_rows(con, oriclib, limit, maxsize, copy_dest)
+        logiciels = software_rows(con, oriclib, limit, maxsize, copy_dest, downloadable_only)
         magazines = consult_rows(con, ["Revue"], limit)
         livres = consult_rows(con, ["Livre", "Documentation"], limit)
     finally:
@@ -201,12 +207,15 @@ def main():
                     help="site.json existant où greffer le catalogue (au lieu d'un site autonome)")
     ap.add_argument("--menu-page", default="main", help="page de menu où ajouter l'entrée Catalogue")
     ap.add_argument("--menu-key", default="8", help="touche de l'entrée Catalogue")
+    ap.add_argument("--all-software", action="store_true",
+                    help="lister AUSSI les logiciels non téléchargeables (défaut : téléchargeables seulement)")
     args = ap.parse_args()
 
     if args.copy_files:
         os.makedirs(args.copy_files, exist_ok=True)
 
-    catalogue = build_catalogue(args.db, args.oriclib, args.limit, args.max_file_size, args.copy_files)
+    catalogue = build_catalogue(args.db, args.oriclib, args.limit, args.max_file_size,
+                                args.copy_files, downloadable_only=not args.all_software)
     if args.merge_into:
         import json
         with open(args.merge_into, encoding="utf-8") as f:

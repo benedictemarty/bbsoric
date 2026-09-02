@@ -118,8 +118,9 @@ with tempfile.TemporaryDirectory() as lib:
 
     copy_dest = os.path.join(lib, "out")
     os.makedirs(copy_dest)
+    # Défaut : téléchargeables seulement -> "Sans Fichier" exclu (1 logiciel).
     source, pages, (nl, nm, nv) = gt.build_catalogue(db, lib, 0, 65535, copy_dest)
-    check((nl, nm, nv) == (2, 1, 2), "build_catalogue : 2 logiciels publiés, 1 magazine, 2 livres (Livre+Doc)")
+    check((nl, nm, nv) == (1, 1, 2), "build_catalogue (défaut) : 1 logiciel téléchargeable, 1 magazine, 2 livres")
 
     data = source["donnees"]
     jeu = next(r for r in data if r["titre"] == "Petit Jeu")
@@ -130,13 +131,19 @@ with tempfile.TemporaryDirectory() as lib:
     check(jeu["auteur"] == "AuteurX" and jeu["editeur"] == "EditPub" and jeu["description"] == "Super jeu.",
           "build_catalogue : métadonnées mappées (auteur=programmer, editeur=publisher, description)")
 
-    sansf = next(r for r in data if r["titre"] == "Sans Fichier")
-    check(sansf["fichier"] == "", "build_catalogue : logiciel sans fichier -> colonne fichier vide")
-
+    check(not any(r["titre"] == "Sans Fichier" for r in data),
+          "build_catalogue (défaut) : logiciel non téléchargeable exclu")
+    check(all(r["taille"] != 0 for r in data if r["categorie"] == "Logiciel"),
+          "build_catalogue (défaut) : plus aucun logiciel à taille 0")
     check(all(r["fichier"] == "" for r in data if r["categorie"] in ("Magazine", "Livre")),
           "build_catalogue : magazines/livres non téléchargeables (fichier vide)")
     check(not any(r["titre"] == "Brouillon" for r in data),
           "build_catalogue : les items non publiés sont exclus")
+
+    # --all-software (downloadable_only=False) : réintègre le logiciel sans fichier.
+    src2, _, (nl2, _, _) = gt.build_catalogue(db, lib, 0, 65535, copy_dest, downloadable_only=False)
+    check(nl2 == 2 and any(r["titre"] == "Sans Fichier" for r in src2["donnees"]),
+          "build_catalogue (--all-software) : logiciels non téléchargeables réintégrés")
 
 print()
 print("Bilan: %d ok, %d ko" % (PASS, FAIL))

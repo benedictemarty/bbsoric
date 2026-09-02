@@ -255,6 +255,34 @@
   truncating at 22 cols (`wrapValeur`); generator adds genre / publisher / language / players /
   screenshot-reference columns. Per-item download count is not in the library data → not added
   (not invented). Test `TestWrapValeur`. Verified in the real server.)*
+- [x] **J5** (5) As an admin, I want an **alternative catalogue source: the tachibana.eu site
+  database** (`tachibana.sqlite`, table `items`), so the catalogue can be sourced from tachibana
+  instead of OricProgramsLib.
+  *(Done 02/09 — `scripts/gen-catalogue-tachibana.py` (same output format, shared assembly refactored
+  out of `gen-catalogue.py`): maps `Logiciel`→software, `Revue`→magazines, `Livre`+`Documentation`→books;
+  download filenames parsed from the item `body` HTML, resolved against a local mirror of `/srv/oriclib`.
+  `scripts/pull-tachibana.sh` snapshots DB + only the useful files (~20 MB) via ssh/pct;
+  `deploy-catalogue.sh --source tachibana`. 3983 software / **1518 downloadable**, 701 magazines, 340 books.
+  Tests `test-gen-catalogue-tachibana.py`. Verified: server seeds 5024 rows, grid, byte-exact XMODEM download.)*
+- [x] **J6** (1) As a user of a download-oriented BBS, I want the **Logiciels view to list only
+  downloadable titles**, so I don't wade through ~2/3 non-transferable entries (and no `taille 0`).
+  *(Done 02/09 — tachibana generator filters non-downloadable software by default (`--all-software`
+  to keep all). Result: 1518 software, all with a real file and non-zero size. Tests updated.)*
+
+## Epic L — Personal file space ("Fichiers" = private per-user files)
+
+> Direction (02/09): the **"Fichiers"** menu should become a **private per-user space** ("fichiers
+> personnels"), **distinct from the public Catalogue**. Today the `download` applet lists the shared
+> `-files` directory flat (9 max) — which now overlaps with the Catalogue and is NOT a personal space.
+> This epic is **not started**; scope/design to be decided before any code (no invention).
+
+- [ ] **L1** (?) As a logged-in user, I want a **private file area** only I can see, so "Fichiers"
+  is my own space, separate from the public Catalogue library.
+  *Open questions to resolve first: storage layout (per-user directory? quota?); auth requirement
+  (identified accounts only?); what `upload` targets (personal space); whether guests get any
+  "Fichiers" at all; relation between the public Catalogue `-files` and the personal store.*
+- [ ] **L2** (?) As an admin, I want the current flat **"Fichiers → Télécharger"** (shared `-files`,
+  9 max) **removed or repurposed**, since the Catalogue supersedes it for public downloads.
 
 ## Epic K — Portable PC terminal (oterm)
 
