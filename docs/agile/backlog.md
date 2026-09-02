@@ -271,18 +271,25 @@
 
 ## Epic L — Personal file space ("Fichiers" = private per-user files)
 
-> Direction (02/09): the **"Fichiers"** menu should become a **private per-user space** ("fichiers
-> personnels"), **distinct from the public Catalogue**. Today the `download` applet lists the shared
-> `-files` directory flat (9 max) — which now overlaps with the Catalogue and is NOT a personal space.
-> This epic is **not started**; scope/design to be decided before any code (no invention).
+> Direction (02/09): the **"Fichiers"** menu becomes a **private per-user space** ("fichiers
+> personnels"), **distinct from the public Catalogue**. Design decided in **ADR-0006**:
+> identified accounts only (no guests), per-user directory `-userfiles/<handle>/` reusing
+> `files.Library`, per-user **quota** (files + bytes), optional flag (nil = disabled).
 
-- [ ] **L1** (?) As a logged-in user, I want a **private file area** only I can see, so "Fichiers"
-  is my own space, separate from the public Catalogue library.
-  *Open questions to resolve first: storage layout (per-user directory? quota?); auth requirement
-  (identified accounts only?); what `upload` targets (personal space); whether guests get any
-  "Fichiers" at all; relation between the public Catalogue `-files` and the personal store.*
-- [ ] **L2** (?) As an admin, I want the current flat **"Fichiers → Télécharger"** (shared `-files`,
-  9 max) **removed or repurposed**, since the Catalogue supersedes it for public downloads.
+- [ ] **L1** (5) As a logged-in user, I want a **private file area** only I can see (list / download /
+  upload), so "Fichiers" is my own space, separate from the public Catalogue.
+  *Scope (ADR-0006): package `server/internal/userfiles` (Store over per-user `files.Library` +
+  quota, tests); wiring — flags `-userfiles`, `-userfiles-max-files` (20), `-userfiles-max-bytes`
+  (512 KB), injection `WelcomeHandler`→`SessionState`→`AppContext`; applet **`mesfichiers`** (list +
+  XMODEM download + XMODEM upload, gated on `State.User != nil` && `UserFiles != nil`). Guests and
+  no-`-userfiles` refuse cleanly. Verify in the real server (upload→reappears→byte-exact download;
+  guest refused; quota refused past limit).*
+- [ ] **L2** (1) As an admin, I want the flat public **"Fichiers → Télécharger/Téléverser"** (shared
+  `-files`, 9 max) **removed** from the `fichiers` page, since the Catalogue supersedes public
+  downloads and the page now hosts the personal space. *(Bundled with L1.)*
+- [ ] **L3** (2) As a logged-in user, I want to **delete / rename** my own files. *(Later.)*
+- [ ] **L4** (3) As a logged-in user, I want to **copy a Catalogue file into my personal space**,
+  so I can keep a public title among my files. *(Later.)*
 
 ## Epic K — Portable PC terminal (oterm)
 

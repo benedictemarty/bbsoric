@@ -6,6 +6,18 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (spécification — ADR-0006 espace fichiers personnels, 02/09/2026)
+- **`docs/adr/0006-personal-file-space.md`** : décision d'architecture pour transformer la section
+  « Fichiers » en **espace privé par utilisateur**, distinct du Catalogue public. Choix actés :
+  **comptes identifiés seulement** (pas les invités), répertoire **`-userfiles/<handle>/`** réutilisant
+  `files.Library` (pseudo déjà `[A-Za-z0-9_-]` → sûr comme nom de dossier), **quota** par utilisateur
+  (nombre de fichiers + octets), flags optionnels (`-userfiles`, `-userfiles-max-files`,
+  `-userfiles-max-bytes` ; nil = désactivé), applet **`mesfichiers`** (liste + download + upload privés),
+  et **retrait** du download/upload public à plat de la page `fichiers` (superseded par le Catalogue).
+- **Backlog Epic L** raffiné selon l'ADR : **L1** (MVP privé), **L2** (retrait download public à plat),
+  **L3** (supprimer/renommer, plus tard), **L4** (copier depuis le Catalogue, plus tard). **Non
+  implémenté** — spécification uniquement.
+
 ### Changed (catalogue tachibana — vue Logiciels : téléchargeables seulement, 02/09/2026)
 - **`scripts/gen-catalogue-tachibana.py`** : par défaut, la vue **Logiciels ne liste que les titres
   réellement téléchargeables** (fichier ≤ 64 Ko présent). Sur un BBS orienté download, inutile
