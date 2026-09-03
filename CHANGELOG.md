@@ -6,6 +6,19 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (actualités BBS depuis les articles tachibana.eu, 03/09/2026)
+- **Nouveau `scripts/gen-news-tachibana.py`** : importe les **articles** de tachibana.eu
+  (`tachibana.sqlite`, table `articles`, `published=1`, langue `--lang` défaut `fr`) vers le store
+  `news` du BBS (tableau JSON d'`Item`). Retire le HTML, **translittère les accents** (é→e — l'Oric
+  est en ASCII pur), borne titre ≤ 38 / corps ≤ 400, date `created_at` normalisée RFC3339 (article
+  ignoré si date inexploitable ou corps vide). `--merge-into` préserve les annonces d'autres auteurs.
+- **`scripts/deploy-news.sh`** : récupère le `news.json` de prod, fusionne les articles tachibana,
+  dépose et **redémarre** le service (le store news est chargé au démarrage). `--dry-run`, `--pull`.
+- **`deploy/bbsoric.service`** : `-news /var/lib/bbsoric/news.json` activé.
+- **Tests** `scripts/test-gen-news-tachibana.py` (17 cas). Doc `docs/news-tachibana.md`.
+- **État** : tachibana.eu n'a **aucun article publié** aujourd'hui → l'« Actualites » du BBS s'affiche
+  « Aucune annonce pour le moment » (vérifié) ; le pont se remplira au premier article `fr` publié.
+
 ### Added (catalogue → espace personnel — copie, L4, 03/09/2026)
 - **Grille DataWindow** : nouvelle touche **`M`** (« Mon espace ») qui **copie** le fichier de la ligne
   du Catalogue public vers l'espace personnel du membre (`copyRowToPersonal` : lecture `-files` →
