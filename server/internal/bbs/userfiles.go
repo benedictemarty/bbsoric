@@ -94,6 +94,33 @@ func mesFichiersApplet(ctx context.Context, s *server.Session, ac *AppContext) O
 	}
 }
 
+// copyRowToPersonal copie le fichier public `nom` (bibliothèque du catalogue) dans
+// l'espace personnel du membre connecté (quota appliqué). Utilisé par la touche `M`
+// de la grille catalogue (L4). Messages + pause finale.
+func copyRowToPersonal(s *server.Session, ac *AppContext, nom string) {
+	if nom == "" {
+		writeErr(s, "Aucun fichier pour cette entree.")
+		anyKey(s)
+		return
+	}
+	data, err := ac.State.Files.Read(nom)
+	if err != nil {
+		writeErr(s, "Lecture impossible : "+err.Error())
+		anyKey(s)
+		return
+	}
+	if err := ac.State.UserFiles.Write(ac.State.User.Handle, nom, data); err != nil {
+		writeErr(s, "Copie refusee : "+err.Error()) // quota atteint ou nom invalide
+		anyKey(s)
+		return
+	}
+	msg := oascii.New()
+	msg.Newline().Ink(oascii.Green).Text(fmt.Sprintf("Copie dans Mes fichiers : %s (%do).", nom, len(data))).Newline()
+	msg.Text("Appuyez sur une touche...").Newline()
+	_ = s.Write(msg.String())
+	_, _ = s.ReadKey()
+}
+
 // pickFile demande un numéro de fichier (1..min(len,9)) et renvoie l'indice choisi,
 // ou -1 si l'entrée est invalide (annulation).
 func pickFile(s *server.Session, list []files.Info, verbe string) int {

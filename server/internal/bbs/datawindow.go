@@ -96,11 +96,14 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 	editable := dw.Editable && ac.State.IsAdmin()
 	// Catalogue : une colonne peut porter un nom de fichier téléchargeable (touche X).
 	downloadable := dw.FichierColonne != "" && ac.State.Files != nil
+	// Copie vers l'espace personnel (touche M) : réservé aux membres identifiés,
+	// espace personnel configuré, sur une source à fichiers.
+	copyable := downloadable && ac.State.UserFiles != nil && ac.State.User != nil
 
 	scroll := 0 // décalage horizontal de la ligne sélectionnée (flèches ←/→)
 	scr := oascii.NewScreen()
 	draw := func() bool {
-		dwgrid.RenderGrid(scr, dw, src, rows, sel, page, parPage, total, filtre, triLabel(src, dw, triEtat), editable, downloadable, scroll)
+		dwgrid.RenderGrid(scr, dw, src, rows, sel, page, parPage, total, filtre, triLabel(src, dw, triEtat), editable, downloadable, copyable, scroll)
 		return s.Write(string(scr.Render())) == nil
 	}
 	// Recharge complète de l'écran (après une saisie plein écran qui a brouillé
@@ -242,6 +245,13 @@ func dataWindowApplet(ctx context.Context, s *server.Session, ac *AppContext) Ou
 				} else {
 					sendFileDownload(s, ac.State.Files, nom)
 				}
+				if !redrawAll() {
+					return Outcome{Quit: true}
+				}
+			}
+		case 'M', 'm': // copier le fichier de la ligne vers mon espace personnel
+			if copyable && len(rows) > 0 {
+				copyRowToPersonal(s, ac, strings.TrimSpace(rows[sel][dw.FichierColonne]))
 				if !redrawAll() {
 					return Outcome{Quit: true}
 				}

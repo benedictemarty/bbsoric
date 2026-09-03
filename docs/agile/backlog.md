@@ -293,8 +293,12 @@
   *(Done 03/09 — `files.Library.Delete`/`Rename` (name-validated, no silent overwrite) exposed via
   `userfiles.Store`; applet `mesfichiers` keys `E` (delete + `O/N` confirm) and `R` (rename). Tests
   `TestDelete`/`TestRename`; verified in a live server (upload → rename → delete, disk empty).)*
-- [ ] **L4** (3) As a logged-in user, I want to **copy a Catalogue file into my personal space**,
-  so I can keep a public title among my files. *(Later.)*
+- [x] **L4** (3) As a logged-in user, I want to **copy a Catalogue file into my personal space**,
+  so I can keep a public title among my files.
+  *(Done 03/09 — DataWindow grid key `M` (`copyable = downloadable && UserFiles && member`): reads the
+  row's public `-files` entry and writes it to the personal space (quota applied). Legend shows
+  `M=perso` only when copyable (`dwgrid` param + test `TestRenderGridLegendKeys`). Verified in a live
+  server: register → catalogue → `M` → the file lands in `<userfiles>/<handle>/`.)*
 
 ## Epic K — Portable PC terminal (oterm)
 

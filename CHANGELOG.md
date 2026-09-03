@@ -6,6 +6,15 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (catalogue → espace personnel — copie, L4, 03/09/2026)
+- **Grille DataWindow** : nouvelle touche **`M`** (« Mon espace ») qui **copie** le fichier de la ligne
+  du Catalogue public vers l'espace personnel du membre (`copyRowToPersonal` : lecture `-files` →
+  `userfiles.Store.Write`, quota appliqué). Réservée aux **membres identifiés** avec `-userfiles`
+  (`copyable = downloadable && UserFiles != nil && User != nil`) ; la légende n'affiche `M=perso` que
+  dans ce cas (`dwgrid.RenderGrid` gagne un paramètre `copyable`).
+- **Tests** : `TestRenderGridLegendKeys` (légende conditionnelle). **Vérifié en live** : inscription →
+  Catalogue → `M` → le fichier apparaît dans `<userfiles>/<pseudo>/`.
+
 ### Added (espace fichiers personnels — supprimer / renommer, L3, 03/09/2026)
 - **`server/internal/files`** : `Library.Delete(name)` et `Library.Rename(old, new)` (noms validés,
   pas d'écrasement silencieux sur rename). Exposés dans **`userfiles.Store`** (`Delete`/`Rename`).

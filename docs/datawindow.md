@@ -140,6 +140,7 @@ différentiel laisse apparaître le pied de la grille au-dessus).*
 | `T` | cycler le tri : défaut → colonne 1 ASC → DESC → colonne 2 ASC → … (libellé au pied) |
 | `N` / `E` / `D` | créer / éditer / supprimer (si `editable` **et** session **admin**) |
 | `X` | **télécharger** le fichier de la ligne (si `fichier_colonne` défini + `-files`) — catalogue |
+| `M` | **copier** le fichier de la ligne dans **Mon espace personnel** (si `-userfiles` + membre identifié ; quota appliqué) — cf. `docs/userfiles.md` |
 | `Q` ou ESC | quitter la grille |
 
 **Catalogue de téléchargement** (Epic J). Un descriptif DataWindow peut porter

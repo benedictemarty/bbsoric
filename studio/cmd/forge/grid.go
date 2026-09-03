@@ -65,7 +65,7 @@ func (s *server) handleGrid(w http.ResponseWriter, r *http.Request) {
 
 	scr := oascii.NewScreen()
 	dwgrid.RenderGrid(scr, dw, src, rows, sel, pageNum, parPage, total, filtre,
-		"", dw.Editable, dw.FichierColonne != "", scroll)
+		"", dw.Editable, dw.FichierColonne != "", false, scroll)
 	w.Header().Set("Content-Type", "application/octet-stream")
 	_, _ = w.Write(scr.Buffer())
 }

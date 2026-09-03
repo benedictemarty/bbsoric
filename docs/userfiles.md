@@ -54,6 +54,13 @@ L'applet **liste** les fichiers du compte (avec compteur d'usage). Touches :
 - `R` : **renommer** un fichier (numéro + nouveau nom ; refus si la cible existe) ;
 - `Q` : revenir.
 
+## Copie depuis le Catalogue (touche `M`)
+
+Depuis une grille **Catalogue** (`datawindow` avec `fichier_colonne`), un membre identifié copie le
+fichier de la ligne sélectionnée dans son espace personnel avec la touche **`M`** (« Mon espace ») :
+le fichier public (`-files`) est lu puis écrit dans `<userfiles>/<pseudo>/` (quota appliqué, refus
+propre si dépassement). La touche n'apparaît (légende « M=perso ») que pour un membre avec `-userfiles`.
+
 ## Règles d'accès
 
 - **Réservé aux comptes identifiés** : un **invité** est refusé (« Reserve aux membres
