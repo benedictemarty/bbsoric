@@ -225,6 +225,16 @@
           "text": " Acces    - telnet 6502 / TLS 6992"
         },
         {
+          "text": " Catalogue- 1520 jeux a telecharger",
+          "ink": "cyan"
+        },
+        {
+          "text": " + 701 revues et 340 livres (fiche V)"
+        },
+        {
+          "text": " Fichiers - espace prive par compte"
+        },
+        {
           "text": " Contenu  - JSON modifiable a chaud",
           "ink": "cyan"
         }

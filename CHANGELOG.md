@@ -6,6 +6,12 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Changed (contenu — page « Informations systeme » enrichie, 03/09/2026)
+- **`content/site.json`** page `info` : ajout des lignes **Catalogue** (1520 jeux à télécharger +
+  701 revues / 340 livres consultables) et **Fichiers** (espace privé par compte). Lignes OASCII
+  vérifiées (≤ 40 colonnes, attribut compris). Appliquée en prod à chaud (hot-reload, sans restart)
+  et vérifiée par navigation.
+
 ### Docs (catalogue & fichiers personnels, 02/09/2026)
 - **`docs/userfiles.md`** (nouveau) : espace fichiers personnel par compte — activation
   (`-userfiles` + quotas), modèle de stockage (`<dir>/<pseudo>/`, réutilise `files.Library`),
