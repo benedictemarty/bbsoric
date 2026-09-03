@@ -6,6 +6,15 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (espace fichiers personnels — supprimer / renommer, L3, 03/09/2026)
+- **`server/internal/files`** : `Library.Delete(name)` et `Library.Rename(old, new)` (noms validés,
+  pas d'écrasement silencieux sur rename). Exposés dans **`userfiles.Store`** (`Delete`/`Rename`).
+- **Applet `mesfichiers`** : touches **`E`** (effacer, sélection par numéro + confirmation `O/N`) et
+  **`R`** (renommer, numéro + nouveau nom). Bandeau d'aide compact « 1-9=DL T=env E=eff R=ren Q=ret ».
+- **Tests** : `TestDelete` (libère le quota, refus si absent), `TestRename` (contenu préservé, quota
+  inchangé, refus si cible existante ou nom invalide). **Vérifié en live** : upload → renommer →
+  supprimer (espace et disque vides).
+
 ### Docs (backlog & ROADMAP réconciliés, 03/09/2026)
 - **`docs/agile/backlog.md`** : K7 (fix flèches oterm) tracé comme fait. Seuls items ouverts : L3
   (supprimer/renommer) et L4 (copier depuis le Catalogue).

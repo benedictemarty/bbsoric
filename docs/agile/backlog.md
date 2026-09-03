@@ -289,7 +289,10 @@
   downloads and the page now hosts the personal space.
   *(Done 02/09 — `content/site.json` page `fichiers` (« MES FICHIERS ») lance désormais `mesfichiers` ;
   les applets `download`/`upload` publics à plat en sont retirés.)*
-- [ ] **L3** (2) As a logged-in user, I want to **delete / rename** my own files. *(Later.)*
+- [x] **L3** (2) As a logged-in user, I want to **delete / rename** my own files.
+  *(Done 03/09 — `files.Library.Delete`/`Rename` (name-validated, no silent overwrite) exposed via
+  `userfiles.Store`; applet `mesfichiers` keys `E` (delete + `O/N` confirm) and `R` (rename). Tests
+  `TestDelete`/`TestRename`; verified in a live server (upload → rename → delete, disk empty).)*
 - [ ] **L4** (3) As a logged-in user, I want to **copy a Catalogue file into my personal space**,
   so I can keep a public title among my files. *(Later.)*
 

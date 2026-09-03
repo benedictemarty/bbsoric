@@ -7,6 +7,7 @@ import (
 
 	"github.com/benedictemarty/bbsoric/internal/oascii"
 	"github.com/benedictemarty/bbsoric/internal/xmodem"
+	"github.com/benedictemarty/bbsoric/server/internal/files"
 	"github.com/benedictemarty/bbsoric/server/internal/server"
 )
 
@@ -66,7 +67,7 @@ func mesFichiersApplet(ctx context.Context, s *server.Session, ac *AppContext) O
 				b.Ink(oascii.White).Text(fmt.Sprintf("%-20s %5do", f.Name, f.Size)).Newline()
 			}
 		}
-		b.Newline().Ink(oascii.Green).Text("1-9=telecharger  T=televerser  Q=retour > ")
+		b.Newline().Ink(oascii.Green).Text("1-9=DL T=env E=eff R=ren Q=ret > ")
 		if s.Write(b.String()) != nil {
 			return Outcome{Quit: true}
 		}
@@ -80,12 +81,83 @@ func mesFichiersApplet(ctx context.Context, s *server.Session, ac *AppContext) O
 			return Outcome{Done: true}
 		case key == 'T' || key == 't':
 			uploadToPersonal(s, ac, handle)
+		case key == 'E' || key == 'e':
+			deleteFromPersonal(s, ac, handle, list)
+		case key == 'R' || key == 'r':
+			renameInPersonal(s, ac, handle, list)
 		case key >= '1' && key <= '9':
 			idx := int(key - '1')
 			if idx < len(list) && idx < 9 {
 				sendFileDownload(s, lib, list[idx].Name)
 			}
 		}
+	}
+}
+
+// pickFile demande un numéro de fichier (1..min(len,9)) et renvoie l'indice choisi,
+// ou -1 si l'entrée est invalide (annulation).
+func pickFile(s *server.Session, list []files.Info, verbe string) int {
+	b := oascii.New()
+	b.Newline().Ink(oascii.Green).Text(verbe + " quel fichier (1-" + itoa(min(len(list), 9)) + ", autre=annuler) ? ")
+	if s.Write(b.String()) != nil {
+		return -1
+	}
+	key, err := s.ReadKey()
+	if err != nil {
+		return -1
+	}
+	idx := int(key - '1')
+	if idx < 0 || idx >= len(list) || idx >= 9 {
+		return -1
+	}
+	return idx
+}
+
+// deleteFromPersonal supprime un fichier de l'espace personnel (avec confirmation).
+func deleteFromPersonal(s *server.Session, ac *AppContext, handle string, list []files.Info) {
+	if len(list) == 0 {
+		return
+	}
+	idx := pickFile(s, list, "Supprimer")
+	if idx < 0 {
+		return
+	}
+	f := list[idx]
+	c := oascii.New()
+	c.Newline().Ink(oascii.Yellow).Text("Supprimer " + f.Name + " ? (O/N) ")
+	_ = s.Write(c.String())
+	k, err := s.ReadKey()
+	if err != nil || (k != 'O' && k != 'o') {
+		return
+	}
+	if err := ac.State.UserFiles.Delete(handle, f.Name); err != nil {
+		writeErr(s, "Echec : "+err.Error())
+		anyKey(s)
+	}
+	// Retour à la boucle : la liste rafraîchie montre la suppression.
+}
+
+// renameInPersonal renomme un fichier de l'espace personnel.
+func renameInPersonal(s *server.Session, ac *AppContext, handle string, list []files.Info) {
+	if len(list) == 0 {
+		return
+	}
+	idx := pickFile(s, list, "Renommer")
+	if idx < 0 {
+		return
+	}
+	f := list[idx]
+	nom, err := prompt(s, "Nouveau nom (vide=annuler)")
+	if err != nil {
+		return
+	}
+	nom = strings.TrimSpace(nom)
+	if nom == "" || nom == f.Name {
+		return
+	}
+	if err := ac.State.UserFiles.Rename(handle, f.Name, nom); err != nil {
+		writeErr(s, "Echec : "+err.Error())
+		anyKey(s)
 	}
 }
 

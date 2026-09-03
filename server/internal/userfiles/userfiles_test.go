@@ -96,6 +96,58 @@ func TestQuotaBytes(t *testing.T) {
 	}
 }
 
+// Delete retire le fichier et libère le quota (nombre + octets).
+func TestDelete(t *testing.T) {
+	st := openTmp(t, 2, 0)
+	if err := st.Write("u", "A", []byte("12345")); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Write("u", "B", []byte("xy")); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Delete("u", "A"); err != nil {
+		t.Fatalf("delete A : %v", err)
+	}
+	n, total, _ := st.Usage("u")
+	if n != 1 || total != 2 {
+		t.Errorf("apres delete : %d fichiers / %do (attendu 1 / 2)", n, total)
+	}
+	// la place libérée permet une nouvelle écriture (quota 2 fichiers)
+	if err := st.Write("u", "C", []byte("z")); err != nil {
+		t.Errorf("ecriture apres delete refusee a tort : %v", err)
+	}
+	// supprimer un fichier absent -> erreur
+	if err := st.Delete("u", "ABSENT"); err == nil {
+		t.Error("delete d'un fichier absent aurait du echouer")
+	}
+}
+
+// Rename change le nom, garde le contenu, ne touche pas au quota ; refuse si la
+// cible existe déjà.
+func TestRename(t *testing.T) {
+	st := openTmp(t, 0, 0)
+	st.Write("u", "OLD.TAP", []byte("data"))
+	st.Write("u", "AUTRE", []byte("z"))
+	if err := st.Rename("u", "OLD.TAP", "NEW.TAP"); err != nil {
+		t.Fatalf("rename : %v", err)
+	}
+	lib, _ := st.For("u")
+	if d, err := lib.Read("NEW.TAP"); err != nil || string(d) != "data" {
+		t.Errorf("relecture NEW.TAP : %q, %v", d, err)
+	}
+	if _, err := lib.Read("OLD.TAP"); err == nil {
+		t.Error("OLD.TAP devrait avoir disparu")
+	}
+	// renommer vers un nom existant -> refusé (pas d'écrasement)
+	if err := st.Rename("u", "NEW.TAP", "AUTRE"); err == nil {
+		t.Error("rename vers une cible existante aurait du echouer")
+	}
+	// nom invalide -> refusé
+	if err := st.Rename("u", "NEW.TAP", "a/b"); err == nil {
+		t.Error("rename vers un nom invalide aurait du echouer")
+	}
+}
+
 // Un pseudo qui ne se réduit pas à [a-z0-9_-] est refusé (défense path-traversal).
 func TestUnsafeHandleRejected(t *testing.T) {
 	st := openTmp(t, 0, 0)

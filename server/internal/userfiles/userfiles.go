@@ -107,3 +107,22 @@ func (s *Store) Write(handle, name string, data []byte) error {
 	}
 	return lib.Write(name, data)
 }
+
+// Delete supprime un fichier de l'espace de handle.
+func (s *Store) Delete(handle, name string) error {
+	lib, err := s.For(handle)
+	if err != nil {
+		return err
+	}
+	return lib.Delete(name)
+}
+
+// Rename renomme un fichier de l'espace de handle (oldName -> newName). Ne change
+// pas l'usage du quota ; refuse si la cible existe déjà.
+func (s *Store) Rename(handle, oldName, newName string) error {
+	lib, err := s.For(handle)
+	if err != nil {
+		return err
+	}
+	return lib.Rename(oldName, newName)
+}

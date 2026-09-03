@@ -105,3 +105,27 @@ func (l *Library) Write(name string, data []byte) error {
 	}
 	return os.Rename(tmpName, dst)
 }
+
+// Delete supprime un fichier de la bibliothèque. Refuse un nom invalide.
+func (l *Library) Delete(name string) error {
+	if !validName(name) {
+		return fmt.Errorf("nom de fichier invalide : %q", name)
+	}
+	return os.Remove(filepath.Join(l.dir, name))
+}
+
+// Rename renomme un fichier (oldName -> newName). Refuse un nom invalide ou si la
+// cible existe déjà (pas d'écrasement silencieux).
+func (l *Library) Rename(oldName, newName string) error {
+	if !validName(oldName) || !validName(newName) {
+		return fmt.Errorf("nom de fichier invalide")
+	}
+	if oldName == newName {
+		return nil
+	}
+	dst := filepath.Join(l.dir, newName)
+	if _, err := os.Stat(dst); err == nil {
+		return fmt.Errorf("un fichier %q existe déjà", newName)
+	}
+	return os.Rename(filepath.Join(l.dir, oldName), dst)
+}

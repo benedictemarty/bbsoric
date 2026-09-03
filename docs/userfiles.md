@@ -47,9 +47,12 @@ Un seul applet : **`mesfichiers`**. Il se pose comme entrée de menu :
 ]}
 ```
 
-L'applet **liste** les fichiers du compte (avec compteur d'usage), permet le **téléchargement**
-(numéro `1`–`9` → XMODEM, même chemin que le Catalogue) et le **téléversement** (`T` → XMODEM →
-écriture avec quota), `Q` pour revenir.
+L'applet **liste** les fichiers du compte (avec compteur d'usage). Touches :
+- `1`–`9` : **télécharger** (XMODEM, même chemin que le Catalogue) ;
+- `T` : **téléverser** (XMODEM → écriture avec quota) ;
+- `E` : **effacer** un fichier (sélection par numéro + confirmation `O/N`) ;
+- `R` : **renommer** un fichier (numéro + nouveau nom ; refus si la cible existe) ;
+- `Q` : revenir.
 
 ## Règles d'accès
 
