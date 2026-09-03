@@ -1,0 +1,11 @@
+[Unit]
+Description=Synchronise les actualites du BBS Oric depuis les articles de tachibana.eu
+# Tourne sur l'hote Proxmox (acces pct aux CT tachibana + bbsoric).
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/oric-news-sync.sh
+# Le script est idempotent : ne pousse/redemarre que si le contenu a change.
+Nice=10

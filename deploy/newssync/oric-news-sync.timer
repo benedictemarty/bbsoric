@@ -1,0 +1,11 @@
+[Unit]
+Description=Synchro quotidienne des actualites BBS Oric <- articles tachibana.eu
+
+[Timer]
+# Tous les jours vers 06:15 (heure locale de l'hote), avec dispersion aleatoire.
+OnCalendar=*-*-* 06:15:00
+RandomizedDelaySec=1800
+Persistent=true
+
+[Install]
+WantedBy=timers.target

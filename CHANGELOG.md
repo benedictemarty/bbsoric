@@ -6,6 +6,15 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (synchro périodique des actualités — artefacts, 03/09/2026)
+- **`deploy/newssync/`** : timer systemd (quotidien) pour importer automatiquement les articles
+  tachibana.eu dans les actualités du BBS, à installer sur l'hôte Proxmox **kiranerys** (seul à
+  atteindre CT 716 tachibana + CT 510 bbsoric via `pct`). `oric-news-sync.sh` **idempotent** : ne
+  pousse le `news.json` et ne redémarre `bbsoric` **que si le contenu a changé** (comparaison
+  sémantique). Unités `.service`/`.timer` + `README.md` d'installation.
+- ⚠️ **Non installé** : l'installation sur kiranerys (infra partagée, redémarrage prod) est laissée à
+  une action manuelle explicite (cf. `deploy/newssync/README.md`).
+
 ### Added (actualités BBS depuis les articles tachibana.eu, 03/09/2026)
 - **Nouveau `scripts/gen-news-tachibana.py`** : importe les **articles** de tachibana.eu
   (`tachibana.sqlite`, table `articles`, `published=1`, langue `--lang` défaut `fr`) vers le store
