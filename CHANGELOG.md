@@ -6,6 +6,14 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Docs (backlog & ROADMAP réconciliés, 03/09/2026)
+- **`docs/agile/backlog.md`** : K7 (fix flèches oterm) tracé comme fait. Seuls items ouverts : L3
+  (supprimer/renommer) et L4 (copier depuis le Catalogue).
+- **`ROADMAP.md`** : réconciliation des statuts (les sprints 0/1/2/10 étaient marqués « in progress »
+  alors que terminés) — bandeau « IN PRODUCTION », headers alignés sur la réalité (finis vs résiduals
+  honnêtes : Sprint 4 bloqué matériel, Sprint 7 #5/#6, HIRES « Later », I2b-c), nouvelle section
+  « Recent epics » (J catalogue tachibana, L espace personnel, K7) référençant le backlog.
+
 ### Changed (contenu — page « Informations systeme » enrichie, 03/09/2026)
 - **`content/site.json`** page `info` : ajout des lignes **Catalogue** (1520 jeux à télécharger +
   701 revues / 340 livres consultables) et **Fichiers** (espace privé par compte). Lignes OASCII

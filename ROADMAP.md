@@ -6,7 +6,13 @@
 > on `0.0.0.0`, reachable by any Oric via WiFiModem). Security, exposure and hosting are concerns of
 > **every** sprint, not just Sprint 5. See `docs/architecture.md` §5.
 
-## Sprint 0 — Scoping & foundation ⏳ (in progress)
+> **Current status (03/09/2026): IN PRODUCTION** on `pavi.3617.fr:6502`. Core sprints (0–3, 5, 9, 11)
+> delivered; recent epics **J (download catalogue, source tachibana.eu)** and **L (personal file
+> space)** are **live** — see the "Recent epics" section below and `docs/agile/backlog.md`. Genuinely
+> **open**: real-hardware test (Sprint 4, awaiting iron), Sprint 7 #5/#6 (RSS, door game), HIRES
+> "Later" enhancements (Sprint 10), backlog **L3/L4**, and header widening **I2b-c** (files > 64 KB).
+
+## Sprint 0 — Scoping & foundation — ✅ done
 - [x] State of the art of retro BBS servers (`docs/state-of-the-art.md`)
 - [x] Target scoping: Oric-1/Atmos + LOCI + WiFiModem; test emulator = `Oric1/oric1-emu` (Phosphoric)
 - [x] Git repository initialisation, agile documentation, CHANGELOG, ROADMAP
@@ -16,7 +22,7 @@
 - [x] Minimal Internet exposure: global and per-IP connection limit, idle timeout, connection logs
 - [x] Emulator test pipeline confirmed (oric1-emu/Phosphoric `--serial tcp:`) — see `docs/emulator-testing.md`
 
-## Sprint 1 — Oric terminal layer ("OASCII") 🎯 heart of the project — ⏳ in progress
+## Sprint 1 — Oric terminal layer ("OASCII") 🎯 heart of the project — ✅ done
 - [x] Encoding of the **Teletext serial attributes**: ink (8), paper (8), blink, double height, alt charset
   — table extracted from the ULA decoder of `oric1-emu` (`src/video/video.c`), unit tests green
 - [x] `internal/oascii`: `Builder` (`Ink/Paper/Blink/DoubleHeight/AltCharset/Text/Newline`), `Sticky` mode
@@ -26,9 +32,9 @@
   (CR/LF/scroll, 40-col clamp), autorun `.tap` build via `bin2tap`
 - [x] **Visual validation in `oric1-emu`**: coloured banner rendered correctly (yellow/cyan/green/white)
   — capture `docs/img/sprint1-banner.png`, automated test `scripts/test-emulateur.sh`
-- [ ] Cursor positioning / direct `cls` (optional — VRAM writing already handles rendering; to be defined if needed)
+- [x] Cursor positioning (`1F col row`, `oascii.Plot`/`Builder.At`) — delivered later (cf. "Forge" studio section). Direct `cls` unneeded (VRAM writing handles rendering).
 
-## Sprint 2 — BBS engine — ⏳ in progress
+## Sprint 2 — BBS engine — ✅ done (login/accounts live in prod ; residuals optional: login-screen emulator capture, password no-echo)
 - [x] Multi-client session loop (1 connection = 1 goroutine) — `server` layer
 - [x] Menu / navigation system (`internal/bbs/menu.go`: main menu + Information / About / Guestbook
   screens, coloured OASCII rendering) — validated on screen (`docs/img/sprint2-menu.png`)
@@ -72,7 +78,7 @@
   **API auth/headers** (`APIConfig.Headers` with `${VAR}` env-expansion, studio editor).
   Tests `TestListerPrefixe` / `TestValiderMasque` / `TestAPISourceHeaders`.
 
-## Sprint 10 — HIRES pages (240×200 graphics) — ⏳ slice 1 (27/06/2026)
+## Sprint 10 — HIRES pages (240×200 graphics) — ✅ slice 1 done (27/06/2026 ; enhancements "Later" below)
 > Graphics pages over the serial link: **both** a bitmap model (logo/splash) and a
 > primitives model (line/box/circle/…). Design: `docs/adr/0005-hires-pages.md`.
 - [x] **Server foundation** (27/06): content model (`Hires`/`HiresOp`, page field
@@ -98,7 +104,7 @@
 - [ ] **Later**: HIRES `paper` colour, flow-controlled bitmap transfer (vs raw blit),
   differential HIRES buffer for animation.
 
-## Sprint 11 — Code quality & hardening — ✅ done (16/07/2026), sauf I2b (firmware, différé)
+## Sprint 11 — Code quality & hardening — ✅ done (16/07/2026 ; I2b-a/b firmware done 01/09, only I2b-c > 64 KB remains)
 > Decomposition of **Epic I** (`docs/agile/backlog.md`), issued from the full source
 > analysis of 16/07/2026. Ordered by value: real bugs first, then security, robustness,
 > hygiene. Each task cites the offending `file:line` and its acceptance test. DoD applies
@@ -165,7 +171,7 @@
   `:`/`$3A`), removed the dead `hires_fillbox` block in `hires.s`; reassembled via `make client`.
   The tight XMODEM `$4000`↔`$B800` buffer margin is left as a documented latent observation.
 
-## Sprint 8 — Close out file transfer + news — 🎯 in progress (27/06/2026)
+## Sprint 8 — Close out file transfer + news — ✅ mostly done (news + cassette spike ; S1 editable-filename partial)
 > Wraps up Epic G (transfer) and starts Epic D (content/news).
 - [~] **S1 — User-editable filename at reception** (terminal): before saving, the
   received file's proposed Sedoric name can be edited at the keyboard, then it is
@@ -181,7 +187,7 @@
   buffers `$027F`/`$02A8`) but **deferred** — ML CSAVE recipe ≈ the Sedoric R&E
   effort for low value (Sedoric/LOCI already cover storage). See `docs/transfer.md`.
 
-## Sprint 3 — Content modules
+## Sprint 3 — Content modules — ✅ core done (forum/news/Connect Four + XMODEM ; terminal residuals: floppy auto-start, real-Oric test)
 - [x] Messaging / forum (read, post) — done 17/07/2026 (applet `forum`, cf. Sprint 7 #1)
 - [x] News / announcements page — done 17/07/2026 (applet `news`, cf. Sprint 8 S2)
 - [x] Interactive mini-game (Connect Four) — done 17/07/2026 (applet `connect4` + package
@@ -208,7 +214,7 @@
     modem) at runtime to coexist with the Microdisc. **Remaining**: hands-free
     auto-start (replace the master's boot program) + **test on a real Oric**.
 
-## Sprint 4 — Real hardware connection — ⏳ in progress
+## Sprint 4 — Real hardware connection — ⏳ blocked on hardware (only the real-Oric acceptance test remains)
 - [x] **WiFiModem + LOCI connection doc** (`docs/hardware-connection.md`): chain
   Oric→ACIA→modem→TCP, ACIA addressing `$031C` / LOCI modem `$0380` (MIA `$03A0-$03BF`), 6551 registers,
   AT commands (`ATD`/`ATDT#`/`AT$CA`/`AT$CV1`), 9600 8N1 settings, troubleshooting.
@@ -251,7 +257,7 @@
   terminal rendering on iron, real serial XMODEM timing, Sedoric write on a physical
   drive (Microdisc/LOCI). To be recorded in `docs/communication.md`.
 
-## "Forge" studio — content tooling ⏳ (in progress)
+## "Forge" studio — content tooling — ✅ core done (open: multi-site UI, studio auth if exposed)
 `studio/` sub-project: local Go web app to edit the `site.json`(s) and deploy by
 profiles. See `docs/adr/0003-studio-forge.md`.
 - [x] **Restructured** the repository into 3 sub-projects `server/` `client/` `studio/`
@@ -280,7 +286,7 @@ profiles. See `docs/adr/0003-studio-forge.md`.
 - [ ] Advanced multi-site (creating new files from the UI), backup management.
 - [ ] Authentication if the studio were to be exposed (today local-only).
 
-## Sprint 7 — Communication between callers (state-of-the-art parity) — ⏳ in progress
+## Sprint 7 — Communication between callers (state-of-the-art parity) — ✅ core done (who/chat/wall/forum/pm) ; #5 RSS + #6 door game later
 > Historic heart of a BBS, today absent (the "Guestbook" is static).
 > Gap analysis: `docs/state-of-the-art.md` §6. Each feature = one applet
 > (`bbs.Register`) + a persisted store modelled on `internal/user`.
@@ -311,6 +317,20 @@ profiles. See `docs/adr/0003-studio-forge.md`.
   « Messagerie privee » in the Community menu. Store unit tests + TCP integration
   (`TestPMReadAndReply`, `TestPMRequiresAccount`); verified in the real server.
 - [ ] **RSS→OASCII news** (#5), **door game** (#6).
+
+## Recent epics — download catalogue & personal files (02–03/09/2026)
+> Full stories in `docs/agile/backlog.md` (Epics J, L). **Live in production.**
+- [x] **Epic J — Download catalogue** (J1–J6): browsable Logiciels / Magazines / Livres (DataWindow),
+  key `X` → XMODEM download. Two generators — `gen-catalogue.py` (OricProgramsLib) and
+  `gen-catalogue-tachibana.py` (**tachibana.eu = production source**) — sharing the site assembly;
+  the Logiciels view lists **downloadable-only** titles. Deploy tooling `pull-tachibana.sh` +
+  `deploy-catalogue.sh --source tachibana`. **In prod: 1520 software / 701 magazines / 340 books**.
+- [x] **Epic L — Personal file space** (L1–L2): per-account **private** files (applet `mesfichiers`,
+  package `server/internal/userfiles`, flags `-userfiles`/quotas), identified accounts only; the
+  "Fichiers" section is now personal (the flat public download/upload was removed, superseded by the
+  catalogue). ADR-0006. **In prod** (verified: register → upload → byte-exact download).
+  **Open**: L3 (delete/rename), L4 (copy a catalogue file into the personal space).
+- [x] **oterm K7**: arrow-key navigation fixed (ANSI CSI/SS3 → Oric arrow codes).
 
 ---
 
