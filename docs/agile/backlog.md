@@ -362,6 +362,13 @@
   bytes identical; the single difference is the ULA mode-latch attribute `0x1E` at `$BB80` written
   by the firmware at `HiOn` (not drawn content, absent from the wire stream) — excluded and
   documented. Test skips without `ORIC_RAM_DUMP` (green CI).)*
+- [x] **K7** (1) As an oterm user, I want the **arrow keys to navigate** (DataWindow grid, menus),
+  since only `+`/`-` worked before.
+  *(Done 02/09 — `pcterm/cmd/oterm/keys.go` (`translateKeys`): converts terminal arrow escape
+  sequences (CSI `ESC [ A/B/C/D`, SS3 `ESC O …`) to the Oric arrow codes the server expects
+  (`0x0B/0x0C/0x0E/0x0F`, cf. `datawindow.go`); ignores other CSI, handles a sequence split across
+  two stdin reads. Tests `keys_test.go`; verified end-to-end (arrow -> Oric code on the wire -> grid
+  selection moves).)*
 
 ## Definition of Done (DoD)
 - Versioned code, `CHANGELOG.md` and `ROADMAP.md` updated.
