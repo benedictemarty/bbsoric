@@ -6,6 +6,22 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (RSS→OASCII news — Sprint 7 #5, 04/09/2026)
+- **Nouveau package `internal/rss`** : parseur défensif **RSS 2.0 / Atom** (stdlib `encoding/xml`,
+  **aucune nouvelle dépendance**). `rss.Parse(io.Reader)` — sans accès réseau — retire le HTML, décode
+  les entités, accepte plusieurs formats de date (RFC1123/RFC3339 et variantes) et trie les entrées de
+  la plus récente à la plus ancienne. Tests RSS + Atom, ordre, entrées vides, dates, rejet du non-XML.
+- **Nouvelle commande `server/cmd/rssnews`** (cible `make rssnews`) : récupère un flux (HTTP **borné +
+  timeout**, ou `-file` local), le convertit en annonces `news.Item` (titre/corps **déaccentués** puis
+  nettoyés ASCII et bornés — l'Oric n'a pas d'accents), garde les `-max` plus récentes, et **fusionne**
+  dans un `news.json` via `--merge-into` en préservant les annonces d'autres auteurs (même règle que le
+  pont tachibana). Tests conversion/bornes/fusion/déaccentuage.
+- **`deploy/rssnews/`** : scaffolding timer systemd (script idempotent + `.service`/`.timer` + README),
+  calqué sur `deploy/newssync`. **Non installé** : aucune URL de flux par défaut (on n'invente pas de
+  source) — `FEED_URL` à renseigner avant activation.
+- **Doc `docs/rss.md`**. `bbsd` reste **sans accès réseau sortant** (l'import se fait hors du daemon).
+  ROADMAP : Sprint 7 #5 marqué fait (reste #6 door game).
+
 ### Added (synchro périodique des actualités, 03/09/2026)
 - **`deploy/newssync/`** : timer systemd (quotidien) qui importe automatiquement les articles
   tachibana.eu dans les actualités du BBS, installé sur l'hôte Proxmox **kiranerys** (seul à atteindre

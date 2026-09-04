@@ -1,6 +1,6 @@
 # BBS Oric — tâches de build, test et déploiement.
 
-.PHONY: help build test vet run studio genfont deploy deploy-build client oterm oterm-run docker-build docker-up docker-down
+.PHONY: help build test vet run studio genfont deploy deploy-build client rssnews oterm oterm-run docker-build docker-up docker-down
 
 help: ## Affiche cette aide
 	@echo "BBS Oric — cibles disponibles :"
@@ -36,6 +36,9 @@ genfont: ## Régénère la police BBS Oric (studio + client) depuis tools/genfon
 
 client: ## Construit la .tap du terminal Oric
 	./client/build.sh
+
+rssnews: ## Compile l'outil d'import de flux RSS/Atom vers les actualités
+	go build -o rssnews ./server/cmd/rssnews
 
 oterm: ## Compile le client terminal OASCII portable (PC : Linux/Windows/macOS)
 	go build -o oterm ./pcterm/cmd/oterm

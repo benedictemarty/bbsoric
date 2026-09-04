@@ -48,6 +48,12 @@
   *(Done 17/07/2026 — applet `news` + package `server/internal/news` (atomic JSON store,
   dated, bounded, ASCII-sanitised). Read for all, admin-only publish. Server flag `-news`;
   « Actualites » in the Services menu. Store tests + TCP integration. Cf. ROADMAP Sprint 8 S2.)*
+- [x] **D2b** (3) As the sysop, I want to **feed the news from an external RSS/Atom feed** (Sprint 7 #5).
+  *(Done 04/09/2026 — package `internal/rss` (defensive RSS 2.0 / Atom parser, stdlib `encoding/xml`,
+  no new dep) + command `server/cmd/rssnews` (bounded HTTP fetch or local file → `news.Item`, accents
+  transliterated then ASCII-sanitised, `--merge-into` preserves other authors like the tachibana
+  bridge). Parser + command unit tests. systemd timer scaffolding `deploy/rssnews/` (not installed:
+  feed URL to be set). Doc `docs/rss.md`. `bbsd` stays network-egress-free.)*
 - [x] **D3** (3) As a user, I want to play a **mini-game** (e.g. Connect Four).
   *(Done 17/07/2026 — applet `connect4` + package `server/internal/connect4` (pure logic,
   7×6 board, deterministic AI: win→block→center, win/draw detection). Services menu

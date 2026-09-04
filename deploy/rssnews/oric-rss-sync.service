@@ -1,0 +1,14 @@
+[Unit]
+Description=Synchronise les actualites du BBS Oric depuis un flux RSS/Atom externe
+# Tourne sur l'hote Proxmox (acces pct au CT bbsoric + reseau sortant vers le flux).
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# URL du flux a renseigner ici (pas de valeur par defaut inventee) :
+Environment=FEED_URL=
+# Environment=FEED_AUTHOR=exemple.org
+ExecStart=/usr/local/bin/oric-rss-sync.sh
+# Le script est idempotent : ne pousse/redemarre que si le contenu a change.
+Nice=10

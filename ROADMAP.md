@@ -9,7 +9,7 @@
 > **Current status (03/09/2026): IN PRODUCTION** on `pavi.3617.fr:6502`. Core sprints (0–3, 5, 9, 11)
 > delivered; recent epics **J (download catalogue, source tachibana.eu)** and **L (personal file
 > space)** are **live** — see the "Recent epics" section below and `docs/agile/backlog.md`. Genuinely
-> **open**: real-hardware test (Sprint 4, awaiting iron), Sprint 7 #5/#6 (RSS, door game), HIRES
+> **open**: real-hardware test (Sprint 4, awaiting iron), Sprint 7 #6 (door game), HIRES
 > "Later" enhancements (Sprint 10), backlog **L3/L4**, and header widening **I2b-c** (files > 64 KB).
 
 ## Sprint 0 — Scoping & foundation — ✅ done
@@ -286,7 +286,7 @@ profiles. See `docs/adr/0003-studio-forge.md`.
 - [ ] Advanced multi-site (creating new files from the UI), backup management.
 - [ ] Authentication if the studio were to be exposed (today local-only).
 
-## Sprint 7 — Communication between callers (state-of-the-art parity) — ✅ core done (who/chat/wall/forum/pm) ; #5 RSS + #6 door game later
+## Sprint 7 — Communication between callers (state-of-the-art parity) — ✅ core done (who/chat/wall/forum/pm/RSS) ; #6 door game later
 > Historic heart of a BBS, today absent (the "Guestbook" is static).
 > Gap analysis: `docs/state-of-the-art.md` §6. Each feature = one applet
 > (`bbs.Register`) + a persisted store modelled on `internal/user`.
@@ -316,7 +316,14 @@ profiles. See `docs/adr/0003-studio-forge.md`.
   Members-only (guests refused); recipient must be an existing account. Server flag `-pm`;
   « Messagerie privee » in the Community menu. Store unit tests + TCP integration
   (`TestPMReadAndReply`, `TestPMRequiresAccount`); verified in the real server.
-- [ ] **RSS→OASCII news** (#5), **door game** (#6).
+- [x] **RSS→OASCII news** (#5, 04/09/2026) — import d'un flux **RSS 2.0 / Atom** externe dans les
+  actualités. Package `internal/rss` (parseur défensif stdlib `encoding/xml`, HTML retiré, dates
+  tolérantes) + commande `server/cmd/rssnews` (récupération HTTP bornée/timeout ou fichier, conversion
+  en `news.Item`, **déaccentuage** avant sanitisation ASCII, fusion `--merge-into` préservant les
+  autres auteurs comme le pont tachibana). Tests parseur (RSS/Atom/ordre/dates) + commande
+  (conversion/bornes/fusion/déaccentuage). Scaffolding timer `deploy/rssnews/` (non installé : URL de
+  flux à renseigner). Cf. `docs/rss.md`. `bbsd` reste sans accès réseau sortant.
+- [ ] **door game** (#6).
 
 ## Recent epics — download catalogue & personal files (02–03/09/2026)
 > Full stories in `docs/agile/backlog.md` (Epics J, L). **Live in production.**
