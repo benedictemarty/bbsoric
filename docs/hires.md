@@ -145,6 +145,35 @@ Sans aucun op `ink`, le rendu reste **monochrome** (encre blanche, colonne 0 lib
   bien compressibles ; un transfert XMODEM-flow-controllé est la piste pour les
   bitmaps arbitraires.
 
+## Animation — buffer différentiel (`oascii.HiresScreen`)
+
+Réémettre 8000 octets de VRAM à chaque image est trop lent pour animer. Le pendant
+HIRES du buffer différentiel TEXT (`oascii.Screen`) résout cela **côté serveur, sans
+toucher au firmware** : `oascii.HiresScreen` maintient la VRAM **composée** et la VRAM
+**affichée**, et son `Render()` n'émet que les **octets modifiés**, sous forme de runs
+`HiBlit` (l'opcode existant, déjà interprété par `hires.s`). Voir ADR-0007.
+
+- **Rastériseur Go** (monochrome, encre par défaut) : `SetPixel`/`ClearPixel`/`Line`/
+  `Box`/`FillBox`/`Circle`/`SetBitmap`, même modèle de pixel que `hires.s`.
+- **Boucle d'animation** : à chaque image, `Clear()` puis (re)tracer la scène, puis
+  `Render()`. La 1ʳᵉ image émet `HiOn` (bascule + efface) ; les suivantes ne portent que
+  les `HiBlit` de diff. L'**effacement est gratuit** (l'ancienne position revient à
+  l'octet vide, capté par le diff). `Render()` renvoie `nil` si rien n'a changé ;
+  `Reset()` force une réémission complète (reconnexion).
+- **Applet de démo** `hiresanim` (`docs/examples/hires-anim.json`) : une balle rebondit
+  dans un cadre fixe ; seule la balle est réémise à chaque image.
+- **Quand le diff gagne** : fond **complexe** (peu compressible RLE) + changement
+  **localisé**. Un changement dispersé sur beaucoup de lignes (contour qui se décale)
+  peut coûter plus cher qu'une image pleine uniforme → garder la partie mobile locale.
+- **Pas de contrôle de flux** : le terminal n'exerce aucune contre-pression. Deux règles
+  pour animer sans saturer le FIFO série : (1) garder les runs **contigus** — une bordure
+  d'écran coûte ~200 mini-blits (1 pixel par ligne à gauche/droite), un rail *horizontal*
+  en coûte 1 ; (2) **cadencer** les images (l'applet démo : sprite plein entre 2 rails,
+  ~3 img/s). Le transfert avec contrôle de flux reste un item « Later » du Sprint 10.
+- **Preuves** : round-trip (le flux rejoué reconstruit exactement la VRAM composée,
+  `internal/oascii/hires_screen_test.go`) + runtime `oric1-emu`
+  (`scripts/test-emulateur-hires-anim.sh` : VRAM dumpée à deux instants → elle a changé).
+
 ## Édition dans le studio Forge
 
 Une page HIRES s'édite visuellement dans le studio (onglet **Édition**) :

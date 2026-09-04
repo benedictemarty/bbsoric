@@ -9,8 +9,8 @@
 > **Current status (03/09/2026): IN PRODUCTION** on `pavi.3617.fr:6502`. Core sprints (0–3, 5, 9, 11)
 > delivered; recent epics **J (download catalogue, source tachibana.eu)** and **L (personal file
 > space)** are **live** — see the "Recent epics" section below and `docs/agile/backlog.md`. Genuinely
-> **open**: real-hardware test (Sprint 4, awaiting iron), Sprint 7 #6 (door game), HIRES
-> "Later" enhancements (Sprint 10).
+> **open**: real-hardware test (Sprint 4, awaiting iron), Sprint 7 #6 (door game), remaining HIRES
+> "Later" (paper colour, flow-controlled bitmap — Sprint 10 ; animation diff done 05/09).
 
 ## Sprint 0 — Scoping & foundation — ✅ done
 - [x] State of the art of retro BBS servers (`docs/state-of-the-art.md`)
@@ -78,7 +78,7 @@
   **API auth/headers** (`APIConfig.Headers` with `${VAR}` env-expansion, studio editor).
   Tests `TestListerPrefixe` / `TestValiderMasque` / `TestAPISourceHeaders`.
 
-## Sprint 10 — HIRES pages (240×200 graphics) — ✅ slice 1 done (27/06/2026 ; enhancements "Later" below)
+## Sprint 10 — HIRES pages (240×200 graphics) — ✅ slice 1 (27/06/2026) + animation diff (05/09/2026) ; paper/flow-control « Later »
 > Graphics pages over the serial link: **both** a bitmap model (logo/splash) and a
 > primitives model (line/box/circle/…). Design: `docs/adr/0005-hires-pages.md`.
 - [x] **Server foundation** (27/06): content model (`Hires`/`HiresOp`, page field
@@ -101,8 +101,12 @@
 - [x] **HIRES ink colour** (27/06): `ink` op now coloured — the terminal places a
   per-line ink attribute at column 0 (authentic Oric attribute clash); monochrome
   unchanged when no `ink` op. Studio preview colourised. Validated in `oric1-emu`.
-- [ ] **Later**: HIRES `paper` colour, flow-controlled bitmap transfer (vs raw blit),
-  differential HIRES buffer for animation.
+- [x] **Differential HIRES buffer for animation** (05/09/2026): `oascii.HiresScreen` (twin of
+  `oascii.Screen`) — composed + shown VRAM, `Render()` emits only changed runs as `HiBlit`
+  (no firmware change; 1st frame `HiOn`, later frames diff-only). Go monochrome rasteriser
+  (SetPixel/Line/Box/FillBox/Circle/SetBitmap). Demo applet `hiresanim` (bouncing ball, fixed frame).
+  Round-trip + TCP tests + runtime proof (`scripts/test-emulateur-hires-anim.sh`). ADR-0007.
+- [ ] **Later**: HIRES `paper` colour, flow-controlled bitmap transfer (vs raw blit).
 
 ## Sprint 11 — Code quality & hardening — ✅ done (16/07/2026 ; I2b firmware a/b/c done 01–05/09, downloads > 64 KB shipped)
 > Decomposition of **Epic I** (`docs/agile/backlog.md`), issued from the full source

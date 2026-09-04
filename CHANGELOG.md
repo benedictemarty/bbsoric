@@ -6,6 +6,23 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (animation HIRES — buffer différentiel, Sprint 10 « Later », 05/09/2026)
+- **Nouveau `oascii.HiresScreen`** : pendant HIRES du buffer différentiel TEXT (`oascii.Screen`).
+  Maintient la VRAM composée + affichée (8000 o) ; `Render()` n'émet que les **octets modifiés**
+  sous forme de runs **`HiBlit`** (opcode existant → **aucun changement firmware**), enveloppés dans
+  `1F FC … HiEnd`. 1ʳᵉ image = `HiOn` (bascule + efface) ; suivantes = diff seul. Rastériseur Go
+  monochrome (`SetPixel`/`ClearPixel`/`Line`/`Box`/`FillBox`/`Circle`/`SetBitmap`, modèle de pixel
+  identique à `hires.s`). `Reset()` force une réémission complète.
+- **Applet `hiresanim`** (démo) : un sprite plein se déplace entre deux rails fixes ; seul le sprite
+  est réémis à chaque image. Contenu d'exemple `docs/examples/hires-anim.json`. Choix dictés par
+  l'**absence de contrôle de flux** : runs contigus (rails horizontaux, pas de bordure = 200 mini-blits)
+  et cadence modérée (~3 img/s) pour ne pas saturer le FIFO série du terminal.
+- **Tests** : unitaires (`hires_screen_test.go`, dont un **round-trip** qui rejoue le flux et
+  reconstruit la VRAM exacte, et une **séquence d'animation** — preuves déterministes du diff),
+  intégration TCP (`hiresanim_test.go`), et **smoke test runtime** `oric1-emu`
+  (`scripts/test-emulateur-hires-anim.sh` : le vrai firmware rend le flux différentiel, la VRAM
+  échantillonnée prend plusieurs états distincts). ADR-0007, doc `docs/hires.md`.
+
 ### Deployed (serveur v4 en prod + release client v4, 05/09/2026)
 - **Serveur v4 déployé en production** (`make deploy` → `pavi.3617.fr` / CT 510 `192.168.5.10:6502`) :
   service `bbsoric` actif, écoute vérifiée sur 6502. Embarque tout l'Unreleased (RSS #5, I2b-c > 64 Kio,

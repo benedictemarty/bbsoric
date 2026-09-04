@@ -1,0 +1,13 @@
+{
+  "_comment": "Demo ANIMATION HIRES (buffer differentiel oascii.HiresScreen). Lancer avec bbsd -content docs/examples/hires-anim.json ; entree 1 -> applet hiresanim : une balle rebondit dans un cadre fixe, seule la balle est reemise a chaque image (HiBlit de diff). Preuve runtime : scripts/test-emulateur-hires-anim.sh.",
+  "start": "accueil",
+  "pages": {
+    "accueil": {
+      "title": "DEMO ANIMATION HIRES",
+      "entries": [
+        { "key": "1", "label": "Balle rebondissante", "applet": "hiresanim", "next": "accueil" },
+        { "key": "Q", "label": "Quitter", "target": "__quit__" }
+      ]
+    }
+  }
+}
