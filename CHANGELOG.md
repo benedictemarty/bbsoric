@@ -6,6 +6,16 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Fixed (régénération du client BBS — firmware v4, 05/09/2026)
+- **Client Oric régénéré** depuis le firmware v4 (en-tête de download 3 octets) : `make client`
+  (`term.tap`, `$1000..$2C9C`, 7325 o) **et** disquette bootable Sedoric `client/term-boot.dsk`
+  (`client/build-disk.sh`).
+- **Bug de troncature corrigé dans `client/build-disk.sh`** : l'adresse de fin du `SAVE"TERM"`
+  Sedoric était **codée en dur** à `E#1E26` (firmware d'une époque bien plus petite). Le firmware
+  actuel finissant à `$2C9C`, la disquette produite tronquait `TERM.COM` de ~3,7 Kio → terminal
+  cassé. L'adresse est désormais **calculée dynamiquement** depuis la taille de `term.bin`
+  (`$1000 + taille − 1`), pour ne plus jamais dériver quand le firmware grossit.
+
 ### Changed (téléchargement de fichiers > 64 Kio — I2b-c, 05/09/2026)
 - **En-tête de download v4** : le champ *taille réelle* passe de **2 à 3 octets** (24 bits,
   lo/mid/hi). Le plafond de téléchargement passe de **64 Kio** à la limite de la jauge (nombre de

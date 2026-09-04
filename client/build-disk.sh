@@ -40,7 +40,12 @@ done
 echo "--- 1. Assemblage du terminal ---"
 bash "$HERE/build.sh" >/dev/null
 [ -f "$HERE/term.bin" ] || { echo "ERREUR : term.bin manquant."; exit 1; }
-echo "  term.bin : $(stat -c%s "$HERE/term.bin") octets"
+SIZE="$(stat -c%s "$HERE/term.bin")"
+# Adresse de fin (inclusive) calculee depuis la taille reelle du firmware : le
+# SAVE Sedoric doit couvrir tout le binaire, sinon TERM.COM est tronque. NE PAS
+# coder cette adresse en dur : le firmware grossit a chaque ajout de fonction.
+END_HEX="$(printf '%04X' $((0x1000 + SIZE - 1)))"
+echo "  term.bin : $SIZE octets  (\$1000..\$$END_HEX)"
 
 echo "--- 2. Cassette non-autorun ---"
 TAP="$(mktemp --suffix=.tap)"
@@ -59,7 +64,7 @@ cp "$MASTER" "$OUT"
 # survit au boot. Au prompt (~13M) : SAVE du terminal en fichier Sedoric.
 "$EMU" -n -r "$ROM" --disk-rom "$DISKROM" -d "$OUT" -t "$TAP" -f \
 	--disk-writeback -c 40000000 \
-	--type-keys '13000000:\n\p1SAVE"TERM",A#1000,E#1E26\n\p8' >/dev/null 2>&1
+	--type-keys "13000000:\n\p1SAVE\"TERM\",A#1000,E#$END_HEX\n\p8" >/dev/null 2>&1
 
 echo "--- 4. Vérification ---"
 if grep -aboqE 'TERM     COM' "$OUT"; then
