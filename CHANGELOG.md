@@ -6,6 +6,15 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Deployed (serveur v4 en prod + release client v4, 05/09/2026)
+- **Serveur v4 déployé en production** (`make deploy` → `pavi.3617.fr` / CT 510 `192.168.5.10:6502`) :
+  service `bbsoric` actif, écoute vérifiée sur 6502. Embarque tout l'Unreleased (RSS #5, I2b-c > 64 Kio,
+  catalogue tachibana, espace fichiers personnels…). `site.json` de prod (éditions à chaud) préservé.
+- **Release client `v0.2.0-alpha`** publiée (GitHub Releases) avec les assets **`term.tap`** et
+  **`term-boot.dsk`** régénérés (firmware v4). README mis à jour (lien « Latest version »).
+- ⚠️ **Incompatibilité assumée** : le terminal v4 va de pair avec le serveur v4 ; un terminal v3 ne
+  peut plus télécharger correctement → reflash requis. Décision utilisateur (déployer serveur + client).
+
 ### Fixed (régénération du client BBS — firmware v4, 05/09/2026)
 - **Client Oric régénéré** depuis le firmware v4 (en-tête de download 3 octets) : `make client`
   (`term.tap`, `$1000..$2C9C`, 7325 o) **et** disquette bootable Sedoric `client/term-boot.dsk`

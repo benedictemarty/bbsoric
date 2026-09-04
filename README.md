@@ -28,7 +28,9 @@ deployed via `make deploy`. See [`ROADMAP.md`](ROADMAP.md) and [`docs/agile/back
 
 The Oric terminal is distributed via the **[GitHub Releases](../../releases)** — the
 images are **not** versioned in the repository (regenerable artefacts, see
-`.gitignore`). Latest version: **[`v0.1.0-alpha`](../../releases/tag/v0.1.0-alpha)**:
+`.gitignore`). Latest version: **[`v0.2.0-alpha`](../../releases/tag/v0.2.0-alpha)**
+(download header **v4**: files > 64 KB, streaming to LOCI SD / Sedoric slices — pairs
+with the v4 server; older terminals must be reflashed):
 
 | File | What |
 |---------|------|
