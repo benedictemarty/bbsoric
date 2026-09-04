@@ -73,9 +73,9 @@ func sendFileDownload(s *server.Session, lib *files.Library, name string) {
 		anyKey(s)
 		return
 	}
-	// L'en-tête de download code la taille réelle sur 16 bits (cf. downloadHeader) :
-	// au-delà, elle serait tronquée silencieusement et la sauvegarde côté terminal
-	// serait corrompue. On refuse proprement plutôt que d'émettre un en-tête faux.
+	// L'en-tête de download borne la taille (cf. maxDownloadSize) : au-delà, elle
+	// déborderait la jauge et la sauvegarde côté terminal serait corrompue. On
+	// refuse proprement plutôt que d'émettre un en-tête faux.
 	if len(data) > maxDownloadSize {
 		writeErr(s, fmt.Sprintf("Fichier trop volumineux : %do (max %do).", len(data), maxDownloadSize))
 		anyKey(s)
@@ -93,10 +93,10 @@ func sendFileDownload(s *server.Session, lib *files.Library, name string) {
 	//   - nombre total de blocs de 128 o (octet bas, octet haut) -> jauge ;
 	//   - nom de fichier au format Sedoric 8.3 (12 octets, complété d'espaces)
 	//     -> le terminal sauve sous ce nom réel au lieu d'un nom figé ;
-	//   - taille réelle du fichier en octets (octet bas, octet haut) -> header v3,
-	//     le terminal tronque la sauvegarde à cette taille au lieu du multiple de
-	//     128 paddé par XMODEM.
-	// Un terminal plus ancien (qui ne lisait que 2 octets) n'est PAS compatible
+	//   - taille réelle du fichier en octets sur 3 octets (bas, milieu, haut) ->
+	//     header v4, le terminal tronque la sauvegarde à cette taille au lieu du
+	//     multiple de 128 paddé par XMODEM (le 3ᵉ octet autorise > 64 Kio).
+	// Un terminal v3 (qui ne lisait que 2 octets de taille) n'est PAS compatible
 	// avec cet en-tête : terminal et serveur évoluent ensemble.
 	_ = s.Write(oascii.RecvCmd())
 	_ = s.Write(string(downloadHeader(name, len(data))))
@@ -159,25 +159,30 @@ func uploadApplet(ctx context.Context, s *server.Session, ac *AppContext) Outcom
 	return Outcome{Done: true}
 }
 
-// maxDownloadSize borne la taille d'un fichier téléchargeable : l'en-tête de
-// download (downloadHeader) code la taille réelle sur 2 octets, donc 0xFFFF est
-// le plus grand fichier représentable sans troncature.
-const maxDownloadSize = 0xFFFF
+// maxDownloadSize borne la taille d'un fichier téléchargeable. L'en-tête de
+// download (downloadHeader v4) code la taille réelle sur 3 octets (24 bits, donc
+// jusqu'à 16 Mio), mais la contrainte réellement limitante est la jauge : le
+// nombre total de blocs de 128 o tient sur 2 octets, soit 0xFFFF blocs =
+// 8 388 480 o. On borne donc à cette valeur (bien au-delà de tout fichier Oric).
+const maxDownloadSize = 0xFFFF * 128
 
 // itoa convertit un petit entier positif (0..9) en chaîne.
 func itoa(n int) string { return string(rune('0' + n)) }
 
-// downloadHeader construit l'en-tête v3 envoyé (après RecvCmd) avant le flux
+// downloadHeader construit l'en-tête v4 envoyé (après RecvCmd) avant le flux
 // XMODEM, de longueur fixe pour une lecture déterministe côté 6502 :
 //   - nombre total de blocs de 128 o (octet bas, octet haut) -> jauge ;
 //   - nom de fichier Sedoric 8.3 (12 octets) -> sauvegarde sous le vrai nom ;
-//   - taille réelle en octets (octet bas, octet haut) -> le terminal tronque la
-//     sauvegarde à cette taille au lieu du multiple de 128 paddé par XMODEM.
+//   - taille réelle en octets sur 3 octets (bas, milieu, haut) -> le terminal
+//     tronque la sauvegarde à cette taille au lieu du multiple de 128 paddé par
+//     XMODEM. Le 3ᵉ octet (v4) autorise les fichiers > 64 Kio (I2b-c).
+// Un terminal v3 (qui ne lisait que 2 octets de taille) n'est PAS compatible :
+// terminal et serveur évoluent ensemble.
 func downloadHeader(name string, dataLen int) []byte {
 	totalBlocks := (dataLen + 127) / 128
 	hdr := []byte{byte(totalBlocks & 0xFF), byte((totalBlocks >> 8) & 0xFF)}
 	hdr = append(hdr, sedoricName(name)...)
-	hdr = append(hdr, byte(dataLen&0xFF), byte((dataLen>>8)&0xFF))
+	hdr = append(hdr, byte(dataLen&0xFF), byte((dataLen>>8)&0xFF), byte((dataLen>>16)&0xFF))
 	return hdr
 }
 

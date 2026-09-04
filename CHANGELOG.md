@@ -6,6 +6,25 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Changed (téléchargement de fichiers > 64 Kio — I2b-c, 05/09/2026)
+- **En-tête de download v4** : le champ *taille réelle* passe de **2 à 3 octets** (24 bits,
+  lo/mid/hi). Le plafond de téléchargement passe de **64 Kio** à la limite de la jauge (nombre de
+  blocs sur 16 bits) soit **~8 Mio** (`maxDownloadSize = 0xFFFF*128`). Le streaming vers disque
+  (I2b-a/b) étant déjà en place, c'était le dernier verrou.
+- **Serveur** (`server/internal/bbs/xfer.go`) : `downloadHeader` émet le 3ᵉ octet de taille ;
+  `maxDownloadSize` relevé. `TestDownloadHeader` couvre un fichier de 100000 o (bit 16 posé).
+- **Firmware** (`client/term.s`, `client/xmodem.s`) : `dlsize` et `xdrem` deviennent **3 octets** ;
+  nouvel état d'en-tête (PLOTST 9) pour l'octet haut ; `hr_is_large` traite tout octet haut non nul
+  comme « gros » ; soustractions **24 bits** dans le streaming (`xr_flush`, `xr_sed_write_slice`,
+  `xr_sed_final`). `XSIZE` reste sur 16 bits (seul le chemin bufferisé ≤ 30 Kio l'utilise).
+- **oterm** (`pcterm/internal/xfer`) : lit l'en-tête de 17 octets (taille sur 3 octets) ; test
+  loopback mis à jour.
+- **Preuve runtime** : `scripts/test-download-large-emu.sh` streame un fichier de **80000 o**
+  (> 65535) via `xmodem_recv` ; le fichier hôte LOCI est **octet-identique** (décrément 24 bits de
+  `xdrem` sur > 512 blocs validé). Le harnais `test-stream-loci-emu.sh` amorce désormais `xdrem` sur
+  3 octets. **Incompatibilité** : un terminal v3 (taille 2 octets) n'est pas compatible avec un
+  serveur v4 — flasher terminal et serveur ensemble.
+
 ### Added (RSS→OASCII news — Sprint 7 #5, 04/09/2026)
 - **Nouveau package `internal/rss`** : parseur défensif **RSS 2.0 / Atom** (stdlib `encoding/xml`,
   **aucune nouvelle dépendance**). `rss.Parse(io.Reader)` — sans accès réseau — retire le HTML, décode

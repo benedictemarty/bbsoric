@@ -87,8 +87,8 @@ func TestDownloadApplet(t *testing.T) {
 	}
 }
 
-// TestDownloadTooLarge vérifie qu'un fichier dépassant la capacité de l'en-tête
-// 16 bits (maxDownloadSize) est refusé proprement, sans troncature silencieuse.
+// TestDownloadTooLarge vérifie qu'un fichier dépassant maxDownloadSize (la limite
+// de la jauge, ~8 Mio) est refusé proprement, sans troncature silencieuse.
 func TestDownloadTooLarge(t *testing.T) {
 	lib, _ := files.Open(t.TempDir(), 0) // 0 = pas de limite d'upload
 	big := bytes.Repeat([]byte("A"), maxDownloadSize+1)
@@ -168,8 +168,8 @@ func TestSedoricName(t *testing.T) {
 func TestDownloadHeader(t *testing.T) {
 	// 200 octets -> 2 blocs de 128 (le 2e partiel) ; nom Sedoric ; taille 200.
 	hdr := downloadHeader("jeu.bin", 200)
-	if len(hdr) != 16 {
-		t.Fatalf("longueur en-tête %d, attendu 16 (2 blocs + 12 nom + 2 taille)", len(hdr))
+	if len(hdr) != 17 {
+		t.Fatalf("longueur en-tête %d, attendu 17 (2 blocs + 12 nom + 3 taille, v4)", len(hdr))
 	}
 	if hdr[0] != 2 || hdr[1] != 0 {
 		t.Errorf("blocs = %d, attendu 2", int(hdr[0])|int(hdr[1])<<8)
@@ -177,12 +177,25 @@ func TestDownloadHeader(t *testing.T) {
 	if name := string(hdr[2:14]); name != "JEU      BIN" {
 		t.Errorf("nom = %q, attendu %q", name, "JEU      BIN")
 	}
-	if size := int(hdr[14]) | int(hdr[15])<<8; size != 200 {
+	if size := int(hdr[14]) | int(hdr[15])<<8 | int(hdr[16])<<16; size != 200 {
 		t.Errorf("taille = %d, attendu 200", size)
 	}
-	// Taille > 255 : vérifie l'encodage petit-boutiste sur 2 octets.
+	// Taille > 255 : vérifie l'encodage petit-boutiste.
 	hdr = downloadHeader("x", 300)
-	if size := int(hdr[14]) | int(hdr[15])<<8; size != 300 {
-		t.Errorf("taille = %d, attendu 300 (encodage 16 bits)", size)
+	if size := int(hdr[14]) | int(hdr[15])<<8 | int(hdr[16])<<16; size != 300 {
+		t.Errorf("taille = %d, attendu 300", size)
+	}
+	// Taille > 64 Kio (I2b-c) : le 3e octet doit porter les bits 16..23.
+	const big = 100000 // 0x0186A0
+	hdr = downloadHeader("x", big)
+	if size := int(hdr[14]) | int(hdr[15])<<8 | int(hdr[16])<<16; size != big {
+		t.Errorf("taille = %d, attendu %d (encodage 24 bits)", size, big)
+	}
+	if hdr[16] != 0x01 {
+		t.Errorf("octet haut = %#x, attendu 0x01", hdr[16])
+	}
+	// Le nombre de blocs suit aussi (100000/128 = 782 blocs, arrondi sup).
+	if blocks := int(hdr[0]) | int(hdr[1])<<8; blocks != (big+127)/128 {
+		t.Errorf("blocs = %d, attendu %d", blocks, (big+127)/128)
 	}
 }

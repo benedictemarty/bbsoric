@@ -4,8 +4,8 @@
 // et au firmware Oric).
 //
 // Download : après 1F FE, le serveur envoie un en-tête de longueur fixe (2 octets
-// de nombre de blocs + 12 octets de nom Sedoric + 2 octets de taille réelle, cf.
-// server/internal/bbs/xfer.go downloadHeader) puis le flux XMODEM. On lit l'en-tête,
+// de nombre de blocs + 12 octets de nom Sedoric + 3 octets de taille réelle, cf.
+// server/internal/bbs/xfer.go downloadHeader v4) puis le flux XMODEM. On lit l'en-tête,
 // on reçoit le fichier, on le tronque à la taille réelle et on l'enregistre sous
 // son nom réel dans le répertoire de téléchargement.
 package xfer
@@ -21,8 +21,8 @@ import (
 	"github.com/benedictemarty/bbsoric/internal/xmodem"
 )
 
-// headerLen est la longueur de l'en-tête de download (2 + 12 + 2).
-const headerLen = 16
+// headerLen est la longueur de l'en-tête de download v4 (2 + 12 + 3).
+const headerLen = 17
 
 // Download lit l'en-tête, reçoit le fichier via XMODEM et l'écrit dans dir sous
 // son nom réel. Renvoie le chemin écrit et le nombre d'octets.
@@ -33,7 +33,7 @@ func Download(c xmodem.Conn, dir string) (string, int, error) {
 		return "", 0, fmt.Errorf("en-tête de download : %w", err)
 	}
 	name := SedoricName(hdr[2:14])
-	size := int(hdr[14]) | int(hdr[15])<<8
+	size := int(hdr[14]) | int(hdr[15])<<8 | int(hdr[16])<<16
 
 	data, err := xmodem.Receive(c)
 	if err != nil {

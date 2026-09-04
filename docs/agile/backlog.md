@@ -175,9 +175,14 @@
     `sed_present` probe, `sed_save` made re-callable. Runtime-proven under **resident Sedoric** in
     `oric1-emu` (`scripts/test-stream-sedoric-emu.sh`: two slices `BIGFILE.001`/`.002` persisted to
     the `.dsk`, catalog entries + data byte-checked).
-  - [ ] **I2b-c** — **files > 64 KB**: widen the download header size field to 3 bytes (server
-    `downloadHeader` + `client/xmodem.s` `XSIZE`/gauge). Only useful once streaming is in place.
-    *(The former "widen header" idea, now correctly ordered after the real enabler.)*
+  - [x] **I2b-c** — **files > 64 KB** (done 05/09/2026): download header **v4** — the real-size
+    field widens from 2 to **3 bytes** (24-bit, lo/mid/hi), lifting the ceiling from 64 KB to the
+    gauge limit **~8 MB** (`maxDownloadSize = 0xFFFF*128`). Server `downloadHeader` (+ test on a
+    100000-byte file), firmware `dlsize`/`xdrem` widened to 3 bytes with a new header state
+    (PLOTST 9) and **24-bit** streaming subtraction (`xr_flush`/`xr_sed_write_slice`/`xr_sed_final`,
+    `hr_is_large`), `oterm` 17-byte header. **Runtime-proven** in `oric1-emu`
+    (`scripts/test-download-large-emu.sh`: an **80000-byte** file > 64 KB streamed to LOCI SD,
+    byte-identical). v3 terminals are not wire-compatible (flash server + terminal together).
 
 ### Security
 - [x] **I3** (3) As an admin deploying content, I want the **remote backup/reload commands

@@ -220,8 +220,10 @@ xr_overflow:
 xr_flush:
         lda xdrem
         ora xdrem+1
+        ora xdrem+2
         beq xf_done          ; deja tout ecrit -> reste = padding, ignorer
         lda xdrem+1
+        ora xdrem+2
         bne xf_full          ; reste >= 256 -> bloc plein
         lda xdrem
         cmp #128
@@ -237,12 +239,16 @@ xf_have:
         lda #$40
         sta SRC+1            ; SRC = $4000 (buffer de bloc fixe)
         jsr loci_write_chunk ; ecrit lcnb octets (best effort - erreur SD ignoree)
-        sec                  ; xdrem -= lcnb
+        sec                  ; xdrem -= lcnb (24 bits, propage l'emprunt)
         lda xdrem
         sbc lcnb
         sta xdrem
-        bcs xf_done
-        dec xdrem+1
+        lda xdrem+1
+        sbc #0
+        sta xdrem+1
+        lda xdrem+2
+        sbc #0
+        sta xdrem+2
 xf_done:
         rts
 
@@ -261,13 +267,16 @@ xr_sed_write_slice:
         sta XSIZE+1
         jsr set_slice_ext    ; dlname+9..+11 = slicenum en 3 chiffres (term.s)
         jsr sed_save         ; sauve $4000..+XSIZE sous FILE.00N
-        sec                  ; xdrem -= XSIZE
+        sec                  ; xdrem -= XSIZE (24 bits, propage l'emprunt)
         lda xdrem
         sbc XSIZE
         sta xdrem
         lda xdrem+1
         sbc XSIZE+1
         sta xdrem+1
+        lda xdrem+2
+        sbc #0
+        sta xdrem+2
         inc slicenum         ; tranche suivante
         rts
 
@@ -277,8 +286,9 @@ xr_sed_write_slice:
 xr_sed_final:
         lda xdrem
         ora xdrem+1
+        ora xdrem+2
         beq xsf_done
-        lda xdrem
+        lda xdrem            ; derniere tranche partielle < 30 Ko -> 2 octets suffisent
         sta XSIZE
         lda xdrem+1
         sta XSIZE+1
@@ -582,15 +592,16 @@ pdc_u:
 ; xsink    - type d'evier quand xstream vaut 1. 1 = LOCI (flush chaque bloc sur
 ;            SD, XBUF fixe). 2 = Sedoric par tranches (accumule dans $4000 comme
 ;            le buffer, sauve une tranche FILE.00N a chaque remplissage - I2b-b).
-; xdrem    - octets reels restant a ecrire (= taille du fichier), decremente ;
-;            tronque le dernier bloc/tranche et ignore le padding XMODEM.
+; xdrem    - octets reels restant a ecrire (= taille du fichier) sur 3 octets
+;            (24 bits -> > 64 Kio, I2b-c), decremente ; tronque le dernier
+;            bloc/tranche et ignore le padding XMODEM.
 ; slicenum - numero de la tranche Sedoric courante (1..255 -> extension 001..255).
 xstream:
         .byt 0
 xsink:
         .byt 0
 xdrem:
-        .byt 0,0
+        .byt 0,0,0
 slicenum:
         .byt 0
 

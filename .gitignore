@@ -37,6 +37,9 @@ deploy/profiles/**/*.conf
 /oterm
 /rssnews
 
+# Répertoires temporaires des tests émulateur (nettoyés par trap, ignorés si un run est interrompu)
+.stream-test.*
+
 # Outillage assistant IA (non distribué — local uniquement)
 CLAUDE.md
 .claude/

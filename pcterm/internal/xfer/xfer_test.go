@@ -43,7 +43,8 @@ func TestDownloadLoopback(t *testing.T) {
 		blocks := (len(payload) + 127) / 128
 		hdr := []byte{byte(blocks & 0xFF), byte(blocks >> 8)}
 		hdr = append(hdr, []byte("TESTFILE TXT")...) // 12 octets (9+3)
-		hdr = append(hdr, byte(len(payload)&0xFF), byte(len(payload)>>8))
+		// Taille réelle sur 3 octets (en-tête v4, lo/mid/hi).
+		hdr = append(hdr, byte(len(payload)&0xFF), byte((len(payload)>>8)&0xFF), byte((len(payload)>>16)&0xFF))
 		_ = srv.SetWriteDeadline(time.Now().Add(5 * time.Second))
 		if _, err := srv.Write(hdr); err != nil {
 			return

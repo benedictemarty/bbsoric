@@ -92,9 +92,9 @@ the ACK and no serial byte is lost during the synchronous SD write — never kee
 than 128 bytes in RAM. The last block is truncated to the real size (`xdrem` counter,
 XMODEM padding dropped) and the file is closed at EOT.
 
-- **File-size ceiling is now the SD card** (and the 16-bit download header ⇒ **64 KB**
-  with the current wire format; going beyond 64 KB is the former "widen header to 3
-  bytes", tracked as the remaining part of I2b).
+- **File-size ceiling is now the SD card** (and, since the **v4 header** widened the size
+  field to **3 bytes**, up to the gauge limit **~8 MB** — see I2b-c below; before v4 the
+  16-bit size field capped it at 64 KB).
 - **Sedoric-only machines: large files via numbered slices** (I2b-b, done 01/09/2026) —
   `XSAVEB` saves one **contiguous** RAM region in a single call and cannot stream, so a
   Sedoric-only terminal instead **accumulates** in `$4000` like the buffered path and, **each
@@ -115,6 +115,30 @@ XMODEM padding dropped) and the file is closed at EOT.
   **byte-identical** to the source. Gotcha: under `--loci-flash` the default ACIA moves to
   the LOCI picowifi modem at `$0380`, so the test forces `--acia-addr 031C` to keep the
   serial ACIA at `$031C` alongside the LOCI MIA at `$03A0`.
+
+#### Files > 64 KB — 24-bit download header (I2b-c, 05/09/2026)
+
+Now that reception **streams to disk**, the download header's 16-bit size field became the
+last thing pinning the ceiling at 64 KB. The header is widened to **v4**: the real-size
+field goes from **2 to 3 bytes** (little-endian lo/mid/hi), lifting the theoretical limit to
+16 MB; the **binding** cap is now the gauge (block count on 2 bytes ⇒ `0xFFFF × 128 ≈ 8 MB`),
+so `maxDownloadSize = 0xFFFF*128`. End-to-end:
+
+- **Server** (`server/internal/bbs/xfer.go`): `downloadHeader` appends the third size byte;
+  `maxDownloadSize` raised. `TestDownloadHeader` covers a 100000-byte file (bit 16 set).
+- **Firmware** (`client/term.s`, `client/xmodem.s`): `dlsize` and `xdrem` become **3 bytes**;
+  a new header state (PLOTST 9) reads the high size byte; `hr_is_large` treats any nonzero
+  high byte as large; the streaming counters (`xr_flush`, `xr_sed_write_slice`, `xr_sed_final`)
+  do **24-bit** subtraction. `XSIZE` stays 16-bit (only the ≤30 KB buffered path uses it).
+- **oterm** (`pcterm/internal/xfer`): reads the 17-byte header (3-byte size); loopback test
+  updated.
+- **Runtime proof**: `scripts/test-download-large-emu.sh` streams an **80000-byte** file
+  (> 65535) through `xmodem_recv`; the LOCI host file is **byte-identical** — proving the
+  24-bit `xdrem` decrement over > 512 blocks. (Thin wrapper over the LOCI streaming harness,
+  whose `xdrem` is now seeded on 3 bytes.)
+
+A **v3 terminal** (2-byte size) is not wire-compatible with a v4 server: terminal and server
+must be flashed together (both are in this repo).
 
 ## Oric side
 

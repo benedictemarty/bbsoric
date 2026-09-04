@@ -137,10 +137,12 @@ h_nm:
         lda #0
         sta XTOTAL               ; jauge desactivee (pas d'ecran a piloter)
         sta XTOTAL+1
-        lda h_size               ; xdrem = taille reelle (40000)
+        lda h_size               ; xdrem = taille reelle (3 octets, > 64 Kio ok)
         sta xdrem
         lda h_size+1
         sta xdrem+1
+        lda h_size+2
+        sta xdrem+2
         jsr xmodem_recv          ; recoit + streame chaque bloc sur SD + ferme
         sta $9000                ; marqueur succes (1) / echec (0)
 h_done:
@@ -148,7 +150,7 @@ h_done:
 h_name:
         .byt "BIGFILE  BIN"
 h_size:
-        .byt <SIZEVAL,>SIZEVAL
+        .byt SZLO,SZMID,SZHI
 ; --- stubs (routines term.s non embarquees ; inertes ici) ---
 print_string:
         rts
@@ -184,7 +186,9 @@ dlname:
         .dsb 12,0
 ASM
 
-sed -i "s/SIZEVAL/$SIZE/g" "$WORK/harness.s"
+# Taille réelle décomposée en 3 octets (en-tête v4 -> xdrem sur 24 bits).
+SZLO=$((SIZE & 255)); SZMID=$(((SIZE >> 8) & 255)); SZHI=$(((SIZE >> 16) & 255))
+sed -i -e "s/SZLO/$SZLO/g" -e "s/SZMID/$SZMID/g" -e "s/SZHI/$SZHI/g" "$WORK/harness.s"
 cat "$WORK/harness.s" "$XMODEM_S" "$LOCI_S" > "$WORK/full.s"
 if ! xa "$WORK/full.s" -o "$WORK/test.bin" 2>"$WORK/xa.err"; then
     ko "assemblage du harnais streaming (voir $WORK/xa.err)"; cat "$WORK/xa.err"; bilan; exit 1

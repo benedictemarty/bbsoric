@@ -10,7 +10,7 @@
 > delivered; recent epics **J (download catalogue, source tachibana.eu)** and **L (personal file
 > space)** are **live** — see the "Recent epics" section below and `docs/agile/backlog.md`. Genuinely
 > **open**: real-hardware test (Sprint 4, awaiting iron), Sprint 7 #6 (door game), HIRES
-> "Later" enhancements (Sprint 10), backlog **L3/L4**, and header widening **I2b-c** (files > 64 KB).
+> "Later" enhancements (Sprint 10).
 
 ## Sprint 0 — Scoping & foundation — ✅ done
 - [x] State of the art of retro BBS servers (`docs/state-of-the-art.md`)
@@ -104,7 +104,7 @@
 - [ ] **Later**: HIRES `paper` colour, flow-controlled bitmap transfer (vs raw blit),
   differential HIRES buffer for animation.
 
-## Sprint 11 — Code quality & hardening — ✅ done (16/07/2026 ; I2b-a/b firmware done 01/09, only I2b-c > 64 KB remains)
+## Sprint 11 — Code quality & hardening — ✅ done (16/07/2026 ; I2b firmware a/b/c done 01–05/09, downloads > 64 KB shipped)
 > Decomposition of **Epic I** (`docs/agile/backlog.md`), issued from the full source
 > analysis of 16/07/2026. Ordered by value: real bugs first, then security, robustness,
 > hygiene. Each task cites the offending `file:line` and its acceptance test. DoD applies
@@ -130,7 +130,12 @@
     accumulate in `$4000`, save a numbered slice each time it fills, final slice at EOT. Sink
     `xsink=2`, `set_slice_ext`, `sed_present`. Proven under resident Sedoric in `oric1-emu`
     (`scripts/test-stream-sedoric-emu.sh`, two slices persisted to the `.dsk`).
-  - [ ] **I2b-c — files > 64 KB**: widen the download header to a 3-byte size field.
+  - [x] **I2b-c — files > 64 KB** (05/09/2026): download header **v4** — real-size field widened
+    from 2 to **3 bytes** (24-bit), ceiling lifted from 64 KB to the gauge limit **~8 MB**
+    (`maxDownloadSize = 0xFFFF*128`). Server `downloadHeader` (+100000-byte test), firmware
+    `dlsize`/`xdrem` on 3 bytes with a new header state and 24-bit streaming subtraction, `oterm`
+    17-byte header. Proven in `oric1-emu` (`scripts/test-download-large-emu.sh`, **80000-byte**
+    file > 64 KB streamed byte-identical). v3 terminals not wire-compatible.
 
 ### Slice 2 — Security (I3, I4, I5) — ✅ done (16/07/2026)
 - [x] **S11.3 — Injection-safe remote deploy** (I3): `validateProfileFields` restricts

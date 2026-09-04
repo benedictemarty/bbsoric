@@ -329,9 +329,10 @@ ks_ret:
 ; ---------------------------------------------------------------------------
 ; Etats PLOTST - 0 normal, 1 apres 1F, 2 attend ligne (plot), 3/4 = total de
 ; blocs (lo/hi) apres 1F FE (jauge), 5 = 12 octets du nom de fichier Sedoric,
-; 6/7 = taille reelle du fichier (lo/hi) -> header v3, sauvegarde a la taille
-; exacte au lieu du multiple de 128 padde par XMODEM. INLEN sert d'index du nom
-; pendant l'etat 5 (saisie manuelle inactive en transfert).
+; 6/7/9 = taille reelle du fichier (lo/mid/hi) -> header v4, sauvegarde a la taille
+; exacte au lieu du multiple de 128 padde par XMODEM (le 3e octet autorise > 64 Kio,
+; I2b-c ; l'etat 8 est reserve au flux HIRES). INLEN sert d'index du nom pendant
+; l'etat 5 (saisie manuelle inactive en transfert).
 ; NB la jauge alias XACC sur PLOTST/PLOTX -> on REINITIALISE PLOTST apres un
 ; transfert (sinon la machine a etats reste desynchronisee).
 handle_rx:
@@ -360,6 +361,8 @@ hr_n3:
         cpx #6
         beq hr_szlo
         cpx #7
+        beq hr_szmid
+        cpx #9
         bne hr_st5               ; etat 5 -> lecture du nom (par defaut)
         jmp hr_szhi              ; branche trop loin pour beq
 hr_st5:
@@ -371,7 +374,7 @@ hr_st5:
         cmp #12
         bcc hr_ret               ; <12 -> rester en etat 5
         lda #6
-        sta PLOTST               ; nom complet -> lire la taille reelle (lo, hi)
+        sta PLOTST               ; nom complet -> lire la taille reelle (lo, mid, hi)
 hr_ret:
         rts
 hr_tothi:
@@ -382,12 +385,17 @@ hr_tothi:
         sta PLOTST               ; etat 5 - lire les 12 octets du nom
         rts
 hr_szlo:
-        sta dlsize               ; etat 6 - taille reelle du fichier (lo)
+        sta dlsize               ; etat 6 - taille reelle du fichier (octet lo)
         lda #7
         sta PLOTST
         rts
+hr_szmid:
+        sta dlsize+1             ; etat 7 - taille reelle (octet median)
+        lda #9
+        sta PLOTST               ; etat 9 - lire l'octet haut (header v4)
+        rts
 hr_szhi:
-        sta dlsize+1             ; etat 7 - taille reelle (hi)
+        sta dlsize+2             ; etat 9 - taille reelle (octet haut) -> header v4
         lda #0
         sta xstream              ; defaut - reception bufferisee en $4000
         jsr hr_is_large          ; C=1 si dlsize > capacite buffer (~30 Ko)
@@ -400,10 +408,12 @@ hr_szhi:
         sta xstream              ; streaming actif
         lda #1
         sta xsink                ; evier = LOCI (flush par bloc)
-        lda dlsize               ; xdrem = taille reelle a ecrire
+        lda dlsize               ; xdrem = taille reelle a ecrire (3 octets)
         sta xdrem
         lda dlsize+1
         sta xdrem+1
+        lda dlsize+2
+        sta xdrem+2
         jsr xmodem_recv          ; streame chaque bloc sur SD + ferme le sink a EOT
         jmp hr_dl_end
 hr_dl_trysed:
@@ -415,10 +425,12 @@ hr_dl_trysed:
         sta xsink                ; evier = Sedoric par tranches
         lda #1
         sta slicenum             ; premiere tranche = extension 001
-        lda dlsize
+        lda dlsize               ; xdrem = taille reelle a ecrire (3 octets)
         sta xdrem
         lda dlsize+1
         sta xdrem+1
+        lda dlsize+2
+        sta xdrem+2
         jsr xmodem_recv          ; accumule + sauve FILE.00N a chaque remplissage
         jmp hr_dl_end
 hr_dl_bufafteredit:
@@ -448,11 +460,13 @@ hr_dl_end:
 ; $4000..$B7FF), C=0 sinon. Au-dela, la reception doit streamer sur disque
 ; plutot que bufferiser (sinon overflow du tampon RAM).
 hr_is_large:
+        lda dlsize+2
+        bne hil_yes              ; octet haut != 0 -> > 64 Kio, forcement grand
         lda dlsize+1
         cmp #$78
-        bcc hil_no               ; hi < $78 -> <= 30720 (tient dans le buffer)
-        bne hil_yes              ; hi > $78 -> > 30720
-        lda dlsize               ; hi == $78 -> grand seulement si lo > 0
+        bcc hil_no               ; mid < $78 -> <= 30720 (tient dans le buffer)
+        bne hil_yes              ; mid > $78 -> > 30720
+        lda dlsize               ; mid == $78 -> grand seulement si lo > 0
         beq hil_no
 hil_yes:
         sec
@@ -1165,10 +1179,11 @@ portbuf:
 ; download. Defaut si rien recu. Rempli par handle_rx (etat 5), lu par sed_save.
 dlname:
         .byt "BBSFILE  BIN"
-; Taille reelle du fichier (octets), recue dans le header v3 (etats 6/7) apres le
-; nom. Sert a tronquer la sauvegarde au lieu du multiple de 128 padde par XMODEM.
+; Taille reelle du fichier (octets), recue dans le header v4 (etats 6/7/9) apres
+; le nom, sur 3 octets (lo, mid, hi) -> autorise les fichiers > 64 Kio (I2b-c).
+; Sert a tronquer la sauvegarde au lieu du multiple de 128 padde par XMODEM.
 dlsize:
-        .byt 0,0
+        .byt 0,0,0
 ; Tampon d'edition du nom de fichier a la reception (12 caracteres + NUL).
 editbuf:
         .dsb 13,0
