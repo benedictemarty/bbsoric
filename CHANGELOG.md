@@ -6,6 +6,16 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (contrôle de flux HIRES par cadence — Sprint 10 « Later », 05/09/2026)
+- **`writeHiresPaced`** (`server/internal/bbs/hirespaced.go`) : écrit un flux HIRES en **tronçons**
+  (240 o < FIFO 512) espacés au **débit du lien** (~700 o/s), pour ne jamais saturer le FIFO série du
+  terminal (sinon le flux se désynchronise et se corrompt). Câblé dans le moteur (page HIRES = gros
+  bitmap, `engine.go`) **et** l'applet `hiresanim`. **Rate-based, sans changement firmware** (pas
+  d'acquittement) → bénéficie aux terminaux v0.2.0 déjà déployés.
+- **Preuves** : le rendu HIRES statique reste **pixel-exact** dans `oric1-emu` (le pacing ne change
+  que le *timing*, `scripts/test-emulateur-hires.sh` : 7999/8000, seul l'artefact ULA connu diffère) ;
+  tests unitaires `paceHires` (tronçonnage/ordre/débit/erreur/vide). ADR-0007, `docs/hires.md`.
+
 ### Added (animation HIRES — buffer différentiel, Sprint 10 « Later », 05/09/2026)
 - **Nouveau `oascii.HiresScreen`** : pendant HIRES du buffer différentiel TEXT (`oascii.Screen`).
   Maintient la VRAM composée + affichée (8000 o) ; `Render()` n'émet que les **octets modifiés**

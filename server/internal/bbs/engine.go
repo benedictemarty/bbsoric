@@ -71,7 +71,9 @@ func runSite(ctx context.Context, s *server.Session, store *content.Store, users
 			}
 			popOrHome(&stack, site)
 		case page.Hires != nil: // page graphique haute résolution (240×200)
-			if s.Write(string(render.Hires(page))) != nil {
+			// Écriture CADENCÉE : un gros bitmap de fond saturerait sinon le FIFO
+			// série du terminal (pas de contre-pression), corrompant le flux.
+			if writeHiresPaced(s, render.Hires(page)) != nil {
 				return
 			}
 			hiresActive = true // le terminal est passé en mode HIRES

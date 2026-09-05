@@ -10,7 +10,7 @@
 > delivered; recent epics **J (download catalogue, source tachibana.eu)** and **L (personal file
 > space)** are **live** — see the "Recent epics" section below and `docs/agile/backlog.md`. Genuinely
 > **open**: real-hardware test (Sprint 4, awaiting iron), Sprint 7 #6 (door game), remaining HIRES
-> "Later" (paper colour, flow-controlled bitmap — Sprint 10 ; animation diff done 05/09).
+> "Later" (paper colour — Sprint 10 ; animation diff + flow-control pacing done 05/09).
 
 ## Sprint 0 — Scoping & foundation — ✅ done
 - [x] State of the art of retro BBS servers (`docs/state-of-the-art.md`)
@@ -78,7 +78,7 @@
   **API auth/headers** (`APIConfig.Headers` with `${VAR}` env-expansion, studio editor).
   Tests `TestListerPrefixe` / `TestValiderMasque` / `TestAPISourceHeaders`.
 
-## Sprint 10 — HIRES pages (240×200 graphics) — ✅ slice 1 (27/06/2026) + animation diff (05/09/2026) ; paper/flow-control « Later »
+## Sprint 10 — HIRES pages (240×200 graphics) — ✅ slice 1 (27/06/2026) + animation diff + flow-control pacing (05/09/2026) ; paper colour « Later »
 > Graphics pages over the serial link: **both** a bitmap model (logo/splash) and a
 > primitives model (line/box/circle/…). Design: `docs/adr/0005-hires-pages.md`.
 - [x] **Server foundation** (27/06): content model (`Hires`/`HiresOp`, page field
@@ -106,7 +106,13 @@
   (no firmware change; 1st frame `HiOn`, later frames diff-only). Go monochrome rasteriser
   (SetPixel/Line/Box/FillBox/Circle/SetBitmap). Demo applet `hiresanim` (bouncing ball, fixed frame).
   Round-trip + TCP tests + runtime proof (`scripts/test-emulateur-hires-anim.sh`). ADR-0007.
-- [ ] **Later**: HIRES `paper` colour, flow-controlled bitmap transfer (vs raw blit).
+- [x] **Flow-controlled HIRES transfer** (05/09/2026): rate-paced writer `writeHiresPaced`
+  (chunks + sleep sized to link throughput ~700 B/s, chunk 240 < FIFO 512) so a large bitmap
+  background or animation frames never overflow the terminal's serial FIFO. Wired into the engine's
+  HIRES page write and the `hiresanim` applet. **No firmware change** (rate-based, no ack) → benefits
+  already-deployed v0.2.0 terminals. Static page stays pixel-exact in `oric1-emu` (pacing changes only
+  timing). Unit tests `paceHires`. *(Ack-based back-pressure remains a possible future refinement.)*
+- [ ] **Later**: HIRES `paper` colour.
 
 ## Sprint 11 — Code quality & hardening — ✅ done (16/07/2026 ; I2b firmware a/b/c done 01–05/09, downloads > 64 KB shipped)
 > Decomposition of **Epic I** (`docs/agile/backlog.md`), issued from the full source

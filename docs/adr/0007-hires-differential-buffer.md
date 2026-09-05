@@ -61,13 +61,14 @@ ink/paper attributes remain the static-page model (`render.Hires`).
   compressible) and changes are *localised*. A change scattered across many rows (e.g.
   a shifting outline) can cost more than a uniform full frame; authors should keep the
   moving part localised. Documented in `docs/hires.md`.
-- **No flow control (yet).** There is no back-pressure from the terminal: the server
-  must not push frames faster than the link + 6502 rendering can absorb, or the serial
-  FIFO overflows and the HIRES stream desyncs. Two rules for animation authors, learnt
-  the hard way with the demo: (1) keep each frame's runs **contiguous** — a
-  full-screen *border* costs ~200 one-byte blits (left/right column, one pixel per
-  row), a *horizontal* rail costs one; (2) **pace** frames (the demo uses a small
-  filled sprite between horizontal rails at ~3 fps). Real flow-controlled transfer is
-  the separate Sprint-10 "Later" item.
+- **Flow control by pacing.** There is no back-pressure from the terminal, so pushing a
+  frame (or a large bitmap) in one write overflows the serial FIFO and desyncs the
+  stream. Fixed by `writeHiresPaced` (`server/internal/bbs/hirespaced.go`): the HIRES
+  stream is written in **chunks** (240 B < 512 B FIFO) spaced to the **link throughput**
+  (~700 B/s). Wired into the engine's HIRES page write and the `hiresanim` applet.
+  Rate-based, **no firmware change** → benefits already-deployed terminals; a static page
+  stays pixel-exact (pacing changes only timing). Authors should still keep runs
+  **contiguous** (a screen *border* costs ~200 one-byte blits, a *horizontal* rail one).
+  Ack-based back-pressure (a terminal ACK per frame) remains a possible future refinement.
 - **Future**: coalesce runs separated by tiny gaps; optional colour animation; a
   non-blocking input path so an animation can be interrupted by a keypress.

@@ -34,7 +34,9 @@ func hiresAnimApplet(ctx context.Context, s *server.Session, ac *AppContext) Out
 		railBot = oascii.HiresPixH - 20
 		minX    = 2
 		maxX    = oascii.HiresPixW - 2 - sprW
-		periode = 320 * time.Millisecond
+		// Plancher de période pour la lisibilité (le pacing gère le débit ; ce
+		// délai évite juste que de tout petits diffs défilent trop vite).
+		minPeriode = 60 * time.Millisecond
 	)
 	hs := oascii.NewHiresScreen()
 	x, y := 40, 90
@@ -53,7 +55,10 @@ func hiresAnimApplet(ctx context.Context, s *server.Session, ac *AppContext) Out
 		hs.FillBox(x, y, x+sprW, y+sprH)                 // le sprite (seul à bouger)
 
 		if out := hs.Render(); out != nil {
-			if err := s.Write(string(out)); err != nil {
+			// Écriture CADENCÉE : ne jamais dépasser le débit du lien (sinon le
+			// FIFO du terminal déborde et l'animation se corrompt). Le pacing
+			// fournit aussi l'essentiel de l'intervalle entre images.
+			if err := writeHiresPaced(s, out); err != nil {
 				return Outcome{Quit: true}
 			}
 		}
@@ -69,7 +74,7 @@ func hiresAnimApplet(ctx context.Context, s *server.Session, ac *AppContext) Out
 			dy = -dy
 			y += dy
 		}
-		time.Sleep(periode)
+		time.Sleep(minPeriode)
 	}
 
 	// Retour au mode TEXT puis invite (sinon l'écran resterait figé en HIRES).

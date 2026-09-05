@@ -165,11 +165,15 @@ toucher au firmware** : `oascii.HiresScreen` maintient la VRAM **composée** et 
 - **Quand le diff gagne** : fond **complexe** (peu compressible RLE) + changement
   **localisé**. Un changement dispersé sur beaucoup de lignes (contour qui se décale)
   peut coûter plus cher qu'une image pleine uniforme → garder la partie mobile locale.
-- **Pas de contrôle de flux** : le terminal n'exerce aucune contre-pression. Deux règles
-  pour animer sans saturer le FIFO série : (1) garder les runs **contigus** — une bordure
-  d'écran coûte ~200 mini-blits (1 pixel par ligne à gauche/droite), un rail *horizontal*
-  en coûte 1 ; (2) **cadencer** les images (l'applet démo : sprite plein entre 2 rails,
-  ~3 img/s). Le transfert avec contrôle de flux reste un item « Later » du Sprint 10.
+- **Contrôle de flux par CADENCE** (`writeHiresPaced`) : le terminal n'exerce aucune
+  contre-pression, donc le serveur écrit le flux HIRES en **tronçons** (240 o < FIFO 512)
+  espacés au **débit du lien** (~700 o/s), pour ne jamais saturer le FIFO série (sinon le
+  flux se corrompt). Utilisé par le moteur (page HIRES = gros bitmap) **et** l'applet
+  d'animation. **Sans changement firmware** (pas d'acquittement) → profite aux terminaux
+  déjà déployés. Un ACK par image (contre-pression réelle) reste une évolution possible.
+- **Runs contigus** : même cadencé, garder la partie mobile compacte aide — une bordure
+  d'écran coûte ~200 mini-blits (1 pixel/ligne à gauche/droite), un rail *horizontal* en
+  coûte 1. La démo `hiresanim` utilise donc rails horizontaux + sprite plein.
 - **Preuves** : round-trip (le flux rejoué reconstruit exactement la VRAM composée,
   `internal/oascii/hires_screen_test.go`) + runtime `oric1-emu`
   (`scripts/test-emulateur-hires-anim.sh` : VRAM dumpée à deux instants → elle a changé).
