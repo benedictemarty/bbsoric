@@ -39,6 +39,8 @@ type Raster struct {
 	penY      int
 	ink       byte
 	colorMode bool // hcolor : pose l'attribut d'encre en col 0 des lignes dessinées
+	paper     byte // attribut PAPER courant (0x10 + couleur)
+	paperOn   bool // hpaperon : fond coloré plein écran (paper en col 0 de chaque ligne)
 
 	// Décodage du flux : opcode courant + arguments accumulés.
 	op    byte
@@ -63,6 +65,7 @@ func (r *Raster) reset() {
 	r.penX, r.penY = 0, 0
 	r.ink = 7
 	r.colorMode = false
+	r.paper, r.paperOn = 0x10, false
 	r.op, r.args, r.need, r.inCmd, r.blit, r.done = 0, r.args[:0], 0, false, nil, false
 }
 
@@ -135,12 +138,18 @@ func (r *Raster) exec() {
 		for i := range r.vram {
 			r.vram[i] = empty
 		}
-		r.penX, r.penY, r.ink, r.colorMode = 0, 0, 7, false
+		r.penX, r.penY, r.ink, r.colorMode, r.paperOn = 0, 0, 7, false, false
 	case oascii.HiInk:
 		r.ink = r.args[0] & 7
 		r.colorMode = true
 	case oascii.HiPaper:
-		// Non rendu par le firmware (fond noir) — accepté et ignoré (parité).
+		// Fond coloré plein écran : attribut PAPER (0x10 + couleur) en col 0 de
+		// chaque ligne, fidèle à client/hires.s (hires_paint_paper).
+		r.paper = 0x10 | (r.args[0] & 7)
+		r.paperOn = true
+		for y := 0; y < H; y++ {
+			r.vram[y*rowByte] = r.paper
+		}
 	case oascii.HiCurset:
 		r.penX, r.penY = int(r.args[0]), int(r.args[1])
 	case oascii.HiPoint:
@@ -175,7 +184,12 @@ func (r *Raster) setPixel(x, y int) {
 	if x < 0 || x >= W || y < 0 || y >= H {
 		return
 	}
-	if r.colorMode {
+	if r.paperOn {
+		// col 0 tient déjà l'attribut paper (peint à HiPaper) ; pixel x<6 ignoré.
+		if x < 6 {
+			return
+		}
+	} else if r.colorMode {
 		r.vram[y*rowByte] = r.ink & 7 // attribut d'encre (bit 6 = 0)
 		if x < 6 {
 			return

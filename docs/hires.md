@@ -135,11 +135,21 @@ chaque ligne dessinée. Conséquences (propres au matériel) :
 - la **1re cellule** (x 0 à 5) de chaque ligne colorée est **sacrifiée** à l'attribut.
 
 Sans aucun op `ink`, le rendu reste **monochrome** (encre blanche, colonne 0 libre).
-`paper` n'est pas encore rendu (fond noir). L'aperçu studio reproduit la couleur
-(approximation per-pixel, plus fine que le per-ligne réel de l'Oric).
+
+L'op **`paper`** pose un **fond coloré plein écran** : le terminal peint l'attribut
+PAPER (`0x10 + couleur`) en **colonne 0 des 200 lignes** (`hires_paint_paper`). Quand
+`paper` est actif, le dessin se fait en **blanc** par-dessus (l'encre colorée simultanée
+n'est pas gérée — la colonne 0 est prise par le paper ; ce serait un raffinement
+ultérieur). Comme pour `ink`, la **1re cellule** (x 0 à 5) est sacrifiée à l'attribut.
+L'aperçu studio et le rastériseur `oterm` reproduisent ce fond (parité, testée pixel-exact
+en émulateur sur `docs/examples/hires-paper.json`).
 
 ### Limites connues
 
+- **Cercle** : le rastériseur Go (`oterm`/studio) et le firmware 6502 peuvent différer de
+  quelques pixels sur le contour d'un `circle` selon le rayon (deux implémentations midpoint
+  distinctes) — pré-existant, sans incidence visuelle notable ; les autres primitives sont
+  pixel-exactes.
 - **Contrôle de flux** : un `blit` volumineux peut saturer le FIFO série du terminal
   (même classe que le défaut RX #1 de `docs/client-review.md`) — réservé aux fonds
   bien compressibles ; un transfert XMODEM-flow-controllé est la piste pour les
@@ -200,3 +210,5 @@ Une page HIRES s'édite visuellement dans le studio (onglet **Édition**) :
 - **Firmware terminal** (interpréteur HIRES `term.s`/`hires.s`, primitives 6502, blit
   RLE, **validation oric1-emu**) : **fait** (slice 2).
 - **Studio Forge** (éditeur de primitives + import d'image, aperçu 240×200 JS) : **fait** (slice 3).
+- **Enhancements Sprint 10** : couleur `ink`, couleur `paper` (fond), **animation** (buffer
+  différentiel `oascii.HiresScreen`) et **contrôle de flux par cadence** (`writeHiresPaced`) : **faits**.

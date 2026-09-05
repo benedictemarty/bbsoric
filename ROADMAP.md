@@ -9,8 +9,8 @@
 > **Current status (03/09/2026): IN PRODUCTION** on `pavi.3617.fr:6502`. Core sprints (0–3, 5, 9, 11)
 > delivered; recent epics **J (download catalogue, source tachibana.eu)** and **L (personal file
 > space)** are **live** — see the "Recent epics" section below and `docs/agile/backlog.md`. Genuinely
-> **open**: real-hardware test (Sprint 4, awaiting iron), Sprint 7 #6 (door game), remaining HIRES
-> "Later" (paper colour — Sprint 10 ; animation diff + flow-control pacing done 05/09).
+> **open**: real-hardware test (Sprint 4, awaiting iron), Sprint 7 #6 (door game). Sprint 10 HIRES
+> is now COMPLETE (animation diff + flow-control pacing + paper colour done 05/09).
 
 ## Sprint 0 — Scoping & foundation — ✅ done
 - [x] State of the art of retro BBS servers (`docs/state-of-the-art.md`)
@@ -78,7 +78,7 @@
   **API auth/headers** (`APIConfig.Headers` with `${VAR}` env-expansion, studio editor).
   Tests `TestListerPrefixe` / `TestValiderMasque` / `TestAPISourceHeaders`.
 
-## Sprint 10 — HIRES pages (240×200 graphics) — ✅ slice 1 (27/06/2026) + animation diff + flow-control pacing (05/09/2026) ; paper colour « Later »
+## Sprint 10 — HIRES pages (240×200 graphics) — ✅ COMPLET : slice 1 (27/06/2026) + animation diff + flow-control pacing + paper colour (05/09/2026)
 > Graphics pages over the serial link: **both** a bitmap model (logo/splash) and a
 > primitives model (line/box/circle/…). Design: `docs/adr/0005-hires-pages.md`.
 - [x] **Server foundation** (27/06): content model (`Hires`/`HiresOp`, page field
@@ -112,7 +112,12 @@
   HIRES page write and the `hiresanim` applet. **No firmware change** (rate-based, no ack) → benefits
   already-deployed v0.2.0 terminals. Static page stays pixel-exact in `oric1-emu` (pacing changes only
   timing). Unit tests `paceHires`. *(Ack-based back-pressure remains a possible future refinement.)*
-- [ ] **Later**: HIRES `paper` colour.
+- [x] **HIRES `paper` colour** (05/09/2026): the terminal now honours the `paper` op (was ignored) —
+  it paints the PAPER attribute (`0x10 + colour`) at **column 0 of all 200 lines**
+  (`hires_paint_paper`) → full-screen coloured background; drawing is white over it (simultaneous
+  coloured ink+paper left as a refinement). Parity in the `oterm` rasteriser and studio preview
+  (both previously ignored it); raster unit test `TestPaper`; pixel-exact firmware↔raster in
+  `oric1-emu` (`docs/examples/hires-paper.json`).
 
 ## Sprint 11 — Code quality & hardening — ✅ done (16/07/2026 ; I2b firmware a/b/c done 01–05/09, downloads > 64 KB shipped)
 > Decomposition of **Epic I** (`docs/agile/backlog.md`), issued from the full source

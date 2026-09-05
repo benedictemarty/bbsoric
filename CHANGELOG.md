@@ -6,6 +6,19 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (couleur HIRES paper / fond coloré — Sprint 10 « Later », 05/09/2026)
+- **Op `paper` rendu** : le firmware (`client/hires.s`) honore enfin l'opcode HiPaper (jusqu'ici
+  ignoré) — il peint l'attribut PAPER (`0x10 + couleur`) en **colonne 0 des 200 lignes**
+  (`hires_paint_paper`) → **fond coloré plein écran**. Quand `paper` est actif, le dessin est en
+  blanc par-dessus (encre colorée simultanée non gérée : la col0 est prise par le paper) ; la 1ʳᵉ
+  cellule (x<6) est sacrifiée à l'attribut, comme pour `ink`. `hpaperon` réinitialisé à HiOn.
+- **Parité** : le rastériseur `oterm` (`pcterm/internal/hires`) et l'aperçu studio (`app.js`) peignent
+  aussi le fond paper (jusque-là ignoré des deux côtés). Test unitaire raster `TestPaper`.
+- **Preuve** : pixel-exact firmware ↔ rastériseur dans `oric1-emu` sur `docs/examples/hires-paper.json`
+  (fond + cadre + rectangle plein). Firmware réassemblé (`term.tap`). ADR-0005/`docs/hires.md`.
+- ⚠️ **Gotcha xa** consigné : dans un commentaire `client/*.s`, `:` et une parenthèse contenant une
+  expression (`(16 plus couleur)`) cassent l'assemblage — en plus de l'apostrophe déjà connue.
+
 ### Added (contrôle de flux HIRES par cadence — Sprint 10 « Later », 05/09/2026)
 - **`writeHiresPaced`** (`server/internal/bbs/hirespaced.go`) : écrit un flux HIRES en **tronçons**
   (240 o < FIFO 512) espacés au **débit du lien** (~700 o/s), pour ne jamais saturer le FIFO série du

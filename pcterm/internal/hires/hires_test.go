@@ -106,6 +106,31 @@ func TestModeCouleur(t *testing.T) {
 	}
 }
 
+func TestPaper(t *testing.T) {
+	r := New()
+	feed(r, oascii.HiOn)
+	feed(r, oascii.HiPaper, byte(oascii.Blue)) // fond bleu plein écran
+	v := r.VRAM()
+	want := byte(0x10) | byte(oascii.Blue) // attribut PAPER = 0x10 + couleur
+	for _, row := range []int{0, 50, 100, 199} {
+		if got := v[row*40]; got != want {
+			t.Errorf("col0 ligne %d = %#02x, veut %#02x (paper)", row, got, want)
+		}
+	}
+	// Un pixel dessiné (x>=6) s'allume ; la cellule paper (x<6) reste l'attribut.
+	feed(r, oascii.HiCurset, 60, 40)
+	feed(r, oascii.HiLine, 120, 40)
+	if !r.Pixel(60, 40) {
+		t.Error("un pixel x>=6 devrait s'allumer sur fond paper")
+	}
+	if r.Pixel(0, 40) {
+		t.Error("x<6 (cellule paper) ne doit pas être tracé")
+	}
+	if v[40*40] != want {
+		t.Errorf("col0 ligne 40 après dessin = %#02x, veut %#02x (paper préservé)", v[40*40], want)
+	}
+}
+
 func TestBlitRLE(t *testing.T) {
 	r := New()
 	feed(r, oascii.HiOn)

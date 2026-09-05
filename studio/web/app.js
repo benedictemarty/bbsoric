@@ -1322,6 +1322,7 @@ function renderHiresPreview(p) {
   const px = new Uint8Array(HIW * HIH);
   const h = p.hires || {};
   hiInk = 7; // encre par défaut = blanc
+  let hiPaper = -1; // fond : -1 = noir par défaut, 0-7 = couleur paper (plein écran)
   if (h.background) {
     const by = b64ToBytes(h.background);
     for (let y = 0; y < HIH; y++) for (let bx = 0; bx < 40; bx++) {
@@ -1341,14 +1342,16 @@ function renderHiresPreview(p) {
       case 'fillbox': hiFillBox(px, penx, peny, x, y); penx = x; peny = y; break;
       case 'circle': hiCircle(px, penx, peny, op.r | 0); break;
       case 'char': hiChar(px, x, y, (op.ch || ' ').charCodeAt(0)); break;
-      default: break; // paper : non rendu dans l'aperçu
+      case 'paper': if (typeof op.c === 'number' && op.c >= 0 && op.c <= 7) hiPaper = op.c | 0; break; // fond plein écran
+      default: break;
     }
   }
   const ctx = cv.getContext('2d');
   const img = ctx.createImageData(HIW, 224);
+  const bg = hiPaper >= 0 ? PAL[hiPaper] : [0, 0, 0]; // fond = paper ou noir
   for (let i = 0; i < HIW * 224; i++) {
     const v = i < HIW * HIH ? px[i] : 0;            // 0 = éteint, sinon encre+1
-    const c = v ? PAL[(v - 1) & 7] : [0, 0, 0];
+    const c = v ? PAL[(v - 1) & 7] : bg;
     const o = i * 4; img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);

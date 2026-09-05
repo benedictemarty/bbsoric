@@ -1,0 +1,25 @@
+{
+  "_comment": "Demo couleur PAPER (fond HIRES). bbsd -content docs/examples/hires-paper.json ; entree 1 -> page graphique 'logo' avec un fond colore plein ecran (op paper) et un cadre + cercle blancs par-dessus. Sert aussi de page pixel-exact (scripts/test-emulateur-hires.sh, BBS_CONTENT=ce fichier).",
+  "start": "accueil",
+  "pages": {
+    "accueil": {
+      "title": "DEMO PAPER HIRES",
+      "entries": [
+        { "key": "1", "label": "Fond colore", "target": "logo" },
+        { "key": "Q", "label": "Quitter", "target": "__quit__" }
+      ]
+    },
+    "logo": {
+      "title": "FOND",
+      "hires": {
+        "draw": [
+          { "op": "paper",   "c": 4 },
+          { "op": "curset",  "x": 20,  "y": 20 },
+          { "op": "box",     "x": 219, "y": 179 },
+          { "op": "curset",  "x": 90,  "y": 80 },
+          { "op": "fillbox", "x": 150, "y": 120 }
+        ]
+      }
+    }
+  }
+}

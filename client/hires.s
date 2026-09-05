@@ -57,6 +57,8 @@ hcharcol: .byt 0           ; colonne (0-5) du glyphe en cours
 hcharbits: .byt 0          ; octet de police de la ligne courante
 hcsaved:  .byt 0           ; 1 = charset deja sauvegarde en $9800
 hcolor:   .byt 0           ; 1 = mode couleur actif (attribut d'encre par ligne)
+hpaper:   .byt $10         ; attribut PAPER courant, soit 16 plus la couleur 0-7
+hpaperon: .byt 0           ; 1 = fond colore actif (attribut paper en col0 de chaque ligne)
 
 ; ---------------------------------------------------------------------------
 ;  hires_feed - consomme un octet (A) du flux HIRES selon hstate.
@@ -167,8 +169,39 @@ hf_ink:
         sta hcolor               ; passe en mode couleur (attribut d'encre par ligne)
         jmp hf_reset_state
 hf_paper:
-        ; PAPER non gere finement (HIRES monochrome pour l'instant)  - ignore
+        ; FOND colore plein ecran, attribut PAPER en col0 de chaque ligne. Les
+        ; pixels de la premiere cellule attribut sont ensuite ignores.
+        and #7
+        ora #$10
+        sta hpaper
+        lda #1
+        sta hpaperon
+        jsr hires_paint_paper
         jmp hf_reset_state
+
+; hires_paint_paper - pose hpaper en colonne 0 des 200 lignes HIRES pour un fond
+; colore plein ecran. Clobbe A, X, Y et HPTR ; appele entre opcodes, jamais en
+; plein blit.
+hires_paint_paper:
+        lda #<HVRAM
+        sta HPTR
+        lda #>HVRAM
+        sta HPTR+1
+        ldx #200                 ; 200 lignes
+hpp_loop:
+        ldy #0
+        lda hpaper
+        sta (HPTR),y             ; col0 de la ligne recoit l'attribut paper
+        clc                      ; HPTR += 40 (ligne suivante)
+        lda HPTR
+        adc #40
+        sta HPTR
+        bcc hpp_nohi
+        inc HPTR+1
+hpp_nohi:
+        dex
+        bne hpp_loop
+        rts
 
 ; --- opcodes a coordonnees  - x puis y ---
 hf_arg_x:
@@ -359,6 +392,7 @@ hon_btm:
         sta hpenx
         sta hpeny
         sta hcolor               ; pas de couleur tant qu'aucun op ink
+        sta hpaperon             ; pas de fond colore par defaut (avant tout op paper)
         lda #7
         sta hink                 ; encre par defaut = blanc
         rts
@@ -445,9 +479,12 @@ hex_n13:
 ; ---------------------------------------------------------------------------
 setpixel_xy:
         cpy #200
-        bcs sp_ret               ; y  sup  200  vers  ignore
+        bcs sp_oob               ; y  sup  200  vers  ignore (trampoline court)
         cpx #240
-        bcs sp_ret               ; x  sup  240  vers  ignore
+        bcc sp_inbounds          ; x  inf  240  vers  dessiner
+sp_oob:
+        rts
+sp_inbounds:
         ; (hmlo,hmhi) = Y*8 puis HPTR = Y*8 ; (hmlo,hmhi) = Y*32 ; HPTR += -> Y*40
         lda #0
         sta hmhi
@@ -478,9 +515,12 @@ setpixel_xy:
         clc
         adc #>HVRAM
         sta HPTR+1
-        ; Mode couleur. Pose l'attribut d'encre (hink, 0 a 7) en col 0 de la ligne
-        ; (HPTR = debut de ligne). La cellule col 0 (x 0 a 5) devient l'attribut, donc
-        ; les pixels x inf 6 sont perdus ; toute la ligne s'affiche dans l'encre.
+        ; Attributs de debut de ligne, deux cas exclusifs. FOND colore hpaperon,
+        ; col0 tient deja le paper pose par hires_paint_paper, dessin blanc
+        ; par-dessus, pixel x inf 6 ignore. Sinon MODE ENCRE hcolor, attribut
+        ; encre en col0, ligne coloree, pixel x inf 6 perdu.
+        lda hpaperon
+        bne sp_paper
         lda hcolor
         beq sp_nocolor
         lda hink
@@ -488,6 +528,10 @@ setpixel_xy:
         sta (HPTR),y
         cpx #6
         bcc sp_ret               ; pixel dans la cellule attribut col 0, ignore
+        jmp sp_nocolor
+sp_paper:
+        cpx #6
+        bcc sp_ret               ; pixel dans la cellule paper (col 0), ignore
 sp_nocolor:
         ; + X/6 (octet dans la ligne) ; reste = X mod 6 dans htmp
         txa
