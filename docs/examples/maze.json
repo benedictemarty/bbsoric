@@ -1,0 +1,13 @@
+{
+  "_comment": "Jeu LABYRINTHE HIRES (applet maze). bbsd -content docs/examples/maze.json ; entree 1 -> labyrinthe : fleches (ou ZQSD/WASD) pour atteindre la sortie (carre creux), Q pour abandonner. Rendu via le buffer HIRES differentiel (seule la case du joueur change) + ecriture cadencee.",
+  "start": "accueil",
+  "pages": {
+    "accueil": {
+      "title": "JEUX HIRES",
+      "entries": [
+        { "key": "1", "label": "Labyrinthe", "applet": "maze", "next": "accueil" },
+        { "key": "Q", "label": "Quitter", "target": "__quit__" }
+      ]
+    }
+  }
+}

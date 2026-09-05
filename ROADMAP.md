@@ -9,8 +9,8 @@
 > **Current status (03/09/2026): IN PRODUCTION** on `pavi.3617.fr:6502`. Core sprints (0–3, 5, 9, 11)
 > delivered; recent epics **J (download catalogue, source tachibana.eu)** and **L (personal file
 > space)** are **live** — see the "Recent epics" section below and `docs/agile/backlog.md`. Genuinely
-> **open**: real-hardware test (Sprint 4, awaiting iron), Sprint 7 #6 (door game). Sprint 10 HIRES
-> is now COMPLETE (animation diff + flow-control pacing + paper colour done 05/09).
+> **open**: real-hardware test (Sprint 4, awaiting iron). Sprints 7 (comms, incl. #6 door game) and
+> 10 (HIRES: animation diff + flow-control + paper) are now COMPLETE (05/09).
 
 ## Sprint 0 — Scoping & foundation — ✅ done
 - [x] State of the art of retro BBS servers (`docs/state-of-the-art.md`)
@@ -306,7 +306,7 @@ profiles. See `docs/adr/0003-studio-forge.md`.
 - [ ] Advanced multi-site (creating new files from the UI), backup management.
 - [ ] Authentication if the studio were to be exposed (today local-only).
 
-## Sprint 7 — Communication between callers (state-of-the-art parity) — ✅ core done (who/chat/wall/forum/pm/RSS) ; #6 door game later
+## Sprint 7 — Communication between callers (state-of-the-art parity) — ✅ COMPLET (who/chat/wall/forum/pm/RSS + #6 door game HIRES)
 > Historic heart of a BBS, today absent (the "Guestbook" is static).
 > Gap analysis: `docs/state-of-the-art.md` §6. Each feature = one applet
 > (`bbs.Register`) + a persisted store modelled on `internal/user`.
@@ -343,7 +343,11 @@ profiles. See `docs/adr/0003-studio-forge.md`.
   autres auteurs comme le pont tachibana). Tests parseur (RSS/Atom/ordre/dates) + commande
   (conversion/bornes/fusion/déaccentuage). Scaffolding timer `deploy/rssnews/` (non installé : URL de
   flux à renseigner). Cf. `docs/rss.md`. `bbsd` reste sans accès réseau sortant.
-- [ ] **door game** (#6).
+- [x] **door game** (#6, 05/09/2026) — jeu **LABYRINTHE HIRES** (applet `maze` + package
+  `server/internal/maze`). Labyrinthe généré (backtracker), rendu HIRES via le buffer différentiel
+  `oascii.HiresScreen` + écriture cadencée `writeHiresPaced` ; déplacement aux flèches, sortie au coin
+  opposé, écran de victoire (nb de coups). Tests logique + TCP + preuve `oric1-emu`
+  (`scripts/test-emulateur-maze.sh`). *Vitrine directe des briques HIRES du Sprint 10.*
 
 ## Recent epics — download catalogue & personal files (02–03/09/2026)
 > Full stories in `docs/agile/backlog.md` (Epics J, L). **Live in production.**

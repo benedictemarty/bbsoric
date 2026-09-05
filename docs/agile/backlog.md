@@ -58,6 +58,13 @@
   *(Done 17/07/2026 — applet `connect4` + package `server/internal/connect4` (pure logic,
   7×6 board, deterministic AI: win→block→center, win/draw detection). Services menu
   « Puissance 4 ». Logic unit tests + TCP integration; verified in the real server.)*
+- [x] **D4** (5) As a user, I want a **graphical (HIRES) door game** (Sprint 7 #6).
+  *(Done 05/09/2026 — applet `maze` + package `server/internal/maze` (recursive-backtracker
+  generation, walls, move, solve). Rendered in HIRES via the **differential buffer**
+  `oascii.HiresScreen` + **rate-paced** `writeHiresPaced` (only the player cell changes per frame);
+  arrow-key movement, exit at the opposite corner, win screen with move count; `Q` to quit. Logic
+  unit tests + TCP integration (`maze_test.go`) + runtime proof `scripts/test-emulateur-maze.sh`.
+  Content `docs/examples/maze.json`. Showcases the Sprint-10 HIRES bricks.)*
 
 ## Epic E — Real hardware & deployment (Sprint 4–5)
 

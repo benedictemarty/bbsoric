@@ -6,6 +6,20 @@ versioning [SemVer](https://semver.org/lang/en/).
 
 ## [Unreleased]
 
+### Added (jeu LABYRINTHE HIRES — door game, Sprint 7 #6, 05/09/2026)
+- **Premier jeu graphique** : applet `maze`. Un labyrinthe est généré (backtracker récursif, arbre
+  couvrant) et rendu en **HIRES** ; le joueur (carré plein) se déplace aux **flèches** (ou ZQSD/WASD,
+  ou pavé 8/4/6/2) jusqu'à la **sortie** (carré creux, coin opposé), `Q` pour abandonner. Écran de
+  victoire avec le nombre de coups. Tour par tour (`ReadKey`, conforme ADR-0002).
+- **Vitrine des briques HIRES** : rendu via le **buffer différentiel** `oascii.HiresScreen` (le
+  labyrinthe est fixe → seule la case du joueur change entre deux images, diff minuscule) et
+  **écriture cadencée** `writeHiresPaced` (pas de saturation du FIFO série).
+- **Logique pure testable** : nouveau package `server/internal/maze` (génération, murs, déplacement,
+  résolution) — tests d'arbre couvrant, bordures fermées, respect des murs. Applet : test TCP
+  (`maze_test.go`, 1ʳᵉ image HIRES + abandon). Contenu d'exemple `docs/examples/maze.json`.
+- **Preuve runtime** : `scripts/test-emulateur-maze.sh` (le vrai firmware affiche le labyrinthe).
+  ROADMAP : Sprint 7 **#6 door game fait** (Sprint 7 désormais complet).
+
 ### Added (couleur HIRES paper / fond coloré — Sprint 10 « Later », 05/09/2026)
 - **Op `paper` rendu** : le firmware (`client/hires.s`) honore enfin l'opcode HiPaper (jusqu'ici
   ignoré) — il peint l'attribut PAPER (`0x10 + couleur`) en **colonne 0 des 200 lignes**
